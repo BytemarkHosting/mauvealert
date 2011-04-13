@@ -1,0 +1,16 @@
+.colmask.threecol
+  .colmid
+    .colleft
+      .urgent.col1
+        Urgent
+        .unacknowledged{:title=>"Urgent alert unacknowledged"} #{@urgent.length - @count_ack[:urgent]}
+        .acknowledged{:title=>"Urgent alert acknowledged"} #{@count_ack[:urgent]}
+      .normal.col2
+        Normal
+        .unacknowledged{:title=>"Normal alert unacknowledged"} #{@normal.length - @count_ack[:normal]}
+        .acknowledged{:title=>"Normal alert acknowledged"} #{@count_ack[:normal]}
+      .low.col3
+        Low
+        .unacknowledged{:title=>"Low alert unacknowledged"} #{@low.length - @count_ack[:low]}
+        .acknowledged{:title=>"Low alert acknowledged"} #{@count_ack[:low]}
+

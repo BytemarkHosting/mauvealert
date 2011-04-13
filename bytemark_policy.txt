@@ -1,0 +1,125 @@
+server {
+  ip "0.0.0.0"
+  port 32741
+  log_file STDOUT
+  log_level 0
+  database "sqlite3:///tmp/mauve_test.db"
+  transmission_id_expire_time 600
+  
+  web_interface {
+    port 1288
+  }
+}
+
+notification_method("xmpp") {
+  jid "mauveserv@chat.bytemark.co.uk"
+  password "foo"
+}
+
+notification_method("email") {
+  # add in SMTP server, username, password etc.
+  # default to sending through localhost
+  from "matthew@bytemark.co.uk"
+  server "bytemail.bytemark.co.uk"
+  subject_prefix "[Bytemark alerts] "
+  #deliver_to_file "/tmp/alerts.txt"
+}
+
+notification_method("sms") {
+  provider "AQL"
+  
+  username "bytemark"
+  password "foo"
+  from "01904890890"
+  max_messages_per_alert 3
+}
+
+person("office") {
+  #all { xmpp "office@conference.chat.bytemark.co.uk" }
+  all { email "matthew@bytemark.co.uk" }
+}
+
+person("mbloch") {
+  urgent { sms("x") }
+  normal { xmpp("mbloch@chat.bytemark.co.uk") || email("matthew@bytemark.co.uk") }
+  low { email("matthew@bytemark.co.uk") }
+}
+
+person("ptaphouse") {
+  urgent { sms("x") }
+  normal { xmpp("ptaphouse@chat.bytemark.co.uk") || email("pete@bytemark.co.uk") }
+  low { email("pete@bytemark.co.uk") }
+}
+
+person("chris") {
+}
+
+alert_group {
+  includes {
+    source == "supportbot" || source == "managed-monitor" 
+  }
+  
+  acknowledgement_time 90.minutes
+  
+  level URGENT
+  
+  notify("office") {
+    every 30.minutes
+  }
+  
+  notify("mbloch") {
+    every 60.minutes
+    hours_in_day(0..8, 17..23)
+    unacknowledged(120.minutes)
+  }
+}
+
+alert_group {
+  includes { source == "network-crit" }
+  level URGENT
+  acknowledgement_time 90.minutes
+  
+  notify("office") { every 15.minutes }
+  notify("ptaphouse") { every 30.minutes }
+  notify("mbloch") { 
+    every 30.minutes
+    unacknowledged(95.minutes)
+  }
+}
+
+alert_group {
+  includes { source == "networkmonitor" }
+  acknowledgement_time 7.days
+  
+  notify("office") { every 120.minutes }
+}
+
+alert_group {
+  includes { source == "disks" }
+  acknowledgement_time 1.day
+  
+  notify("chris") { every 4.hours }
+  notify("mbloch","ptaphouse") { 
+    every 12.hours
+    unacknowledged 24.hours
+  }
+  
+}
+
+alert_group {
+  includes { source == "pxefs" }
+  level URGENT
+  
+  notify("office") { every 1.hour }
+  notify("mbloch") { 
+    every 3.hours
+    unacknowledged 24.hours
+  }
+}  
+
+alert_group("default") {
+  level LOW
+  
+  notify("office") { every 3.hours }
+}
+

@@ -1,0 +1,14 @@
+- if @person
+  %a{:href => "/alerts"} Current alerts
+  %a{:href => "/events"} Last day
+  %a{:href => "/preferences"} My preferences
+  %a{:href => "/logout"} Logout <strong>(#{@person.username})</strong>
+- else
+  %form{:action => '/login', :method => :POST}
+    Username
+    %input{:name => 'username', :type => 'text', :size => 10}
+    Password
+    %input{:name => 'password', :type => 'password', :size => 10}
+    %input{:type => 'submit', :value => 'Log in'}
+- if flash['error']
+  .error= flash['error']

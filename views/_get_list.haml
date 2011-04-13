@@ -1,0 +1,40 @@
+//- alerts.each_pair do |subject, alerts|
+- alertsList.keys.sort.each do |subject| 
+  - alerts = alertsList[subject]
+  - if 1 < alerts.length()
+    %li{:id=>"firstAlert#{alerts[0].id}"}
+      - if "urgent" == level 
+        %span.levelUrgent Urgent
+      - elsif "normal" == level
+        %span.levelNormal Normal
+      -else
+        %span.levelLow Low
+      .conglomerate
+        %span.subject= alerts[0].subject
+        - if alerts[0].acknowledged?
+          There are <strong>#{alerts.length}</strong> alerts in this conglomerate.
+        - else
+          - shortestAckTime = 9223372036854775807
+          - lst = Array.new
+          - alerts.each do |alert| 
+            - shortestAckTime = alert.get_default_acknowledge_time() if alert.get_default_acknowledge_time() < shortestAckTime
+            - lst << alert.id
+          %a{:href=>"javascript:", :onClick=>"showBulkAcknowledgeStatus(event, #{"['#{lst.join('\',\'')}']"}, #{shortestAckTime});"}
+            [Bulk acknowledge <strong>#{alerts.length}</strong> alerts for
+            - hrs = shortestAckTime / 3600
+            - if 1 == hrs 
+              one hour.
+            - elsif 24 > hrs and 1 > hrs
+              #{hrs} hours
+            - elsif 24 == hrs
+              one day.
+            - elsif 24 < hrs and 168 > hrs
+              #{hrs/24} days.
+            - elsif 168 == hrs
+              one week
+            - else 
+              #{hrs/168} weeks
+            ]
+      %ul= partial("get_alerts", :locals => {:level => level, :alerts => alerts})
+  - else 
+    = partial("get_alerts", :locals => {:level => level, :alerts => alerts})

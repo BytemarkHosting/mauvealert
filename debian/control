@@ -1,0 +1,57 @@
+Source: mauvealert
+Maintainer: Matthew Bloch <matthew@bytemark.co.uk>
+Uploaders: Patrick J Cherry <patrick@bytemark.co.uk>
+Section: ruby
+Priority: optional
+Build-Depends: ruby1.8, debhelper, cdbs, rdoc
+Standards-Version: 3.8.0
+
+Package: mauvealert-client
+Architecture: all
+Depends: ruby1.8,
+  mauvealert-common,
+  ${misc:Depends}
+Description: Mauve network alert system -- client
+  mauve is a network alert system for system and network administrators.  You
+ can use it to quickly set up ad-hoc monitoring for a variety of services, and
+ to confidently replace all scripts that might otherwise send floods of emails
+ or text messages.
+ .
+ This is the client package.
+
+Package: mauvealert-server
+Architecture: all
+Depends: mauvealert-common,
+ ruby1.8,
+ libhaml-ruby1.8,
+ liblog4r-ruby1.8,
+ libredcloth-ruby1.8,
+ librmail-ruby1.8,
+ libsinatra-ruby1.8,
+ libuuidtools-ruby1.8,
+ libwebrick-ruby1.8,
+ libdm-sqlite-adapter-ruby1.8,
+ thin1.8,
+ libxmpp4r-ruby1.8,
+ ${misc:Depends}
+Suggests: mauvealert-client
+Description: Mauve network alert system -- server
+ mauve is a network alert system for system and network administrators.  You can
+ use it to quickly set up ad-hoc monitoring for a variety of services, and to
+ confidently replace all scripts that might otherwise send floods of emails or
+ text messages.
+ .
+ This is the server package.
+
+Package: mauvealert-common
+Architecture: all
+Depends: ruby1.8, ruby-protobuf, ${misc:Depends}
+Suggests: mauvealert-client
+Description: Mauve network alert system -- common libraries
+ mauve is a network alert system for system and network administrators.  You can
+ use it to quickly set up ad-hoc monitoring for a variety of services, and to
+ confidently replace all scripts that might otherwise send floods of emails or
+ text messages.
+ .
+ This is the package of libraries in common with both the client and server.
+

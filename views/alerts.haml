@@ -1,0 +1,24 @@
+!!!
+%html
+  %head
+    %title #{@title}: Current alerts (logged in as #{@person.username})
+    %link{:rel => "stylesheet", :href => "/alerts.css"} 
+    %link{:rel => "stylesheet", :href => "/alerts-mobil.css", :media => "handheld"} 
+    %script{:type => "text/javascript", :src => "/prototype.js"}
+    %script{:type => "text/javascript", :src => "/mauve_utils.js"}
+    %script{:type => "text/javascript", :src => "/datadumper.js"}
+  %body{:onLoad => "addAutoHover(); addRefresh();"}
+    #header
+      %h1= @title
+    #errors{:style => "display: none;"}
+      %h1 
+        Trouble!
+        (
+        %a{:href=>"#", :onClick => "clearErrors();"} hide
+        )
+      %ul#errors_list
+        %p Either the alert server or your internet connection is malfunctioning, so you may want to try refreshing the page.
+    #alert_counts= partial("alert_counts")
+    #navigation= partial("navigation")
+    #alert_summary= partial("alert_summary")
+    //%p The session is #{session.inspect()}

@@ -1,0 +1,223 @@
+/*
+ * url http://www.w3schools.com/css/default.asp
+ *
+ * Light Mauve (Hex: #DCD0FF) (RGB: 220, 208, 255)
+ * Mauve (Mallow) (Hex: #E0B0FF) (RGB: 224, 176, 255)
+ * Opera Mauve (Hex: #CA82AF) (RGB: 202, 130, 175)
+ * Mauve Taupe (Hex: #915F6D) (RGB: 145, 95, 109)
+ * Old Mauve (Hex: #673147) (RGB: 103, 49, 71)
+ */
+body {
+  background-color: #777777;
+  font-family: Arial;
+}
+
+h1 {
+  font-family: "Neo Tech Std", Arial; 
+  font-weight: normal; 
+  margin: 0;
+}
+
+#header {
+  font-size: small;
+  background-color: #ffffff;
+  text-align: center;
+  background-image: url('/images/logo.png');
+  background-repeat: no-repeat;
+  background-position: top right;
+  text-align: left;
+}
+
+#errors { 
+  font-size: larger;
+  background-color: #ffffff;
+  background-image: url(/images/broken_window.jpg);
+  background-repeat: no-repeat;
+}
+
+#errors h1 { padding-left: 100px; color: #ff0000; }
+
+
+/* lifted from http://matthewjamestaylor.com/blog/perfect-3-column.htm */
+
+/* column container */
+.colmask {
+	position:relative;	/* This fixes the IE7 overflow hidden bug */
+	clear:both;
+	float:left;
+	width:100%;			/* width of whole page */
+	overflow:hidden;		/* This chops off any overhanging divs */
+	border-top: solid; 
+	border-bottom: solid;
+}
+/* common column settings */
+.colright,
+.colmid,
+.colleft {
+	float:left;
+	width:100%;			/* width of page */
+	position:relative;
+}
+.col1,
+.col2,
+.col3 {
+	float:left;
+	position:relative;
+	padding:0 0 0 0;	/* no left and right padding on columns, we just make them narrower instead 
+					only padding top and bottom is included here, make it whatever value you need */
+	overflow:hidden;
+}
+/* 3 Column settings */
+.threecol {
+}
+.threecol .colmid {
+	right:33%;			/* width of the right column */
+}
+.threecol .colleft {
+	right:34%;			/* width of the middle column */
+}
+.threecol .col1 {
+  font-family: "Neo Tech Std", Arial; 
+  font-size: large;
+	width:34%;			/* width of center column content (column width minus padding on either side) */
+	left:100%;			/* 100% plus left padding of center column */
+}
+.threecol .col2 {
+  font-family: "Neo Tech Std", Arial; 
+  font-size: large;
+	width:33%;			/* Width of left column content (column width minus padding on either side) */
+	left:33%;			/* width of (right column) plus (center column left and right padding) plus (left column left padding) */
+}
+.threecol .col3 {
+  font-family: "Neo Tech Std", Arial; 
+  font-size: large;
+	width:33%;			/* Width of right column content (column width minus padding on either side) */
+	left:67%;			/* Please make note of the brackets here:
+					(100% - left column width) plus (center column left and right padding) plus (left column left and right padding) plus (right column left padding) */
+}
+
+/* Navigation bar directly under alert counts */
+#navigation { 
+  background-color: #ffffff; 
+  text-align: right;
+  padding-bottom: 4px;
+  padding-right: 4px;
+}
+#navigation * { font-size: smaller; }
+#navigation a { padding-left: 1em; padding-right: 1em; }
+#navigation a:hover { background-color: #ff7f7f; }
+
+/* Styling only for alert counts - layout thankfully outsourced (see above) */
+#alert_counts { font-size: 8pt; }
+#alert_counts * { text-align: center; }
+#alert_counts .urgent { background-color: #ff2020; }
+#alert_counts .normal { background-color: #ffff40; }
+#alert_counts .low    { background-color: #8080ff; }
+#alert_counts * .unacknowledged { 
+  font-family: "Neo Tech Std", Arial; 
+  font-size: 24pt;
+  width: 100%; 
+}
+#alert_counts * .acknowledged {
+  font-family: "Neo Tech Std", Arial; 
+  font-size: 12pt;
+  width: 80%;
+  text-align: right;
+  padding-right: 1em;
+}
+
+/* Style for each alert strip */
+#alert_strip { 
+  width: 100%; 
+  background-color: #808080; 
+  padding: 2px; 
+}
+#alert_summary .urgent .alert_strip  { background-color: #ff2020; }
+#alert_summary .urgent .alert_strip:hover  { background-color: #ffa0a0; }
+#alert_summary .normal .alert_strip  { background-color: #ffff40; }
+#alert_summary .normal .alert_strip:hover  { background-color: #ffffa0; }
+#alert_summary .low    .alert_strip  { background-color: #8080ff; }
+#alert_summary .low    .alert_strip:hover  { background-color: #a0a0ff; }
+
+/* widgets along with each alert */
+.alert_strip { padding: 2px;}
+.alert_strip * { display: inline; vertical-align: middle; }
+.alert_strip .source  { font-size: smaller; font-style: italic; }
+.alert_strip .subject { font-size: smaller; font-weight: bold; padding-left:1em;}
+.alert_strip .summary { font-size: larger; padding-left:1em; padding-right:1em;}
+.alert_strip * img { border: none; }
+.alert_whole {
+  padding-top:0em;
+  padding-bottom:0.25em;
+  padding-right:0em;
+  padding-left:0em;
+}
+
+
+/* the detail strip can contain arbitrary HTML */
+.detail_strip { 
+  background-color: #eeeeee;
+  font-size: smaller;
+  left: 10em; 
+  padding-left: 8.0em;
+}
+
+
+/* Not needed anymore.  Was used for funky effect which is no longer needed.
+img.unacknowledged { background: url(/images/acknowledge_unacknowledged.png); }
+img.unacknowledged:hover { background: url(/images/acknowledge_hover.png); }
+*/
+
+.alert_full_list { display: table; width: 100%; background-color: #e0e0e0; padding: 0.5em; }
+.alert_full_list .row { display: table-row; }
+.alert_full_list .row.alt { background-color: #e0b0b0; }
+.alert_full_list .row h2 { text-align: center; }
+.alert_full_list .row * { display: table-cell; padding: 0.2em; }
+
+.raised.upraised { font-weight: bold; }
+.cleared.upcleared { font-weight: bold; }
+.acknowledged.upacknowledged { font-weight: bold; }
+
+#about_alert { 
+  background-color: #ffffff; 
+  padding: 1em;
+}
+
+#about_alert .detail { background-color: #d0ffd0; padding: 0.3em; }
+
+#about_alert h1 { background-color: #ffd0d0; text-align: center; padding-top: 0.2em; }
+
+.dangerous { color: #ff0000; }
+
+.grouped_folder {
+  outline-color: #673147;
+  outline-style: solid;
+  outline-width: 0.15em;
+  padding-top:0em;
+  padding-bottom:0.0em;
+  padding-right:0em;
+  padding-left:0em;
+  margin-top:1.0em;
+}
+
+img {
+  border: none; 
+  vertical-align:middle;
+}
+
+.control {
+  font-family: "Neo Tech Std", Arial; 
+  color: #673147;
+  background-color: #aaaaaa;
+  padding-left: 6.5em;
+  padding-right: 0.5em;
+  font-size: smaller;
+  font-style: italic;
+  text-align: right;
+}
+
+.error {
+  color: #ff0000;
+  font-family: "Neo Tech Std", Arial;
+  text-align: center;
+}

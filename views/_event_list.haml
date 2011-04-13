@@ -1,0 +1,22 @@
+.alert_full_list
+  .row
+    %h2
+    %h2 Subject
+    %h2 Summary
+    %h2 Raised
+    %h2 Acknowledged
+    %h2 Cleared
+  - alerts.each do |alert|
+    .row{:id => alert.id, :class => cycle('alt','')}
+      .more
+        %a{:href => "/alert/#{alert.id}"} [details]
+      .subject= alert.subject
+      .summary= alert.summary
+      .raised{:class => "up"+alert.update_type}= alert.raised_at ? alert.time_relative(Time.now - alert.raised_at.to_time) : ""
+      .acknowledged{:class => "up"+alert.update_type}
+        - if alert.acknowledged_at
+          = alert.time_relative(Time.now - alert.acknowledged_at.to_time)
+          by 
+          = alert.acknowledged_by
+      .cleared{:class => "up"+alert.update_type}= alert.cleared? ? alert.time_relative(Time.now - alert.cleared_at.to_time) : ""
+

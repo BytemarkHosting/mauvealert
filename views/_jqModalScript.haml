@@ -1,0 +1,22 @@
+.jdHandle.jqDrag
+%strong 
+  Acknowledge alert!
+%em
+  Please be careful what you chose and err on the side of shorter times scales.
+%form{:name=>"input", :action=>"html_form_action", :method=>"post"}
+  //%a{:href=>"javascript:toogleAcknowledge(#{alert.id})"}
+  %a{:href=>"javascript:toogleAcknowledge"}
+    Acknowledge this alert for
+  %select
+    %option{:value=>"1"}1 hour
+    %option{:value=>"2"}2 hour
+    %option{:value=>"3"}3 hours
+    %option{:value=>"5"}5 hours
+    %option{:value=>"7"}7 hours
+    %option{:value=>"24"}1 day
+    %option{:value=>"48"}2 days
+    %option{:value=>"168"}1 week
+    %option{:value=>"0"}Forever
+%a{:href=>"#", :class=>"jqmClose"}
+  Close
+.jqHandle.jqResize

@@ -1,0 +1,164 @@
+** Mauve Alert
+
+  a messaging system for system and network administrators to help you sleep 
+  better, and be attentive to your computers.
+
+    Holly: Purple alert! Purple alert!
+    
+    Lister: What's a 'Purple Alert'?
+    
+    Holly: Well, it's sort of like, not as bad as a red alert, but a bit worse
+           than a blue alert. Kind of like a mauve alert, don't want to say 
+           'mauve alert.'
+           
+    Rimmer: Holly, wipe the rabid foam from your chin and start again.
+
+** Introduction
+
+If you run a network where too many scripts know your mobile phone number,
+or you run up huge text messaging bills, your inbox is filled with
+wall-to-wall red alerts of questionable urgency, or you want to be able
+to make use of SNMP without a huge effort up-front, mauve may be for you.
+
+Mauve is not a network monitoring system, but it makes it very easy to
+construct a reliable one from only shell scripts and cron.  If you have a 
+network monitoring system (or more likely, several), mauve lets you consolidate
+or reorganise how it alerts you and your team.
+
+Many monitoring systems only deal in red alerts, and put a lot of design
+effort into screaming like a baby.  The result of having multiple monitoring
+systems all screaming  at once, is that it's  difficult to keep on top of what 
+alerts are actually important.  The weary sysadmin learns to ignore their 
+text message noise in certain patterns, at certain times  of day, filters their
+email and so on, at the risk of ignoring something critical.
+
+Mauve is intended to be a bucket into which the sysadmin can easily throw 
+alerts.  He can then decide on a central policy for distribution to his team,
+saving the screaming red lights for really urgent problems.
+
+Many controls are built into mauve to ensure alerts are responded to by team
+members.  If it doesn't know any better, the system will send SMS messages to
+a mobile phone, emails, or instant messages, and wait for the user to 
+acknowledge its alert(s), reminding the user at configured intervals.
+
+The user can also run a special client which suppresses the normal alerts
+clogging up her email or phone.  This mode of operation is intended for users
+with 24/7 connected devices with richer alerting functions than a simple
+text message beep or email chime.  They are by their desks running a particular
+program.  Mauve comes with a simple prototype for Linux, and a smartphone
+client for Android phones. [TODO]
+
+** Important data in mauve
+
+An alert is an event signalled by a system in your network, and it suggests
+that something needs attention within a timeframe of a few minutes to a few
+days.  Alerts are not intended to be useful for helping you organise jobs
+that can take longer than this, and are not intended to organise multi-stage
+complicated jobs.
+
+Alerts are raised and cleared only by the system, and acknowledged by people.
+
+An acknowledgement is a message to the server that someone is attending to
+the alert, and that it can expect the alert to be cleared within a particular 
+time frame.  mauveserver provides a web interface through which users can
+acknowledge alerts.
+
+Alerts are sent in a group, in a single packet called an "alert update".
+Individual alert systems can send a complete update, specifying all the current
+alerts that they are aware of - or they can send updates consisting of alert/
+clear messages as each change occurs.  
+
+The information flow looks like this:
+
+            (single UDP packets)
+                  alert                  notifi    (SMS/email etc.)
+                 updates                 cations
+[alert source 1] ------> [             ] -------> [person 1]
+[alert source 2] ------> [alert station] -------> [person 2]
+[alert source 3] ------> [             ]    ...       |
+   ...                          |                     |
+                                \-----------<<--------+
+                                    acknowledgements
+                                     (web interface)
+
+** Alert updates
+
+The alert update is the most important data structure and is described fully
+in the mauve.proto file.  See later on in this document for how these fields
+are use to implement various monitoring patterns in Bytemark's network.
+
+Alert updates are not intended to span more than a single UDP packet, and
+are therefore limited to 64KB.  Their format is a packed binary defined by
+Google's protobuf tools, and a single alert describing typical network events 
+will be in the order of 100s or even 10s of bytes.
+
+** Alert transmission and network architecture [NOT IMPLEMENTED, BAD IDEA?]
+
+Alert Updates are intended to be transmitted several times simultaneously 
+through a network of relays, each of which will forward to the intended 
+destination (the Alert Station), i.e.
+
+              --------> relay ----\
+             /                     \
+Alert source ---------> relay ----\ \
+             \                     \ \
+              \                     \ \
+               --------------------v v v
+                                Alert station
+
+
+The canny administrator of a multi-homed mauve network is anticipating total
+network failure and/or heavily congested links.  Relay stations should be
+positioned such that simultaneous transmission from a single source in the
+network will result in different paths being taken to relays and/or final
+destination.
+
+Alerts signal often fleeting events, and may not be of any significance if 
+they do not arrive at the alert station within a minute of transmission.
+Transmission of an alert should be a "fire and forget" event, and the onus
+of reliability of transmission lies with the network designer rather than
+any protocol or queuing.
+
+Therefore we allow simple proxying of alerts, and the alert sender should
+send alerts to all proxies and the final destination at once.  The
+destination will only process the same update once, so it's safe to try to
+transmit through many different paths.
+
+As currently implemented, the alert station in a mauve system cannot be 
+duplicated or replicated reliably, and I'm not keen to try.  A failover alert
+station must be part of your planning!
+   
+** Alert stations [TO REVISE]
+
+Alert stations are the central point in mauve's alert system.  They are the
+destinations for devices to send their alerts.  It is a feature of the mauve 
+alert protocols that many alert stations can  be configured, and they should
+all contain the same information.
+
+Devices send their alerts to every configured alert station.
+
+Monitors can connect to multiple alert stations to find out which is the most
+up-to-date.
+
+            send/clear alerts                   copy alerts
+   devices --------------------> alert station -------------> alert monitor
+                                               <-------------
+                                              acknowledge alerts
+
+** Software components of mauve
+
+Mauve is a set of tools to construct an alert system that suits your network.
+It has several front-end tools:
+
+   mauvesend   - a command line tool to send alert updates to a server
+   
+   mauveserver - the alert receiver, which stores incoming alerts in a database,
+     consults a configuration to decide who needs to know about which alerts,
+     and sends out texts, emails or jabber messages.
+     
+   mauveclient - a prototype client program allowing a person to acknowledge 
+     alerts.
+
+** Installation
+
+

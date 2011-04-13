@@ -1,0 +1,21 @@
+... Because it is needed. 
+
+Version 1.0.13
+  * Buttons now appear in a line. 
+  * Function were called in wrong order on buttons. 
+  * Alerts no longer sorted by source, just by subject.
+  * Alerts sorted by subject then summary.
+  * Page no longer needs to reload on status changes.  No new conglomerate created.
+  * Bug #1111 fix: Alerts do not acknowledge for longer than maximum time.
+  * Bug #1116 fix: Ajax requests take too long, now spawn a new thread -- 
+    see feature 1131 for full fix.
+
+
+Version 1.0.12
+  * Added time scales to bulk alerts acknowledgement.
+  * Change the web page header to be simpler and nicer.
+  * Added link to alert history.
+
+
+Version 1.0.11 and below.
+  * Nothing documented.

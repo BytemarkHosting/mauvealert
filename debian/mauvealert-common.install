@@ -1,0 +1,3 @@
+mauve.proto         usr/lib/mauvealert/
+lib/mauve/proto.rb  usr/lib/ruby/1.8/mauve/
+

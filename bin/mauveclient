@@ -1,0 +1,172 @@
+#! /usr/bin/ruby1.8
+# == Synopsis
+#
+# mauvesend: send alert(s) to a given alert station
+#
+# == Usage
+#
+# mauvesend [destination]
+#   [--source | -o <source>] [--replace | -p] [--verbose | -v]
+#   [--id <alert ID> [alert options] ... ]
+#
+# <destination>:
+#   where the alert should go, can be one of:
+#     SRV record from DNS (we add _mauvealert._udp to record name)
+#     normal hostname (i.e. A record)
+#     IP address:port number
+#
+#   if no destination is supplied, reads parameter from file 
+#   /etc/mauvealert/mauvesend.destination (otherwise throws an error).
+# 
+# --source | -o <source>:
+#   identify the source of the alert (defaults to hostname, but you might
+#   want to name your monitoring systems more explicitly).
+#
+# --replace | -p:
+#   Send an update replacing all other alerts for this source - any previous
+#   alerts not specified in this update are assumed to be cleared.  If you
+#   specify this option, you don't have to supply *any* alerts to raise or 
+#   clear (in which case all alerts from that source will be cleared).
+#
+# --verbose | -v:
+#   If you specify this option once, it will print the transmission ID
+#   of the packet for debugging.  If you specify it twice, it will print
+#   the entire data structure.
+#
+# You can specify any number of alerts in an update - every time you specify
+# --id starts a new alert.
+#
+# --id | -i <alert ID>:
+#   alert ID; unique specified for each alert raised.
+#
+# --summary | -s <summary>:
+#   text for humans describing the nature of the alert, first 100 characters
+#   are only ones guaranteed to make it to pagers, twitter, SMS etc.
+#
+# --detail | -d <detail>:
+#   HTML fragment describing the alert in more detail, no limit on length.
+#
+# --subject | -u <subject>:
+#   set the subject of the alert (i.e. the server/entity that this alert
+#   concerns).
+#
+# --clear | -c <time>:
+#   mark the alert to be cleared at the given time, or +N where N is a number
+#   of seconds, or 'now'.  If not supplied, the alert is deemed to be raised 
+#   until explicitly cleared.
+#
+# --raise | -r <time>:
+#   mark the alert to be (re)raised at the given time.  If not supplied, the
+#   alert will be raised immediately.
+# 
+
+require 'getoptlong'
+require 'mauve/sender'
+require 'mauve/proto'
+require 'mauve/mauve_time'
+require 'pp'
+
+def error(msg)
+  STDERR.print "*** Error: #{msg}\n"
+  STDERR.print "*** For help, type: #{$0} -h\n"
+  exit 1
+end
+
+def parse_time_spec(spec)
+  now = Mauve::MauveTime.now
+
+  return now if spec == 'now'
+
+  case spec[0]
+    when ?+ then multiplier = 1
+    when ?- then multiplier = -1
+    else
+      return Mauve::MauveTime.parse(spec)
+  end
+  multiplier *= case spec[-1]
+    when ?m then 60
+    when ?h then 3600
+    when ?d then 86400
+    else
+      1
+  end
+
+  now + spec[1..-1].to_i * multiplier
+end
+
+update = Mauve::Proto::AlertUpdate.new
+update.replace = false
+update.alert = []
+message = nil
+verbose = 0
+help    = false
+
+GetoptLong.new(
+  ['-h', '--help', GetoptLong::NO_ARGUMENT], 
+  ['-o', '--source', GetoptLong::REQUIRED_ARGUMENT],
+  ['-p', '--replace', GetoptLong::NO_ARGUMENT],
+  ['-i', '--id', GetoptLong::REQUIRED_ARGUMENT],
+  ['-s', '--summary', GetoptLong::REQUIRED_ARGUMENT],
+  ['-u', '--subject', GetoptLong::REQUIRED_ARGUMENT],
+  ['-c', '--clear', GetoptLong::REQUIRED_ARGUMENT],
+  ['-r', '--raise', GetoptLong::REQUIRED_ARGUMENT],
+  ['-d', '--detail', GetoptLong::REQUIRED_ARGUMENT],
+  ['-v', '--verbose', GetoptLong::NO_ARGUMENT]
+).each do |opt,arg|
+  case opt
+    when '-h'
+      help = true
+    when '-p'
+      update.replace = true
+    when '-i'
+      message = Mauve::Proto::Alert.new
+      message.id = arg
+      update.alert << message
+    when '-o'
+      error "Can only specify one source" if update.source
+      update.source = arg
+    when '-v'
+      verbose += 1
+    else
+      error "Must specify --id before message" unless message
+      case opt
+        when '-s' then message.summary = arg
+        when '-u' then message.subject = arg
+        when '-d' then message.detail = arg
+        when '-c' then message.clear_time = parse_time_spec(arg).to_i
+        when '-r' then message.raise_time = parse_time_spec(arg).to_i
+        else
+          error "Unknown option #{opt}"
+      end
+  end
+end
+
+
+# CAUTION! Kwality kode.
+#
+if help
+  # Open the file, stripping the shebang line
+  lines = File.open(__FILE__){|fh| fh.readlines}[2..-1]
+
+  lines.each do |line|
+  line.chomp!
+    break if line.empty?
+    puts line[2..-1].to_s
+  end
+
+  exit 0
+end
+
+
+error "No alerts specified" unless !update.alert.empty? || update.replace
+
+update.transmission_id = rand(2**63)
+
+begin
+  Mauve::Sender.new(ARGV).send(update, verbose)
+rescue ArgumentError => ae
+  error ae.message
+rescue Protobuf::NotInitializedError => bad
+  error "Alert not initialized fully - you must supply an ID"
+end
+

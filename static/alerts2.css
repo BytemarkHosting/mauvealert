@@ -1,0 +1,523 @@
+body {
+  background: #aaaaaa;
+}
+
+a { 
+  color: #222; 
+  text-decoration: underline;
+}
+
+.head h1 {
+  font-family: "Neo Tech Std", Arial; 
+  font-weight: normal;
+  font-size: 1.6em;
+  padding: 0.7em 0 0.0 0.7em;
+  margin: 0 0 0 0;
+  background-color: #000;
+  color: #fff;
+}
+
+h2 {
+  font-family: "Neo Tech Std", Arial; 
+  font-weight: normal;
+  font-size: 1.4em;
+  padding: 0.7em 0 0.0em 0.7em;
+  margin: 0 0 0 0;
+}
+
+h3 {
+  font-family: "Neo Tech Std", Arial; 
+  font-weight: normal;
+  font-size: 1.3em;
+  padding: 0.7em 0 0.0em 0.7em;
+  margin: 0 0 0 0;
+  background-color: #666;
+}
+
+h4 {
+  font-family: "Neo Tech Std", Arial; 
+  font-weight: normal;
+  font-size: 1.2em;
+  padding: 0 0 0.1em 0.7em;
+  margin: 0 0 0 0;
+}
+
+h5 {
+  font-family: "Neo Tech Std", Arial; 
+  font-weight: normal;
+  font-size: 1.0em;
+  padding: 0 0 0.1em 0.1em;
+  margin: 0 0 0 0;
+}
+
+.head {
+  margin: 0 0 1em 0;
+  width: 100%;
+}
+
+.unacknowledged {
+  border: 2px solid black;
+  width: 100%;
+}
+
+.acknowledge {
+  opacity: 0.65;
+  filter:alpha(opacity=65); /* IE */
+  border: 2px solid black;
+  margin: 1em 0 1em 0;
+  width: 100%;
+}
+
+/*****************************************************************************
+ * HEADER CODE
+ * For more details, see 
+ *  url http://matthewjamestaylor.com/blog/perfect-3-column.htm 
+ *****************************************************************************/
+.nbrUnacknowledged {
+  font-family: "Neo Tech Std", Arial; 
+  color: #333;
+  font-size: 1.0em;
+}
+
+.nbrAcknowledged {
+  font-family: "Neo Tech Std", Arial; 
+  color: #666;
+  font-size: 0.7em;
+}
+
+/*****************************************************************************
+ *  LAYOUT TECHNIQUES: 3 columns, all fluid
+ *****************************************************************************/
+#main {
+  border-top: 2px solid black;
+  border-bottom: 2px solid black;
+  border-right: 2px solid black;
+  height: 29px;
+  overflow:hidden;
+  background: #fff;
+}
+#mainleft {
+  width:16%;
+  float:left;
+  padding: 0.2px 0.2px 0.2px 0.2px;
+  background-color: #000;
+  color: white;
+  font-size: 1.75em;
+  font-family: "Neo Tech Std", Arial;
+}
+#maincenter {
+  width:60.5%;
+  float:left;
+  background:#fff;
+  padding: 0.2px 0.2px 0.2px 0.2px;
+}
+#mainright {
+  width:23.5%;
+  float:right;
+  background:#fff;
+  padding: 0.2px 0.2px 0.2px 0.2px;
+}
+.urgent {
+  font-family: "Neo Tech Std", Arial; 
+  font-size: 1.3em;
+  color: #ff0000;
+  padding-right: 1em;
+}
+.normal {
+  font-family: "Neo Tech Std", Arial; 
+  font-size: 1.3em;
+  color: #ff7000;
+  padding-right: 1em;
+}
+.low {
+  font-family: "Neo Tech Std", Arial; 
+  color: #ccc000;
+  font-size: 1.3em;
+  padding-right: 1em;
+}
+.nbrUnacknowledged {
+  font-family: "Neo Tech Std", Arial; 
+  color: #333;
+  font-size: 1.0em;
+}
+.nbrAcknowledged {
+  font-family: "Neo Tech Std", Arial; 
+  color: #666;
+  font-size: 0.7em;
+}
+
+
+
+/*****************************************************************************
+ * ALERT LIST CODE.
+ *****************************************************************************/
+.alert {
+  background-color: #999;
+  width: 100%;
+  /*white-space: normal;
+   */
+}
+
+.alert .subject {
+  font-size: 1.25em;
+  font-weight: bold;
+  display: inline; 
+  padding-left: 0.5em;
+  /*
+  float: left;
+  width: 20%;
+  */
+}
+
+.alert .source {
+  display: inline; 
+  padding-left: 0.5em;
+  /*
+  color: #444;
+  font-size: 0.75em;
+  float: left;
+  width: 20%;
+  */
+}
+
+.alert .summary {
+  font-size: 1.25em;
+  display: inline; 
+  /*
+  float: left;
+  width: 20%;
+  */
+}
+
+.alert .time {
+  /*
+  color: #444;
+  font-size: 0.75em;
+  */
+  display: inline;
+}
+
+.alert .ackDetails {
+  font-size: 0.75em;
+  padding-left: 1em;
+  display: inline;
+}
+
+.alert .detail {
+  display: inline;
+}
+
+.levelUrgent, 
+.levelNormal,
+.levelLow {
+  /*
+  float: left;
+  width: 3.75%;
+  */
+  padding-left: .5em;
+  padding-right: .5em;
+  display: inline; 
+}
+
+.levelUrgent {
+  background-color: #ff0000;
+}
+
+.levelNormal {
+  background-color: #ff7000;
+}
+
+.levelLow {
+  background-color: #cccc00;
+}
+
+.conglomerate  {
+  background-color: #aaa;
+  display: inline; 
+}
+.conglomerate .subject {
+  font-size: 1.25em;
+  font-weight: bold;
+  background-color: #aaa;
+  display: inline; 
+}
+
+.conglomerate .time {
+  font-size: 0.95em;
+  display: inline; 
+}
+
+.TitleUnacknowledged {
+  color: #ff0000;
+  display: inline; 
+}
+
+.inlineDetails {
+  padding: 0.0em 0.0em 0.0em 1.5em;
+  margin: 0 0 0 0;
+}
+
+/*****************************************************************************
+ * TREEVIEW LIST CODE.
+ *****************************************************************************/
+.treeview, .treeview ul { 
+	padding: 0;
+	margin: 0;
+	list-style: none;
+}
+
+.treeview ul {
+	background-color: #aaa;
+	margin-top: 4px;
+}
+
+.treeview .hitarea {
+	background: url(/images/treeview-default.png) -64px -25px no-repeat;
+	height: 16px;
+	width: 16px;
+	margin-left: -16px;
+	float: left;
+	cursor: pointer;
+}
+/* fix for IE6 */
+* html .hitarea {
+	display: inline;
+	float:none;
+}
+
+.treeview li { 
+	margin: 0;
+	padding: 3px 0pt 3px 16px;
+}
+
+.treeview a.selected {
+	background-color: #eee;
+}
+
+#treecontrol { 
+  font-size: 0.75em;
+}
+
+.treeview .hover { color: black; cursor: pointer; }
+
+.treeview li { background: url(/images/treeview-default-line.png) 0 0 no-repeat; }
+.treeview li.collapsable, .treeview li.expandable { background-position: 0 -176px; }
+
+.treeview .expandable-hitarea { background-position: -80px -3px; }
+
+.treeview li.last { background-position: 0 -1766px }
+.treeview li.lastCollapsable, .treeview li.lastExpandable { background-image: url(images/treeview-default.png); }  
+.treeview li.lastCollapsable { background-position: 0 -111px }
+.treeview li.lastExpandable { background-position: -32px -67px }
+
+.treeview div.lastCollapsable-hitarea, .treeview div.lastExpandable-hitarea { background-position: 0; }
+
+.treeview-black li { background-image: url(images/treeview-black-line.png); }
+.treeview-black .hitarea, .treeview-black li.lastCollapsable, .treeview-black li.lastExpandable { background-image: url(images/treeview-black.png); }  
+
+
+/*****************************************************************************
+ * POP! CODE.
+ *****************************************************************************/
+.pop {
+  position: absolute;
+  display: inline; 
+}
+.pop .pop_menu {
+  display: none;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px; 
+  border: 2px solid #000;
+}
+.pop .pop_toggle {
+  /*
+  background-image: url(/images/arrow_down.png);
+  background-repeat: no-repeat;
+  background-position: center center;
+  */
+  width: 7em;
+  height: 1em;
+  overflow: hidden;
+  cursor: pointer;
+}
+.active .pop_menu .title {
+  /*
+  border: 1px solid #000;
+  background-color: #999;
+  */
+  font-family: "Neo Tech Std", Arial; 
+  font-size: 1.2em;
+  text-align: center;
+}
+.active .pop_menu .content {
+  padding: 0.5em 0.5em 0.5em 0.5em;
+  border: 1px solid #000;
+  background-color: #ccc;
+  overflow: auto;
+}
+.active .pop_menu {
+  display: block;
+  background-color: #999;
+  color: #000;
+  position: absolute;
+  padding: .6em;
+  width: 33em; 
+}
+.active .pop_toggle {
+  z-index: 2000;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-image: url(/images/arrow_up.png); 
+  width: 20px;
+  height: 20px;
+}
+
+
+/*****************************************************************************
+ * jQUERY COUNTDOWN STYLES 1.5.8. 
+ *****************************************************************************/
+.countdown {
+  display: inline; 
+	float: right;
+}
+
+.hasCountdown {
+	background-color: #fff;
+  color: #aaa;
+}
+.countdown_rtl {
+	direction: rtl;
+}
+.countdown_holding span {
+	background-color: #fff;
+}
+.countdown_row {
+	clear: both;
+	width: 10px;
+	padding: 0px 0px;
+	text-align: center;
+}
+.countdown_show1 .countdown_section {
+	width: 3em;
+}
+.countdown_show2 .countdown_section {
+	width: 3.5em;
+}
+.countdown_show3 .countdown_section {
+	width: 0%;
+}
+.countdown_show4 .countdown_section {
+	width: 0%;
+}
+.countdown_show5 .countdown_section {
+	width: 0%;
+}
+.countdown_show6 .countdown_section {
+	width: 0%;
+}
+.countdown_show7 .countdown_section {
+	width: 0%;
+}
+.countdown_section {
+	display: block;
+	float: left;
+  font-size: 0.6em;
+	text-align: center;
+}
+.countdown_amount {
+  font-size: 0.6em;
+}
+.countdown_descr {
+	display: block;
+	width: 10px;
+}
+
+/*****************************************************************************
+ * CHANGE STATUS OF ALERTS -- aka ACKNOWLEDGE
+ *****************************************************************************/
+.darkMask {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  overflow: hidden;
+  display: none;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  background-color: black;
+  opacity: 0.3;
+  filter:alpha(opacity=30); /* IE */
+}
+
+.updateAlertStatus {
+  display: none;
+  border: 2px solid black;
+
+  position: absolute;
+  max-width: 12em;
+  width: 100%;
+  padding: 0.25em 0.25em 0.25em 0.25em;
+
+  text-align: justify;
+
+  background-color: white;
+  z-index: 100;
+}
+
+.updateAlertStatus em {
+  font-size: 0.9em;
+  text-align: center;
+}
+
+.raiseAlert:hover,
+.raiseAlert,
+.timeList:hover,
+.timeList,
+.trashAlert:hover,
+.trashAlert,
+.buttonAcknowledgeAlert:hover,
+.buttonAcknowledgeAlert,
+.timeList:hover,
+.timeList {
+  width: 100%;
+  text-align: center;
+  padding: 0.5em 0.5em 0.5em 0.5em;
+}
+.trashAlert:hover,
+.trashAlert {
+  font-weight: bold;
+}
+.trashAlert:hover {
+  background-color: black;
+  color: red;
+  border: 1px solid #f00;
+}
+.trashAlert {
+  background-color: red;
+  color: black;
+  border: 1px solid #000;
+}
+
+/*****************************************************************************
+ * LOGIN PAGE
+ *****************************************************************************/
+.loginForm {
+  font-family: "Neo Tech Std", Arial; 
+  border: 2px solid #000;
+  padding: 0.5em 0.0em 0.5em 0.5em;
+}
+
+.loginNotes {
+  font-family: Arial; 
+  font-weight: italic;
+  font-size: 0.8em;
+}
+
+.submitLoginButton {
+  border: 1px solid #000;
+  font-family: "Neo Tech Std", Arial; 
+  font-weight: normal;
+  font-size: 1.2em;
+  padding-top: 0.3em;
+}

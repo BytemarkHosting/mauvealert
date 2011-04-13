@@ -1,0 +1,43 @@
+- alerts.each do |alert|
+  %li{:id=>"alert#{alert.id}"}
+    .alert
+      - if "urgent" == level 
+        .levelUrgent 
+          %a{:href=>"javascript:", :onClick=>"showAcknowledgeStatus(event, #{alert.id}, #{alert.get_default_acknowledge_time()});"}
+            Urgent
+      - elsif "normal" == level
+        .levelNormal 
+          %a{:href=>"javascript:", :onClick=>"showAcknowledgeStatus(event, #{alert.id}, #{alert.get_default_acknowledge_time()});"}
+            Normal
+      -else
+        .levelLow 
+          %a{:href=>"javascript:", :onClick=>"showAcknowledgeStatus(event, #{alert.id}, #{alert.get_default_acknowledge_time()});"}
+            Low
+      .subject= alert.get_safe_html_subject
+      .summary= alert.get_safe_html_summary
+      %a{:href=>"/alert/#{alert.id}"}
+        History
+      //%a{:href=>"javascript:", :onClick=>"$(furtherInformation#{alert.id}).toggle();"}
+      %a{:href=>"javascript:", :onClick=>"$(\"#furtherInformation#{alert.id}.furtherInformation\").toggle();"}
+        Extra
+      //%a{:href=>"javascript:", :onClick=>"$(inlineDetails#{alert.id}).toggle();"}
+      %a{:href=>"javascript:", :onClick=>"$(\"#inlineDetails#{alert.id}.inlineDetails\").toggle();"}
+        Details
+      .inlineDetails{:id=>"inlineDetails#{alert.id}", :style=>"display: none"}
+        %h5 Alert details
+        #{alert.get_details}
+      //.furtherInformation{:id=>"furtherInformation#{alert.id}"}
+      .furtherInformation{:id=>"furtherInformation#{alert.id}", :style=>"display: none"}
+        Alert group is '#{AlertGroup.matches(alert)[0].name}'.
+        - if alert.source != alert.subject
+          .source= "Source is '#{alert.get_safe_html_source}'."
+        - if alert.acknowledged?
+          .ackDetails
+            Acknowledged by user
+            %strong= "#{alert.get_acknowledged_by()} "
+            and will #{alert.get_unacknowledge_at_string()}.
+        - else
+          .time 
+            Last updated on
+            %em= "#{alert.get_updated_at()}."
+

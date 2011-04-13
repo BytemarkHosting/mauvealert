@@ -1,0 +1,146 @@
+                      TODO list for mauve
+                      ---=== o O o ===---
+
+
+1 Unit test.
+-------------
+
+We need a lot more.  Currently, the testing is woefully inadequate. In
+specific:
+
+1.1 test_cases.rb
+
+  This needs a little work so that the tests in there run faster.  The
+test currently run in nearly four minutes which is too long.  The
+main problem appears to be the starting and stopping of the server.
+Using a server for all the tests should work provided that we remove the
+fake alert created by each test in the database in the teardown method.
+
+  This could be linked to 2.3
+
+1.2 The rest...
+
+  Too many classes have no unit tests.  This has to change. 
+
+  Everything new must have unit test associated with it.
+
+
+2 Code refactor. 
+-----------------
+
+  The idea here is to have a mauve server that receive new Alerts and
+process them as state machines.  A brain within this should determine
+which Person gets a notification.  This brain needs to be accessible via
+the UI since events within the UI will impact the Alert -- such as
+acknowledge events.
+
+  The UI should be separate from the mauve server. The UI either needs
+a hook into the backend database or send updated alerts.  I prefer the
+latter.
+
+
+2.1 Timers class.
+
+  This needs ripping out and replacing with event machine. 
+
+
+2.2 Alert class.
+
+  This needs ripping out and replacing with a state machine.  Something
+like http://slagyr.github.com/statemachine/ maybe useful.
+
+  A brain need creating as well.
+
+  Mauvesend may need to be refactored to conform to the state machine
+model.  It should not be much work but will require major work to deploy
+on all systems.
+
+  This is lots of work.
+
+
+2.3 Configuration class.
+
+  Nothing here is essential but would be nice to have.
+
+  This is fine but needs more error checking of the loaded configuration
+file.  
+
+  A method to reload the configuration file gracefully -- aka without a
+restart.  This could be linked to 1.1.
+
+
+2.4 UI, the web interface.
+
+  This needs ripping out and separated as a new process.  We can have a
+thread in the main mauve server process write the date to a file every X
+seconds.  The UI can display this date and thus any check can be done on
+that date.  If it is older than X, then the main server has stopped and
+we should alert everybody.
+
+
+
+3 General work.
+----------------
+
+3.1 Move to apt-ruby.
+
+  We must get ride of the external directories and move fully to
+apt-ruby.  This should lead to better deployment on Debian.
+
+
+3.2 Rubinius.
+
+  Make sure we can run the code in Rubinius.  Not urgent until the GIL
+is fixed.  Note that this may entails some new code for the XMPP
+notification class.
+
+  I tried to do this on Tue Jan 18 with rbx-head hydra (no GIL devel
+branch) and it did not work well at all.  The unit test ran slower than
+with mri and failed on multiple occations (140 tests, 248 assertions, 0
+failures, 122 errors, 0 pendings, 0 omissions, 0 notifications 47.8571%
+passed).  I suspect rr mock and log4r gems are not playing well with
+rbx as most errors were due to interactions between those two.  It could
+be that the rbx-head version is really not ready to be used in
+production.
+
+
+3.3 Documentation.
+
+  We need some more in code documentation although it is now adequate.  
+
+  User documentation, especially with regards to the configuration file,
+need a lot of work.  Not sure where is the best: Redmine wiki, Bytemark
+wiki, text file in repository...
+
+
+
+
+4 New features.
+---------------
+
+4.1 XMPP/email interface.
+
+  The ability to manipulate Alerts via XMPP and eamil.
+
+
+4.2 Suppress Alerts.
+
+  The ability to suppress alerts for a short time.
+
+
+4.3 Notes for Alerts.
+
+  The ability to create notes on alerts.
+
+
+4.4 Better alert history.
+
+  Either just cosmetic or require code changes to have a better timeline
+of alerts status.
+
+
+4.5 Really SMTP
+
+  Move new smtp code so that we do not use the local mailer but send the
+email directly.  The code (with documentation and tests) is written but 
+not incorporated yet.

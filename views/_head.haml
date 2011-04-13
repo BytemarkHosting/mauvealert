@@ -1,0 +1,22 @@
+.colmask.threecol
+  .colmid
+    .colleft
+      .col1
+        .countdown{:id=>"reloadPage"}
+        %span.count
+          %span.urgent 
+            Urgent
+            %span.nbrUnacknowledged{:title=>"Urgent alert unacknowledged"} #{@urgent.length - @count_ack[:urgent]}
+            %span.nbrAcknowledged{:title=>"Urgent alert acknowledged"} (Seen #{@count_ack[:urgent]})
+          %span.normal
+            Normal
+            %span.nbrUnacknowledged{:title=>"Normal alert unacknowledged"} #{@normal.length - @count_ack[:normal]}
+            %span.nbrAcknowledged{:title=>"Normal alert acknowledged"} (Seen #{@count_ack[:normal]})
+          %span.low 
+            Low
+            %span.nbrUnacknowledged{:title=>"Low alert unacknowledged"} #{@low.length - @count_ack[:low]}
+            %span.nbrAcknowledged{:title=>"Low alert acknowledged"} (Seen #{@count_ack[:low]})
+      .col2
+        .title #{@title}
+      .col3
+        %img{:src => "/images/logo.png"}
