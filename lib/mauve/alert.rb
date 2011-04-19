@@ -282,7 +282,7 @@ module Mauve
         #
         # Transmission time helps us determine any time offset
         #
-        if update.transmission_time
+        if update.transmission_time and update.transmission_time > 0
           transmission_time = MauveTime.at(update.transmission_time) 
         else
           transmission_time = reception_time
