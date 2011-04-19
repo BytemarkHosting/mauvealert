@@ -94,7 +94,7 @@ module Mauve
     end
    
     def main_loop
-      @server = ::Thin::Server.new(@ip, @port, Rack::CommonLogger.new(Rack::Chunked.new(Rack::ContentLength.new(WebInterface.new)), RackErrorsProxy.new(@logger)), :signals => false)
+      @server = ::Thin::Server.new(@ip, @port, Rack::CommonLogger.new(Rack::Chunked.new(Rack::ContentLength.new(WebInterface.new)), RackErrorsProxy.new(logger)), :signals => false)
       @server.start
     end
     

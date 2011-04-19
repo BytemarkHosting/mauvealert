@@ -369,7 +369,14 @@ module Mauve
             alert_db.update_type = :changed
           end
 
-          logger.error "Couldn't save update #{alert} because of #{alert_db.errors}" unless alert_db.save
+          if !alert_db.save
+            if alert_db.errors.respond_to?("full_messages")
+              msg = alert_db.errors.full_messages
+            else
+              msg = alert_db.errors.inspect
+            end
+            logger.error "Couldn't save update #{alert} because of #{msg}" unless alert_db.save
+          end
         end
         
         # If this is a complete replacement update, find the other alerts
