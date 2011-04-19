@@ -101,18 +101,24 @@ message = nil
 verbose = 0
 help    = false
 
-GetoptLong.new(
-  ['-h', '--help', GetoptLong::NO_ARGUMENT], 
-  ['-o', '--source', GetoptLong::REQUIRED_ARGUMENT],
+opts = GetoptLong.new(
+  ['-h', '--help',    GetoptLong::NO_ARGUMENT], 
+  ['-o', '--source',  GetoptLong::OPTIONAL_ARGUMENT],
   ['-p', '--replace', GetoptLong::NO_ARGUMENT],
-  ['-i', '--id', GetoptLong::REQUIRED_ARGUMENT],
-  ['-s', '--summary', GetoptLong::REQUIRED_ARGUMENT],
-  ['-u', '--subject', GetoptLong::REQUIRED_ARGUMENT],
-  ['-c', '--clear', GetoptLong::REQUIRED_ARGUMENT],
-  ['-r', '--raise', GetoptLong::REQUIRED_ARGUMENT],
-  ['-d', '--detail', GetoptLong::REQUIRED_ARGUMENT],
+  ['-i', '--id',      GetoptLong::OPTIONAL_ARGUMENT],
+  ['-s', '--summary', GetoptLong::OPTIONAL_ARGUMENT],
+  ['-u', '--subject', GetoptLong::OPTIONAL_ARGUMENT],
+  ['-c', '--clear',   GetoptLong::OPTIONAL_ARGUMENT],
+  ['-r', '--raise',   GetoptLong::OPTIONAL_ARGUMENT],
+  ['-d', '--detail',  GetoptLong::OPTIONAL_ARGUMENT],
   ['-v', '--verbose', GetoptLong::NO_ARGUMENT]
 ).each do |opt,arg|
+
+  #
+  # Can catch empty arguments better if we set the GetoptLong things to
+  # "optional" rather than "required" and catch the empty arg here.
+  error "#{opt} cannot be empty" if arg.empty? and not %w(-h -p -v).include?(opt)
+
   case opt
     when '-h'
       help = true
@@ -140,7 +146,6 @@ GetoptLong.new(
       end
   end
 end
-
 
 # CAUTION! Kwality kode.
 #

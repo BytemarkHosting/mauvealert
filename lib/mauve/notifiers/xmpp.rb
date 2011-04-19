@@ -64,8 +64,6 @@ module Mauve
           logger.debug "Jabber starting connection to #{@jid}"
           @client = Client.new(JID::new(@jid))
           @client.connect
-          logger.debug "Jabber authentication"
-
           @client.auth_nonsasl(@password, false)
           @roster = Roster::Helper.new(@client)
 
@@ -79,11 +77,16 @@ module Mauve
               ensure_roster_and_subscription!(stanza.from)
             end.join
           end
+          
+          @client.add_message_callback do |m|
+            receive_message(m)
+          end
 
           @roster.wait_for_roster
           logger.debug "Jabber authenticated, setting presence"
 
           @client.send(Presence.new.set_type(:available))
+
           @mucs = {}
           
           logger.debug "Jabber is ready in theory"
@@ -289,6 +292,14 @@ module Mauve
           results.include?(true)
         end
         
+      end
+
+      #
+      # TODO parse message and ack as needed..?  The trick is here to
+      # understand what the person sending the message wants.  Could be
+      # difficult.
+      def receive_message(message)
+        @logger.debug "Received message from #{message.from}.. Ignoring for now."
       end
     end
   end

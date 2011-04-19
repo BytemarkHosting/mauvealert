@@ -128,7 +128,6 @@ module Mauve
           # being raised.
           send_alert(level, alert) if last_change.was_relevant_when_raised? 
         end
-      end
     end
     
     def remind(alert, level)

@@ -80,8 +80,7 @@ module Mauve
           m.header.from = @from
           m.header.date = MauveTime.now
 
-          summary_formatted = ""          
-#          summary_formatted = "  * "+alert.summary_two_lines.join("\n  ")
+          summary_formatted = "  * "+alert.summary_two_lines.join("\n  ")
                     
           case alert.update_type.to_sym
             when :cleared
@@ -99,8 +98,8 @@ module Mauve
           # FIXME: include alert.detail as multipart mime
           ##Thread.abort_on_exception = true
           m.body += "\n" + '-'*10 + " This is the detail field " + '-'*44 + "\n\n"
-          #m.body += alert.get_details()
-          #m.body += alert.get_details_plain_text()
+          m.body += alert.get_details()
+          m.body += alert.get_details_plain_text()
           m.body += "\n" + '-'*80 + "\n\n"
           
           if @suppressed_changed == true
@@ -122,12 +121,12 @@ single alert, you must watch the web front-end instead.
               "There is currently one other alert outstanding:\n\n" :
               "There are currently #{other_alerts.length} other alerts outstanding:\n\n"
             
-#            other_alerts.each do |other|
-#              m.body += "  * "+other.summary_two_lines.join("\n  ")+"\n\n"
-#            end
+            other_alerts.each do |other|
+              m.body += "  * "+other.summary_two_lines.join("\n  ")+"\n\n"
+            end
           end
           
-          m.body += @email_suffix
+          m.body += "-- \n"+@signature
           
           m.to_s
         end

@@ -12,25 +12,17 @@ require 'mauve/configuration'
 include Mauve
 
 configuration_file = ARGV[0]
-if configuration_file.nil?
-  %w(/etc/mauvealert/mauveserver.conf mauveserver.conf).each do |configuration_file|
-    break if File.exists?(configuration_file)
-  end
-end
 
-unless File.exists?(configuration_file)
-  if ARGV[0]
-    STDERR.print "Configuration file #{configuration_file} not found"
-  else
-    STDERR.print "Syntax: #{$0} <configuration filename>\n"
-  end
-  exit 1
+configuration_file = [".", "/etc/mauvealert/"].find{|d| File.file?(File.join(d,"mauveserver.conf")) } if configuration_file.nil?
+
+configuration_file = File.expand_path(configuration_file)
+
+unless File.file?(configuration_file)
+  STDERR.print "Configuration file #{configuration_file} not found"
+  Kernel.exit 1
 end
 
 Configuration.current = ConfigurationBuilder.load(configuration_file)
-
-class RestartSignalReceived < Exception; end
-class TerminateSignalReceived < Exception; end
 
 %w(HUP).each do |sig|
   trap("HUP") do
@@ -54,18 +46,5 @@ end
   end
 end
 
-#begin
-  Mauve::Server.instance.run
-#rescue SystemExit
-  # Woo!
-#  exit 0
-#rescue Exception => ex
-#  [ex.class.to_s, ex.to_s, ex.backtrace.join("\n")].each do |s|
-#    Configuration.current.logger.fatal s
-#    warn s
-#  end
-#
-#  exit 1
-#end
-#
+Mauve::Server.instance.run
 
