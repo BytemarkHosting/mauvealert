@@ -27,7 +27,7 @@ module Mauve
     # @return [Array] A list of all the username on support.
     def self.get_users_on_support(url)
       result = get_URL(url)
-      logger = Log4r::Logger.new "mauve::CalendarInterface"
+      logger = Log4r::Logger.new "Mauve::CalendarInterface"
       logger.debug("Cheching who is on support: #{result}")
       return result 
     end
@@ -40,7 +40,7 @@ module Mauve
     # @param [String] usr User single sign on.
     # @return [Boolean] True if on support, false otherwise.
     def self.is_user_on_support?(url, usr)
-      logger = Log4r::Logger.new "mauve::CalendarInterface"
+      logger = Log4r::Logger.new "Mauve::CalendarInterface"
       list = get_URL(url)
       if true == list.include?("nobody")
         logger.error("Nobody is on support thus alerts are ignored.")
@@ -63,7 +63,7 @@ module Mauve
       return false if true == list.nil? or true == list.empty?
       pattern = /[\d]{4}-[\d]{2}-[\d]{2}\s[\d]{2}:[\d]{2}:[\d]{2}/
       result = (list[0].match(pattern))? true : false
-      logger = Log4r::Logger.new "mauve::CalendarInterface"
+      logger = Log4r::Logger.new "Mauve::CalendarInterface"
       logger.debug("Cheching if #{usr} is on holiday: #{result}")
       return result
     end
@@ -83,7 +83,7 @@ module Mauve
     # @retur [Array] An array of strings, each newline creates an new item.
     def self.get_URL (uri_str, limit = 11)
 
-      logger = Log4r::Logger.new "mauve::CalendarInterface"
+      logger = Log4r::Logger.new "Mauve::CalendarInterface"
       
       if 0 == limit
         logger.warn("HTTP redirect deeper than 11 on #{uri_str}.")

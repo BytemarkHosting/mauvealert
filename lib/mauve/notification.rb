@@ -31,7 +31,7 @@ module Mauve
       @time = time
       @alert = alert
       @during = during || Proc.new { true }
-      @logger = Log4r::Logger.new "mauve::DuringRunner"
+      @logger = Log4r::Logger.new "Mauve::DuringRunner"
     end
     
     def now?
@@ -136,6 +136,11 @@ module Mauve
     #       configuration has a fall back that will send an alert in all cases.
     #
     def alert_changed(alert)
+
+      if people.nil? or people.empty?
+        logger.warn "No people found in for notification #{list}"
+        return
+      end
 
       # Should we notificy at all?
       is_relevant = DuringRunner.new(MauveTime.now, alert, &during).now?

@@ -1,4 +1,5 @@
 bin/mauveserver                      usr/sbin/
+bin/mauveconsole                     usr/sbin/
 lib/dm-sqlite-adapter-with-mutex.rb  usr/lib/ruby/1.8/
 lib/mauve/alert.rb                   usr/lib/ruby/1.8/mauve/
 lib/mauve/alert_changed.rb           usr/lib/ruby/1.8/mauve/

@@ -3,7 +3,7 @@ require 'timeout'
 require 'log4r'
 
 module Mauve
-  class Person < Struct.new(:username, :password, :holiday_url, :urgent, :normal, :low)
+  class Person < Struct.new(:username, :password, :holiday_url, :urgent, :normal, :low, :email, :xmpp, :sms)
   
     attr_reader :notification_thresholds
   
@@ -24,26 +24,50 @@ module Mauve
     # 
     class NotificationCaller
 
-      def initialize(alert, other_alerts, notification_methods, base_conditions={})
-        logger = Log4r::Logger.new "mauve::NotificationCaller"
+      def initialize(person, alert, other_alerts, notification_methods, base_conditions={})
+        @person = person
         @alert = alert
         @other_alerts = other_alerts
         @notification_methods = notification_methods
         @base_conditions = base_conditions
       end
       
-      def method_missing(name, destination, *args)
-        conditions = @base_conditions.merge(args[0] ? args[0] : {})
-        notification_method = @notification_methods[name.to_s]
+      def logger ; @logger ||= Log4r::Logger.new self.class.to_s ; end
 
-        unless notification_method
-          raise NoMethodError.new("#{name} not defined as a notification method")
+      #
+      # This method makes sure things liek
+      #
+      #   xmpp 
+      #   works
+      #
+      def method_missing(name, *args)
+        #
+        # Work out the destination
+        #
+        if args.first.is_a?(String)
+          destination = args.pop
+        else 
+          destination = @person.__send__(name)
         end
+
+        if args.first.is_a?(Array)
+          conditions  = @base_conditions.merge(args[0])
+        end
+
+        notification_method = Configuration.current.notification_methods[name.to_s]
+
+        raise NoMethodError.new("#{name} not defined as a notification method") unless notification_method
+
         # Methods are expected to return true or false so the user can chain
         # them together with || as fallbacks.  So we have to catch exceptions
         # and turn them into false.
         #
-        notification_method.send_alert(destination, @alert, @other_alerts, conditions)
+        res = notification_method.send_alert(destination, @alert, @other_alerts, conditions)
+        #
+        # Log the result
+        logger.debug "Notification " +  (res ? "succeeded" : "failed" ) + " for #{@person.username} using notifier '#{name}' to '#{destination}'"
+
+        res
       end
 
     end 
@@ -174,6 +198,7 @@ module Mauve
       return if suppressed? or this_alert_suppressed
 
       result = NotificationCaller.new(
+        self,
         alert,
         current_alerts,
         Configuration.current.notification_methods,
@@ -197,7 +222,7 @@ module Mauve
     # Returns the subset of current alerts that are relevant to this Person.
     #
     def current_alerts
-      Alert.all_current.select do |alert|
+      Alert.all_raised.select do |alert|
         my_last_update = AlertChanged.first(:person => username, :alert_id => alert.id)
         my_last_update && my_last_update.update_type != :cleared
       end

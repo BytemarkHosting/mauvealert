@@ -1,0 +1,183 @@
+/*----------------------------\  
+| Bytemark Internal Stylesheet|
+\-----------------------------/
+
+To give your page a nice feel, make sure it starts:
+    <html><head>
+    <link rel="stylesheet" 
+          href="https://admin.bytemark.co.uk/common/bytemark.css"
+          type="text/css" 
+    />
+    </head><body>
+    .
+    .
+    .
+    .
+    </body></head>
+
+Using headers in the correct order (i.e. h1, h2, h3) also helps.
+
+Patrick 
+2004-06-38
+*/
+
+pre, code {
+  font-family: monospace;
+}
+
+ul {
+  background-color: white;
+  color: black;
+}
+
+.OK {
+  background-color: LawnGreen;
+  color: black;
+}
+
+.Failed {
+  background-color: OrangeRed;
+  color: black;
+}
+
+h1 {
+  background-color: #ffea05;
+  color: black;
+  padding: 10px;
+  margin: 5px;
+  font-size: x-large;
+  font-weight: normal;
+}
+h2 {
+  background-color: #ABABAB;
+  color: white;
+  padding: 5px 5px;
+  margin: 5px 5px 0px 5px;
+  font-weight: bold;
+  font-size: large;
+}
+h2 a {
+  color: white;
+  font-weight: bold;
+  font-size: large;
+}
+
+h3, th {
+  font-weight: bold;
+  font-size: small;
+  background-color: #E4E4E4;
+  color: black;
+}
+h3 {
+  padding: 3px 5px;
+  margin: 5px 5px 0px 5px;
+}
+h4 {  
+  padding: 3px 5px;
+  margin: 5px 5px 0px 5px;
+}
+html {
+  background-color: #666;
+  color: white;
+  padding: 5px 5px;
+  font-family: arial, sans-serif;
+}
+
+body {
+  margin: 0px;
+  padding: 5px 5px 5px 5px;
+  background-color: white;
+  color: black;
+  border: none;
+}
+
+div#navbar {
+  /* try to cancel out the body padding above, leaving a bit of a margin beneath */
+  margin:  -5px -5px 5px -5px;
+  padding-left: 15px;
+  width: 100%;
+  background-color: #666;
+  font-size: 14px;
+}
+
+div#navbar ul {
+ margin:  0px;
+ padding: 0px;
+ list-style: none;
+}
+
+div#navbar ul li {
+  float: left;
+  margin-right: 2px;
+  padding: 4px 4px;
+  background: none;
+  color: #333;
+  background: #ccc;
+  border: 1px solid #9b8748;
+  border-bottom: none;
+}
+
+div#navbar a {
+  display: block;
+  text-decoration: none;
+  margin: 0px;
+  min-height: 16px;
+  color: inherit;
+  vertical-align: bottom;
+}
+
+div#navbar li#nav_index a {
+  background-image: url(/common/images/BytemarkLogo180.png);
+  background-repeat:no-repeat;
+  background-position:left center;
+  padding-left: 180px;
+  width: 0px;
+  overflow: hidden;
+}
+
+div#navbar li#nav_index, div#navbar li#nav_selected {
+  background-color: white;
+  color: #333;
+}
+
+div#navbar br {
+  clear: both;
+}
+
+p {
+  margin: 0px 5px;
+  padding: 7px;
+  background-color: white;
+  color: black;
+}
+table {
+  margin: 5px 0px;
+  padding: 0px;
+}
+table.full {
+  width: 100%;
+}
+tr {
+  margin: 0px;
+  padding: 0px;
+}
+td {
+  vertical-align: top;
+  margin: 5px;
+  padding: 5px;
+}
+ul {
+  padding: 0px 20px;
+}
+a {
+  text-decoration: none;
+}
+a:link {
+  color: #0061ab;
+}
+
+div#nav form {
+  display: inline;
+}
+
+

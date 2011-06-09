@@ -68,11 +68,13 @@ module Mauve
       #
       # TODO: why is/isn't this non-block?
       #
+      i = 0
       begin
-        # packet = @socket.recvfrom_nonblock(65535)
-        packet      = @socket.recvfrom(65535)
+        packet      = @socket.recvfrom_nonblock(65535)
+#       packet      = @socket.recvfrom(65535)
         received_at = MauveTime.now
-      rescue Errno::EAGAIN, Errno::EWOULDBLOCK
+      rescue Errno::EAGAIN, Errno::EWOULDBLOCK => ex
+        puts "#{i += 1} + #{ex}"
         IO.select([@socket])
         retry unless self.should_stop?
       end
@@ -99,7 +101,7 @@ module Mauve
       #
       # Triggers loop to close socket.
       #
-      UDPSocket.open.send("", 0, @socket.addr[2], @socket.addr[1]) unless @socket.closed?
+      UDPSocket.open.send("", 0, @socket.addr[2], @socket.addr[1]) unless @socket.nil? or @socket.closed?
 
       super
     end

@@ -21,19 +21,21 @@ module Mauve
     alias username label
 
     def list
-      self[:list]
+      self[:list] || []
     end
 
     #
     # Set up the logger
     def logger
-      @logger ||=  Log4r::Logger.new self.class
+      @logger ||=  Log4r::Logger.new self.class.to_s
     end
 
     #
     # Return the array of people
     #
     def people
+      logger.warn "No-one found in the people list for #{self.label}" if self.list.empty?
+
       list.collect do |name|
         Configuration.current.people.has_key?(name) ? Configuration.current.people[name] : nil
       end.reject{|person| person.nil?}

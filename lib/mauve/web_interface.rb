@@ -1,7 +1,11 @@
 # encoding: UTF-8
+require 'haml'
+require 'redcloth'
+
+require 'sinatra/tilt'
 require 'sinatra/base'
 require 'sinatra-partials'
-require 'haml'
+
 require 'rack'
 require 'rack-flash'
 
@@ -16,15 +20,18 @@ module Mauve
   
     class PleaseAuthenticate < Exception; end
   
-    use Rack::Session::Cookie, :expire_after => 604800 # 7 days in seconds
-
-    enable :sessions
-
+    use Rack::CommonLogger
+    use Rack::Chunked
+    use Rack::ContentLength
     use Rack::Flash
-    
-    set :root, "/usr/share/mauve"
-    set :views, "#{root}/views"
-    set :public, "#{root}/static"
+
+#    Tilt.register :textile, RedClothTemplate
+
+
+    # Ugh.. hacky way to dynamically configure the document root.
+    set :root, Proc.new{ HTTPServer.instance.document_root }
+    set :views, Proc.new{ root && File.join(root, 'views') }
+    set :public,  Proc.new{ root && File.join(root, 'static') }
     set :static, true
     set :show_exceptions, true
 
@@ -39,12 +46,43 @@ module Mauve
     ########################################################################
     
     before do
-      @person = Configuration.current.people[session['username']]
       @title = "Mauve alert panel"
+      @person = nil
+      #
+      # Make sure we're authenticated.
+      #
+
+      if session.has_key?('username') and Configuration.current.people.has_key?(session['username'].to_s)
+        # 
+        # Phew, we're authenticated
+        #
+        @person = Configuration.current.people[session['username']]
+
+        #
+        # A bit wasteful maybe..?
+        #
+        @alerts_raised  = Alert.all_raised
+        @alerts_cleared = Alert.all_cleared
+        @alerts_ackd    = Alert.all_acknowledged
+        @group_by       = "subject"
+      else
+        # Uh-oh.. Intruder alert!
+        #
+        ok_urls = %w(/ /login /logout)
+
+        unless ok_urls.include?(request.path_info) 
+          flash['error'] = "You must be logged in to access that page."
+          redirect "/login?next_page=#{request.path_info}"
+        end
+      end      
     end
     
     get '/' do
-      redirect '/alerts'
+      if @person.nil?
+        redirect '/login' 
+      else
+        redirect '/alerts'
+      end
     end
     
     ########################################################################
@@ -53,36 +91,69 @@ module Mauve
     #
     # The password can be either the SSO or a local one defined 
     # in the configuration file.
-    #
+   
+    get '/login' do
+      if @person
+        redirect '/'
+      else
+        @next_page = params[:next_page] || '/'
+        haml :login
+      end
+    end
+ 
     post '/login' do
       usr = params['username']
       pwd = params['password']
-      ret_sso = helper_auth_SSO(usr, pwd)
-      ret_loc = helper_auth_local(usr, pwd)
-      if "success" == ret_sso or "success" == ret_loc
+      next_page = params['next_page']
+      #
+      # Make sure we don't magically logout automatically :)
+      #
+      next_page = '/' if next_page == '/logout'
+
+      if auth_helper(usr, pwd)
         session['username'] = usr
+        redirect next_page
       else
-        flash['error'] =<<__MSG
-<hr /> <img src="/images/error.png" /> <br />
-ACCESS DENIED  <br />
-#{ret_sso} <br />
-#{ret_loc} <hr />
-__MSG
+        flash['error'] = "Access denied."
       end
-      redirect '/alerts'
     end
     
     get '/logout' do
       session.delete('username')
-      redirect '/alerts'
+      redirect '/login'
     end
     
     get '/alerts' do 
-      #now = MauveTime.now.to_f
-      please_authenticate()
-      find_active_alerts()
-      #pp MauveTime.now.to_f - now
-      haml(:alerts2)
+      redirect '/alerts/raised'
+    end
+
+    get '/alerts/:alert_type' do
+      redirect "/alerts/#{params[:alert_type]}/subject"
+    end
+
+    get '/alerts/:alert_type/:group_by' do 
+      if %w(raised cleared acknowledged).include?(params[:alert_type])
+        @alert_type = params[:alert_type]
+      else
+        @alert_type = "raised"
+      end
+
+      if %w(subject source summary id alert_id level).include?(params[:group_by])
+        @group_by = params[:group_by]
+      else
+        @group_by = "subject"
+      end
+
+      case @alert_type
+        when "raised"
+          @grouped_alerts = group_by(@alerts_raised, @group_by)
+        when "cleared"
+          @grouped_alerts = group_by(@alerts_cleared, @group_by)
+        when "acknowledged"
+          @grouped_alerts = group_by(@alerts_ackd, @group_by)
+      end
+
+      haml(:alerts)
     end
     
     get '/_alert_summary' do
@@ -98,22 +169,20 @@ __MSG
       partial("head")
     end
   
-    get '/alert/:id/detail' do
-      please_authenticate
-    
-      content_type("text/html") # I think
-      Alert.get(params[:id]).detail
+    get '/alert/:id/_detail' do
+      content_type "text/html"
+      alert = Alert.get(params[:id])
+
+      haml :_detail, :locals => { :alert => alert } unless alert.nil?
     end
     
     get '/alert/:id' do
-      please_authenticate
       find_active_alerts
       @alert = Alert.get(params['id'])
       haml :alert
     end
     
     post '/alert/:id/acknowledge' do
-      please_authenticate
       
       alert = Alert.get(params[:id])
       if alert.acknowledged?
@@ -128,7 +197,6 @@ __MSG
     # Note that :until must be in seconds.
     post '/alert/acknowledge/:id/:until' do
       #now = MauveTime.now.to_f
-      please_authenticate
 
       alert = Alert.get(params[:id])
       alert.acknowledge!(@person, params[:until].to_i())
@@ -140,7 +208,6 @@ __MSG
 
     post '/alert/:id/raise' do
       #now = MauveTime.now.to_f
-      please_authenticate
       
       alert = Alert.get(params[:id])
       alert.raise!
@@ -150,7 +217,6 @@ __MSG
     end
     
     post '/alert/:id/clear' do
-      please_authenticate
       
       alert = Alert.get(params[:id])
       alert.clear!
@@ -159,7 +225,6 @@ __MSG
     end
 
     post '/alert/:id/toggleDetailView' do 
-      please_authenticate
       
       alert = Alert.get(params[:id])
       if nil != alert
@@ -171,8 +236,6 @@ __MSG
     end
 
     post '/alert/fold/:subject' do 
-      please_authenticate
-      
       session[:display_folding][params[:subject]] = (true == session[:display_folding][params[:subject]])? false : true
       content_type("application/json")
       'all is good'.to_json
@@ -181,7 +244,6 @@ __MSG
     ########################################################################
     
     get '/preferences' do
-      please_authenticate
       find_active_alerts
       haml :preferences
     end
@@ -189,7 +251,6 @@ __MSG
     ########################################################################
     
     get '/events' do
-      please_authenticate
       find_active_alerts
       find_recent_alerts
       haml :events
@@ -199,11 +260,21 @@ __MSG
     
     helpers do
       include Sinatra::Partials
-      
-      def please_authenticate
-        raise PleaseAuthenticate.new unless @person
+     
+      def group_by(things, meth)
+        return {} if things.empty?
+
+        raise ArgumentError.new "#{things.first.class} does not respond to #{meth}" unless things.first.respond_to?(meth)
+        
+        results = Hash.new{|h,k| h[k] = Array.new}
+
+        things.each do |thing|
+          results[thing.__send__(meth)] << thing
+        end
+
+        results
       end
-      
+ 
       def find_active_alerts
 
         # FIXME: make sure alerts only appear once some better way
@@ -287,25 +358,45 @@ __MSG
 
       ## Test for authentication with SSO.
       #
-      def helper_auth_SSO (usr, pwd)
-        auth = AuthSourceBytemark.new()
-        begin
-          return "success" if true == auth.authenticate(usr,pwd)
-          return "SSO did not regcognise your login/password combination."
-        rescue ArgumentError => ex
-          return "SSO argument error: #{ex.message}"
-        rescue => ex
-          return "SSO generic error: #{ex.message}"
+      def auth_helper (usr, pwd)
+        # First try Bytemark
+        #
+        auth = AuthBytemark.new()
+        result = begin
+          auth.authenticate(usr,pwd)
+        rescue Exception => ex
+          @logger.debug "Caught exception during Bytemark auth for #{usr} (#{ex.to_s})"
+          false
         end
-      end
 
-      ## Test for authentication with configuration file parameter.
-      #
-      def helper_auth_local (usr, pwd)
-        person = Configuration.current.people[params['username']]
-        return "I did not recognise your local login details." if !person
-        return "I did not recognise your local password." if Digest::SHA1.hexdigest(params['password']) != person.password
-        return "success"
+        if true == result
+          return true
+        else
+          @logger.debug "Bytemark authentication failed for #{usr}"
+        end
+
+        # 
+        # OK now try local auth
+        #
+        result = begin
+          if Configuration.current.people.has_key?(usr)
+            Digest::SHA1.hexdigest(params['password']) == Configuration.current.people[usr].password
+          end
+        rescue Exception => ex
+          @logger.debug "Caught exception during local auth for #{usr} (#{ex.to_s})"
+          false
+        end
+
+        if true == result
+          return true
+        else
+          @logger.debug "Local authentication failed for #{usr}"
+        end
+        #
+        # Rate limit logins.
+        #
+        sleep 5
+        false
       end
 
     end
@@ -316,14 +407,13 @@ __MSG
       status 403
       session[:display_alerts] = Hash.new()
       session[:display_folding] = Hash.new()
-      haml :please_authenticate
     end
     
     ########################################################################
     # @see http://stackoverflow.com/questions/2239240/use-rackcommonlogger-in-sinatra
     def call(env)
       if true == @logger.nil?
-        @logger = Log4r::Logger.new("mauve::Rack")
+        @logger = Log4r::Logger.new("Mauve::Rack")
       end
       env['rack.errors'] = RackErrorsProxy.new(@logger)
       super(env)

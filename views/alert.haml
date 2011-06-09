@@ -2,18 +2,18 @@
 %html
   %head
     %title #{@title}: Alert #{@alert.id}: #{@alert.get_safe_html_summary}
-    %link{:rel => "stylesheet", :href => "/alerts2.css"}
-    %link{:rel => "stylesheet", :href => "/alerts-mobil.css", :media => "handheld"} 
-    %script{:type => "text/javascript", :src => "/prototype.js"}
-    %script{:type => "text/javascript", :src => "/mauve_utils.js"}
-    %script{:type => "text/javascript", :src => "/datadumper.js"}
+    %link{:rel => "stylesheet", :href => "/alerts2.css"}/
+    %link{:rel => "stylesheet", :href => "/alerts-mobil.css", :media => "handheld"} /
+    %script{:type => "text/javascript", :src => "/prototype.js"}/
+    %script{:type => "text/javascript", :src => "/mauve_utils.js"}/
+    %script{:type => "text/javascript", :src => "/datadumper.js"}/
   %body{:onLoad => "addAutoHover(); addRefresh();"}
     .head= partial("head3")
     #about_alert
       %h1.summary #{@alert.get_safe_html_subject}: #{@alert.get_safe_html_summary}
       %h2.details Alert Details
       - if @alert.detail
-        .detail= @alert.get_details
+        .arse= partial("detail")
       - if @alert.source != @alert.subject
         %h2.source Source
         .source= @alert.get_safe_html_source

@@ -212,6 +212,7 @@ module Mauve
     is_attribute "port"
     is_attribute "ip"
     is_attribute "document_root"
+    is_attribute "session_secret"
     
     def builder_setup
       @result = HTTPServer.instance
@@ -322,9 +323,17 @@ module Mauve
     end
 
     def holiday_url (url)
-      @result.holiday_url = url
+      @result.holiday_url = url.to_s
     end
-    
+   
+    def email(e)
+      @result.email = e.to_s
+    end
+
+    def xmpp(x)
+      @result.xmpp = x.to_s
+    end
+ 
     def suppress_notifications_after(h)
       raise ArgumentError.new("notification_threshold must be specified as e.g. (10 => 1.minute)") unless
         h.kind_of?(Hash) && h.keys[0].kind_of?(Integer) && h.values[0].kind_of?(Integer)
@@ -384,7 +393,6 @@ module Mauve
 
     # Create a new instance and adds it.
     def builder_setup(label)
-      pp label
       @result = PeopleList.new(label)
     end
 

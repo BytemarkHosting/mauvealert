@@ -103,7 +103,7 @@ module Mauve
     def logger
       Log4r::Logger.new(self.class.to_s)
     end
- 
+
     def time_relative(secs)
       secs = secs.to_i.abs
       case secs
@@ -167,6 +167,10 @@ module Mauve
     def alert_group
       AlertGroup.matches(self)[0]
     end
+
+    def level
+      self.alert_group.level
+    end
     
     def subject
       attribute_get(:subject) || source
@@ -174,7 +178,8 @@ module Mauve
     
     def subject=(subject); set_changed_if_different(:subject, subject); end
     def summary=(summary); set_changed_if_different(:summary, summary); end
-    def detail=(detail); set_changed_if_different(:detail, detail); end
+#  def detail=(detail); set_changed_if_different(:detail, detail); end
+   def detail=(detail);  attribute_set(:detail, detail) ; end
     
     protected
     def set_changed_if_different(attribute, value)
@@ -252,10 +257,33 @@ module Mauve
     
     class << self
     
-      def all_current
-        all(:cleared_at => nil)
+      def all_raised
+        all(:raised_at.not => nil, :cleared_at => nil)
       end
-      
+
+      def all_acknowledged
+        all(:acknowledged_at.not => nil)
+      end
+
+      def all_cleared
+        all(:cleared_at.not => nil)
+      end
+
+      # Returns a hash of all the :urgent, :normal and :low alerts.
+      #
+      # @return [Hash] A hash with the relevant alerts per level
+      def get_all ()
+        hash = Hash.new
+        hash[:urgent] = Array.new
+        hash[:normal] = Array.new
+        hash[:low] = Array.new
+        all().each do |iter|
+          next if true == iter.cleared?
+          hash[AlertGroup.matches(iter)[0].level] << iter
+        end
+        return hash
+      end
+
       # Returns the next Alert that will have a timed action due on it, or nil
       # if none are pending.
       #
@@ -273,8 +301,9 @@ module Mauve
       # Receive an AlertUpdate buffer from the wire.
       #
       def receive_update(update, reception_time = MauveTime.now)
-        update = Proto::AlertUpdate.parse_from_string(update) unless
-          update.kind_of?(Proto::AlertUpdate)
+
+        update = Proto::AlertUpdate.parse_from_string(update) unless update.kind_of?(Proto::AlertUpdate)
+
         alerts_updated = []
         
         logger.debug("Alert update received from wire: #{update.inspect.split.join(", ")}")
@@ -289,7 +318,8 @@ module Mauve
         end
 
         time_offset = (reception_time - transmission_time).round
-        logger.debug("Update received from a host #{time_offset}s behind") if time_offset.abs > 0
+
+        logger.debug("Update received from a host #{time_offset}s behind") if time_offset.abs > 5
 
         # Update each alert supplied
         #
@@ -297,8 +327,17 @@ module Mauve
           # Infer some actions from our pure data structure (hmm, wonder if
           # this belongs in our protobuf-derived class?
           #
-          raise_time = alert.raise_time == 0 ? nil : MauveTime.at(alert.raise_time + time_offset)
           clear_time = alert.clear_time == 0 ? nil : MauveTime.at(alert.clear_time + time_offset)
+          raise_time = alert.raise_time == 0 ? nil : MauveTime.at(alert.raise_time + time_offset)
+
+          if raise_time.nil? && clear_time.nil?
+            #
+            # Make sure that we raise if neither raise nor clear is set
+            #
+            logger.warn("No clear time or raise time set.  Assuming raised!")
+
+            raise_time = reception_time 
+          end
 
           logger.debug("received at #{reception_time}, transmitted at #{transmission_time}, raised at #{raise_time}, clear at #{clear_time}")
 
@@ -316,10 +355,10 @@ module Mauve
           
           ##
           #
-          # Allow a 15s offset in timings.
+          # Allow a 5s offset in timings.
           #
           if raise_time
-            if raise_time <= (reception_time + 15)
+            if raise_time <= (reception_time + 5)
               alert_db.raised_at = raise_time
             else
               alert_db.will_raise_at = raise_time
@@ -327,19 +366,24 @@ module Mauve
           end
 
           if clear_time
-            if clear_time <= (reception_time + 15)
+            if clear_time <= (reception_time + 5)
               alert_db.cleared_at = clear_time
             else
               alert_db.will_clear_at = clear_time
             end
           end
           
-          # re-raise
+          # 
+          # Re-raise if raised_at and cleared_at are set.
+          #
           if alert_db.cleared_at && alert_db.raised_at && alert_db.cleared_at < alert_db.raised_at
             alert_db.cleared_at = nil 
           end
           
-          if pre_cleared && alert_db.raised?
+          #
+          # 
+          #
+          if (pre_raised or pre_cleared) && alert_db.raised?
             alert_db.update_type = :raised
           elsif pre_raised && alert_db.cleared?
             alert_db.update_type = :cleared
@@ -355,8 +399,8 @@ module Mauve
           # These updates happen but do not sent the alert back to the
           # notification system.
           #
-          alert_db.importance = alert.importance if alert.importance != 0
-  
+          alert_db.importance = alert.importance if alert.importance != 0 
+ 
           # FIXME: this logic ought to be clearer as it may get more complicated
           #
           if alert_db.update_type
@@ -368,6 +412,8 @@ module Mauve
           else
             alert_db.update_type = :changed
           end
+
+          logger.debug "Saving #{alert_db}"
 
           if !alert_db.save
             if alert_db.errors.respond_to?("full_messages")
@@ -394,7 +440,9 @@ module Mauve
             alerts_updated << alert_db
           end
         end
-        
+       
+        logger.debug "Got #{alerts_updated.length} alerts to notify about"
+ 
         AlertGroup.notify(alerts_updated)
       end
 

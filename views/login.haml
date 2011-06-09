@@ -1,0 +1,27 @@
+!!! XML
+!!!
+%html
+  %head
+    %meta{:name=>"viewport", :content=>"width=device-width"}/
+    %title #{@title}: Authentication required
+    %link{:rel => "stylesheet", :href => "/stylesheets/bytemark.css"}/
+    %link{:rel => "stylesheet", :href => "/stylesheets/mauve.css"}/
+    %script{:src => 'javascript/jquery/jquery.js', :type => 'text/javascript'}
+  %body
+    = partial('navbar')
+    %h1 Mauve Alerts
+    - if flash['error']
+      %p.error= flash['error']
+    %form{:action => '/login', :method => :POST}
+      %fieldset
+        %legend Please log in
+        %label{:for => "username"} Username
+        %input{:name => 'username', :type => 'text'}/
+        %br
+        %label{:for => "password", :title => "This is either your Single Sign On password or a PIN."} Password / PIN
+        %input{:name => 'password', :type => 'password'}/
+        %br
+        %input{:type => 'hidden', :name => 'next_page', :value => @next_page}/
+        %input{:type => 'submit', :value => 'Log in'}/
+
+

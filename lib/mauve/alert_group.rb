@@ -29,11 +29,14 @@ module Mauve
           logger.warn "no groups found for #{alert.id}" if groups.empty?
 
           #
-          # Notify each group.
+          # Notify just the group that thinks this alert is the most urgent.
           #
-          groups.each do |grp|
-            logger.info("notifying group #{groups[0]} of AlertID.#{alert.id}.")
-            grp.notify(alert)
+          %w(urgent normal low).each do |lvl|
+            this_group = groups.find{|grp| grp.level.to_s == lvl}
+            next if this_group.nil?
+            logger.info("notifying group #{this_group} of AlertID.#{alert.id} (matching #{lvl})")
+            this_group.notify(alert)
+            break
           end
         end
       end

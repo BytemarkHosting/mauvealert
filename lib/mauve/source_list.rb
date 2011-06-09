@@ -27,7 +27,7 @@ module Mauve
 
     ## Default contructor.
     def initialize ()
-      @logger = Log4r::Logger.new "mauve::SourceList"
+      @logger = Log4r::Logger.new "Mauve::SourceList"
       @hash = Hash.new
       @http_head = Regexp.compile(/^http[s]?:\/\//)
       @http_tail = Regexp.compile(/\/.*$/)

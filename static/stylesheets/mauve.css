@@ -1,0 +1,41 @@
+tr.hilight {
+  background-color: #eee;
+}
+
+tr.triggered.hilight {
+  background-color: #f98;
+}
+
+tr.acknowledged.triggered.hilight {
+  background-color: #fa5;
+}
+
+
+.triggered {
+  background-color: #fba;
+}
+
+.acknowledged {
+  color: #444;
+}
+
+.acknowledged.triggered {
+  background-color: #fb6;
+}
+
+.missing_data {
+
+}
+
+body {
+  min-width: 800px;
+}
+
+.out_of_date {
+  font-style: italic;
+}
+
+.detail {
+  background-color: white
+}
+

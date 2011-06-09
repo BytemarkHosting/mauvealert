@@ -2,15 +2,15 @@
 #
 # Bleuurrgggggh!  Bleurrrrrgghh!
 #
+require 'mauve/auth_bytemark'
+require 'mauve/web_interface'
+require 'mauve/mauve_thread'
 require 'digest/sha1'
 require 'log4r'
 require 'thin'
 require 'rack'
 require 'rack-flash'
 require 'rack/handler/webrick'
-require 'mauve/auth_bytemark'
-require 'mauve/web_interface'
-require 'mauve/mauve_thread'
 
 ################################################################################
 #
@@ -87,19 +87,19 @@ module Mauve
     attr_accessor :session_secret # not used yet
     
     def initialize
-      @port = 32761
+      @port = 1288
       @ip = "127.0.0.1"
-      @document_root = "."
-      @session_secret = rand(2**100).to_s
+      @document_root = "/usr/share/mauvealert"
+      @session_secret = "%x" % rand(2**100)
     end
    
     def main_loop
-      @server = ::Thin::Server.new(@ip, @port, Rack::CommonLogger.new(Rack::Chunked.new(Rack::ContentLength.new(WebInterface.new)), RackErrorsProxy.new(logger)), :signals => false)
+      @server = ::Thin::Server.new(@ip, @port, Rack::Session::Cookie.new(WebInterface.new, {:key => "mauvealert", :secret => @session_secret, :expire_after => 691200}), :signals => false)
       @server.start
     end
     
     def stop
-      @server.stop
+      @server.stop if @server
       super
     end
   end    

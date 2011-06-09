@@ -1,68 +1,106 @@
 require 'log4r'
 require 'xmpp4r'
-require 'xmpp4r/xhtml'
 require 'xmpp4r/roster'
-require 'xmpp4r/muc/helper/simplemucclient'
+require 'xmpp4r/muc'
+# require 'xmpp4r/xhtml'
+# require 'xmpp4r/discovery/helper/helper'
 require 'mauve/notifiers/debug'
-#Jabber::debug = true
+
+
+
+#
+# A couple of monkey patches to fix up all this nonsense.
+#
+module Jabber
+  class Stream
+    def close
+      #
+      # Just close
+      #
+      close!
+    end
+
+    def close!
+      10.times do
+        pr = 0
+        @tbcbmutex.synchronize { pr = @processing }
+        break if pr = 0
+        Thread::pass if pr > 0
+        sleep 1
+      end
+
+      # Order Matters here! If this method is called from within 
+      # @parser_thread then killing @parser_thread first would 
+      # mean the other parts of the method fail to execute. 
+      # That would be bad. So kill parser_thread last
+      @tbcbmutex.synchronize { @processing = 0 }
+      @fd.close if @fd and !@fd.closed?
+      @status = DISCONNECTED
+      stop
+    end
+  end
+end
+
+
+
 
 module Mauve
   module Notifiers    
     module Xmpp
       
-      class CountingMUCClient < Jabber::MUC::SimpleMUCClient
-
-        attr_reader :participants
-
-        def initialize(*a)
-          super(*a)
-          @participants = 0
-          self.on_join  { @participants += 1 }
-          self.on_leave { @participants -= 1 }
-        end
-
-      end
-      
+#      class CountingMUCClient < Jabber::MUC::SimpleMUCClient
+#
+#        attr_reader :participants
+#
+#        def initialize(*a)
+#          super(*a)
+#          @participants = 0
+#          self.on_join  { @participants += 1 }
+#          self.on_leave { @participants -= 1 }
+#        end
+#
+#      end
+#      
       class Default
 
         include Jabber
-        
+
         # Atrtribute.
         attr_reader :name
 
         # Atrtribute.
         attr_accessor :jid, :password
 
-        # Atrtribute.
-        attr_accessor :initial_jid
-
-        # Atrtribute.
-        attr_accessor :initial_messages
-        
         def initialize(name)
+          Jabber::logger = self.logger       
+          #Jabber::debug = true
+          #Jabber::warnings = true
+
           @name = name
           @mucs = {}
           @roster = nil
+          @closing = false
+
         end
 
         def logger
-          @logger ||= Log4r::Logger.new self.class.to_s
+          # Give the logger a sane name
+          @logger ||= Log4r::Logger.new self.class.to_s.sub(/::Default$/,"")
         end
+       
+        def jid=(jid)
+          @jid = JID.new(jid)
+        end
+ 
+        def connect
+          logger.info "Jabber starting connection to #{@jid}"
 
-        def reconnect
-          if @client
-            begin
-              logger.debug "Jabber closing old client connection"
-              @client.close
-              @client = nil
-              @roster = nil
-            rescue Exception => ex
-              logger.error "#{ex} when reconnecting"
-            end
-          end
+          # Make sure we're disconnected.
+          self.close if @client.is_a?(Client)
 
-          logger.debug "Jabber starting connection to #{@jid}"
-          @client = Client.new(JID::new(@jid))
+          @client = Client.new(@jid) 
+
+          @closing = false
           @client.connect
           @client.auth_nonsasl(@password, false)
           @roster = Roster::Helper.new(@client)
@@ -70,11 +108,17 @@ module Mauve
           # Unconditionally accept all roster add requests, and respond with a
           # roster add + subscription request of our own if we're not subscribed
           # already
-          @roster.add_subscription_request_callback do |ri, stanza|
+          @roster.add_subscription_request_callback do |ri, presence|
             Thread.new do
-              logger.debug("Accepting subscription request from #{stanza.from}")
-              @roster.accept_subscription(stanza.from)
-              ensure_roster_and_subscription!(stanza.from)
+              logger.debug "Known? #{is_known_contact?(presence.from).inspect}"
+              if is_known_contact?(presence.from)
+                logger.info("Accepting subscription request from #{presence.from}")
+                @roster.accept_subscription(presence.from)
+                ensure_roster_and_subscription!(presence.from)
+              else
+                logger.info("Declining subscription request from #{presence.from}")
+                @roster.decline_subscription(presence.from)
+              end
             end.join
           end
           
@@ -85,37 +129,40 @@ module Mauve
           @roster.wait_for_roster
           logger.debug "Jabber authenticated, setting presence"
 
-          @client.send(Presence.new.set_type(:available))
+          @client.send(Presence.new(nil, "Woo!").set_type(nil))
 
-          @mucs = {}
-          
-          logger.debug "Jabber is ready in theory"
-        end  
-
-        def reconnect_and_retry_on_error
-          @already_reconnected = false
-          begin
-            yield
-          rescue StandardError => ex
-            logger.error "#{ex} during notification\n"
-            logger.debug ex.backtrace
-            if !@already_reconnected
-              reconnect
-              @already_reconnected = true
-              retry
-            else
-              raise ex
+          @client.on_exception do |ex, stream, where|
+            #
+            # The XMPP4R exception clauses in Stream all close the stream, so
+            # we just need to reconnect.
+            #
+            unless ex.nil? or @closing 
+              logger.warn(["Caught",ex.class,ex.to_s,"during XMPP",where].join(" "))
+              connect
+              @mucs.each do |jid, muc|
+                @mucs.delete(jid)
+                join_muc(jid)
+              end
             end
           end
         end  
 
-        def connect
-          self.reconnect_and_retry_on_error { self.send_msg(@initial_jid, "Hello!") }
+        #
+        # Kills the processor thread
+        #
+        def stop
+          @client.stop
         end
 
         def close
-          self.send_msg(@initial_jid, "Goodbye!")
-          @client.close
+          @closing = true
+          if @client and @client.is_connected?
+            @mucs.each do |jid, muc|
+              muc.exit("Goodbye!") if muc.active?
+            end 
+            @client.send(Presence.new(nil, "Goodbye!").set_type(:unavailable))
+            @client.close!
+          end
         end
         
         # Takes an alert and converts it into a message.
@@ -144,97 +191,232 @@ module Mauve
         # or more of the choices - see +check_jid_has_presence+ for options.
 
         def send_alert(destination, alert, all_alerts, conditions = nil)
-          #message = Message.new(nil, alert.summary_two_lines.join("\n"))
-          message = Message.new(nil, convert_alert_to_message(alert))
-          
+          destination_jid = JID.new(destination)         
+ 
           if conditions
             @suppressed_changed = conditions[:suppressed_changed]
           end
           
-          # MUC JIDs are prefixed with muc: - we need to strip this out.
-          destination_is_muc, dest_jid = self.is_muc?(destination)
-
-          begin
-            xhtml = XHTML::HTML.new("<p>" +
-                                    convert_alert_to_message(alert)+
-#                                    alert.summary_three_lines.join("<br />") +
-                                    #alert.summary_two_lines.join("<br />") +
-                                    "</p>") 
-            message.add_element(xhtml)
-          rescue REXML::ParseException => ex
-            logger.warn("Can't send XMPP alert as valid XHTML-IM, falling back to plaintext")
-            logger.debug(ex)
-          end
-
-          logger.debug "Jabber sending #{message} to #{destination}"
-          reconnect unless @client
-
-          ensure_roster_and_subscription!(dest_jid) unless destination_is_muc
-
-          if conditions && !check_alert_conditions(dest_jid, conditions) 
-            logger.debug("Alert conditions not met, not sending XMPP alert to #{jid}")
+          if conditions && !check_alert_conditions(destination_jid, conditions) 
+            logger.info("Alert conditions not met, not sending XMPP alert to #{destination_jid}")
             return false
           end
 
-          if destination_is_muc
-            if !@mucs[dest_jid]
-              @mucs[dest_jid] = CountingMUCClient.new(@client)
-              @mucs[dest_jid].join(JID.new(dest_jid))
-            end
-            reconnect_and_retry_on_error { @mucs[dest_jid].send(message, nil) ; true }
-          else
-            message.to = dest_jid
-            reconnect_and_retry_on_error { @client.send(message) ; true }
-          end            
+          send_message(destination_jid, convert_alert_to_message(alert))
         end
 
         # Sends a message to the destionation.
         #
-        # @param [String] destionation The (full) JID to send to.
+        # @param [String] destination The (full) JID to send to.
         # @param [String] msg The (formatted) message to send.
         # @return [NIL] nada.
-        def send_msg(destination, msg)
-          reconnect unless @client
-          message = Message.new(nil, msg)
-          destination_is_muc, dest_jid = self.is_muc?(destination)
-          if destination_is_muc
-            if !@mucs[dest_jid]
-              @mucs[dest_jid] = CountingMUCClient.new(@client)
-              @mucs[dest_jid].join(JID.new(dest_jid))
+        def send_message(jid, msg)
+          jid = JID.new(jid) unless jid.is_a?(JID)
+
+          message = Message.new(jid)
+
+          #if msg.is_a?(XHTML::HTML)
+          #  message.add_element(msg)
+          #else
+          message.body = msg
+          #end
+
+          if is_muc?(jid)
+            jid = join_muc(jid.strip)
+            muc = @mucs[jid]
+
+            if muc
+              message.to   = muc.jid
+              muc.send(message)
+              true
+            else
+              logger.warn "Failed to join MUC #{jid} when trying to send a message"
+              false
             end
-            reconnect_and_retry_on_error { @mucs[dest_jid].send(message, nil) ; true }
           else
-            message.to = dest_jid
-            reconnect_and_retry_on_error { @client.send(message) ; true }
+            #
+            # We aren't interested in sending things to people who aren't online.
+            #
+            ensure_roster_and_subscription!(jid)
+
+            if check_jid_has_presence(jid)
+              #
+              # We set the chat type to chat
+              #
+              message.type = :chat
+              message.to = jid
+              @client.send(message)
+              true
+            else
+              false
+            end
           end
-          return nil
+        end
+
+        #
+        # Joins a chat, and returns the stripped JID of the chat joined.
+        #
+        def join_muc(jid, password=nil) 
+          if jid.is_a?(String) 
+            jid = JID.new($1) if jid =~ /^muc:(.*)/
+          end
+            
+          unless jid.is_a?(JID)
+            logger.warn "I don't think #{jid} is a MUC"
+            return
+          end
+
+          jid.resource = @client.jid.resource if jid.resource.to_s.empty?
+
+          if !@mucs[jid.strip]
+
+            logger.info("Adding new MUC client for #{jid}")
+            
+            @mucs[jid.strip] = Jabber::MUC::MUCClient.new(@client)
+            
+            # Add some callbacks
+            @mucs[jid.strip].add_message_callback do |m|
+              receive_message(m)
+            end
+
+            @mucs[jid.strip].add_private_message_callback do |m|
+              receive_message(m)
+            end
+
+          end
+
+          if !@mucs[jid.strip].active?
+            logger.info("Joining #{jid}")
+            #
+            # Make sure we have a resource.
+            #
+            @mucs[jid.strip].join(jid, password)
+
+          else
+            logger.debug("Already joined #{jid}.")
+          end
+
+          #
+          # Return the JID object
+          #
+          jid.strip
+        end 
+        
+        # 
+        # Checks whether the destination JID is a MUC. 
+        #
+        def is_muc?(jid)
+          (jid.is_a?(JID)    and @mucs.keys.include?(jid.strip)) or
+          (jid.is_a?(String) and jid =~ /^muc:(.*)/)
+
+          #
+          # It would be nice to use service discovery to determin this, but it
+          # turns out that it is shite in xmpp4r.  It doesn't return straight
+          # away with an answer, making it a bit useless.  Some sort of weird
+          # threading issue, I think.
+          #
+          # begin
+          #   logger.warn caller.join("\n")
+          #   cl  = Discovery::Helper.new(@client)
+          #   res = cl.get_info_for(jid.strip)
+          #   @client.wait
+          #   logger.warn "hello #{res.inspect}"
+          #   res.is_a?(Discovery::IqQueryDiscoInfo) and res.identity.category == :conference
+          # rescue Jabber::ServerError => ex
+          #  false
+          # end
+        end
+
+        # 
+        # Checks to see if the JID is in our roster, and whether we are
+        # subscribed to it or not. Will add to the roster and subscribe as
+        # is necessary to ensure both are true.
+        #
+        def ensure_roster_and_subscription!(jid)
+          return jid if is_muc?(jid)
+
+          jid = JID.new(jid) unless jid.is_a?(JID)
+
+          ri = @roster.find(jid).values.first
+          @roster.add(jid, nil, true) if ri.nil? 
+
+          ri = @roster.find(jid).values.first
+          ri.subscribe unless [:to, :both, :remove].include?(ri.subscription)
+          ri.jid
+        rescue StandardError => ex
+          logger.error("Problem ensuring that #{jid} is subscribed and in mauve's roster: #{ex.inspect}")
+          nil
         end
 
         protected
 
-        # Checks whether the destination JID is a MUC. 
-        # Returns [true/false, destination]
-        def is_muc?(destination)
-          if /^muc:(.*)/.match(destination)
-            [true, $1]
-          else
-            [false, destination]  
+        def receive_message(msg)
+          # We only want to hear messages from known contacts.
+          unless is_known_contact?(msg.from)
+            # ignore message
+            logger.info "Ignoring message from unknown contact #{msg.from}"
+            return nil
+          end
+
+          case msg.type
+            when :error
+              receive_error_message(msg)
+            when :groupchat
+              receive_groupchat_message(msg)
+            else
+              receive_normal_message(msg)
           end
         end
-        
-        # Checks to see if the JID is in our roster, and whether we are
-        # subscribed to it or not. Will add to the roster and subscribe as
-        # is necessary to ensure both are true.
-        def ensure_roster_and_subscription!(jid)
-          jid = JID.new(jid)
-          ri = @roster.find(jid)[jid]
-          if ri.nil? 
-            @roster.add(jid, nil, true)
-          else  
-            ri.subscribe unless [:to, :both, :remove].include?(ri.subscription)
-          end  
-        rescue Exception => ex
-          logger.error("Problem ensuring that #{jid} is subscribed and in mauve's roster: #{ex.inspect}")
+
+        def receive_error_message(msg)
+          logger.warn("Caught XMPP error #{msg}") 
+          nil
+        end
+
+        def receive_normal_message(msg)
+          #
+          # Treat invites specially
+          #
+          if msg.x("jabber:x:conference")
+            #
+            # recieved an invite.  Need to mangle the jid.
+            #
+            jid =JID.new(msg.x("jabber:x:conference").attribute("jid"))
+            # jid.resource = @client.jid.resource
+            logger.info "Received an invite to #{jid}"
+            unless join_muc(jid)
+              logger.warn "Failed to join MUC #{jid} following invitation"
+              return nil
+            end            
+          elsif msg.body
+            #
+            # Received a message with a body.
+            #
+            jid = msg.from
+          end
+
+          #
+          # I don't have time to talk to myself! 
+          #
+          if jid and jid.strip != @client.jid.strip
+            txt = File.executable?('/usr/games/fortune') ? `/usr/games/fortune -s -n 60`.chomp : "I'd love to stay and chat, but I'm really too busy." 
+            send_message(jid, txt)
+          end
+        end
+
+        def receive_groupchat_message(msg)
+          #
+          # We only want group chat messages from MUCs we're already joined to,
+          # that we've not sent ourselves, that are not historical, and that
+          # match our resource or node in the body.
+          #
+          if @mucs[msg.from.strip].is_a?(MUC::MUCClient) and
+                msg.from != @mucs[msg.from.strip].jid and
+                msg.x("jabber:x:delay") == nil and 
+                (msg.body =~ /\b#{Regexp.escape(@client.jid.resource)}\b/i or
+                msg.body =~ /\b#{Regexp.escape(@client.jid.node)}\b/i)
+            receive_normal_message(msg) 
+          end
         end
 
         def check_alert_conditions(destination, conditions)
@@ -264,8 +446,11 @@ module Mauve
         # Returns true if at least one of the presence specifiers for the jid
         # is met, false otherwise. Note that if the alerter can't see the alertee's
         # presence, only 'unknown' will match - generally, you'll want [:online, :unknown]
-        def check_jid_has_presence(jid, presence_or_presences)
-          return true if jid.match(/^muc:/)
+        def check_jid_has_presence(jid, presence_or_presences = [:online, :unknown])
+          jid = JID.new(jid) unless jid.is_a?(JID)
+
+
+          return true if is_muc?(jid)
 
           reconnect unless @client
 
@@ -291,15 +476,16 @@ module Mauve
           end
           results.include?(true)
         end
-        
-      end
 
-      #
-      # TODO parse message and ack as needed..?  The trick is here to
-      # understand what the person sending the message wants.  Could be
-      # difficult.
-      def receive_message(message)
-        @logger.debug "Received message from #{message.from}.. Ignoring for now."
+        def is_known_contact?(jid)
+          jid = JID.new(jid) unless jid.is_a?(JID)
+
+          Configuration.current.people.any? do |username, person|
+            next unless person.xmpp.is_a?(JID)
+            person.xmpp.strip == jid.strip
+          end
+        end
+        
       end
     end
   end

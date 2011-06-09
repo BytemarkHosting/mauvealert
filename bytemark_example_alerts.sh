@@ -1,17 +1,17 @@
 #!/bin/sh
 
-PRE="./mauve_starter.rb ./bin/mauvesend 127.0.0.1 "
+PRE="ruby -I lib ./bin/mauveclient 127.0.0.1 "
 
 $PRE -o supportbot -i 173123 \
-  -s "My server is not responding" \
-  -d "<strong>From:</strong> John Smith &lt;john@smith.name><br/>
-<strong>To:</strong> support@support.bytemark.co.uk</br/>
-<br/>
-<pre>It has been several hours now since I have been able to contact my server
-foo.bar.bytemark.co.uk.  I am very upset that blah blah blah blah
-and furthermore by business is under threat because &pound;15.00 per month
-is far too much blah blah blah</pre>
-"
+ -s "My server is not responding" \
+ -d "<strong>From:</strong> John Smith &lt;john@smith.name><br/>
+#<strong>To:</strong> support@support.bytemark.co.uk</br/>
+#<br/>
+#<pre>It has been several hours now since I have been able to contact my server
+#foo.bar.bytemark.co.uk.  I am very upset that blah blah blah blah
+#and furthermore by business is under threat because &pound;15.00 per month
+#is far too much blah blah blah</pre>
+#"
 
 $PRE -o networkmonitor -i 1 -u cr01.man.bytemark.co.uk \
   -s "cr01.man.bytemark.co.uk did not respond to pings"
@@ -23,8 +23,10 @@ $PRE -o networkmonitor -i 2 -u cr01.thn.bytemark.co.uk \
 $PRE -o vmhs -i 12346 -u ventham.bytemark.co.uk \
   -s "ventham.bytemark.co.uk heartbeat not received" -r +5
  
+
 $PRE -o vmhs -i 12345 -u partridge.bytemark.co.uk \
-  -s "partridge.bytemark.co.uk heartbeat not received" -r +2
+  -s "partridge.bytemark.co.uk heartbeat not received" -r +10 -c now
+
 
 $PRE -o vmhs -i 12347 -u eider.bytemark.co.uk \
   -s "eider.bytemark.co.uk heartbeat not received" -r +2

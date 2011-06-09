@@ -162,7 +162,6 @@ if help
   exit 0
 end
 
-
 error "No alerts specified" unless !update.alert.empty? || update.replace
 
 update.transmission_id = rand(2**63)

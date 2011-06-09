@@ -1,0 +1,15 @@
+#navbar
+  %ul
+    %li
+      %a{:href => "/"} Mauve
+    - if @person
+      %li{:id => [ @alert_type == "raised" && "nav_selected"]}
+        %a{:href => '/alerts/raised/'+@group_by} Raised (#{@alerts_raised.length})
+      %li{:id => [ @alert_type == "acknowledged" && "nav_selected"]}
+        %a{:href => '/alerts/acknowledged/'+@group_by} Ack'd (#{@alerts_ackd.length})
+      %li{:id => [ @alert_type == "cleared" && "nav_selected"]}
+        %a{:href => '/alerts/cleared/'+@group_by} Cleared (#{@alerts_cleared.length})
+      %li
+        %a{:href => '/logout'} Log out
+  %br
+

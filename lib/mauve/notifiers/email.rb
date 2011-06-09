@@ -38,6 +38,11 @@ module Mauve
           @suppressed_changed = nil
         end
 
+        def logger
+          @logger ||= Log4r::Logger.new self.class.to_s.sub(/::Default$/,"")
+
+        end
+
         def send_alert(destination, alert, all_alerts, conditions = nil)
           message = prepare_message(destination, alert, all_alerts, conditions)
           args  = [@server, @port]
@@ -46,14 +51,11 @@ module Mauve
             Net::SMTP.start(*args) do |smtp|
               smtp.send_message(message, @from, destination)
             end
-          rescue Errno::ECONNREFUSED => e
-            @logger = Log4r::Logger.new "mauve::email_send_alert"
-            @logger.error("#{e.class}: #{e.message} raised. " +
-                          "args = #{args.inspect} "
-                         )
-            raise e
-          rescue => e
-            raise e
+            true
+          rescue StandardError => ex
+            logger.error "SMTP failure: #{ex.to_s}"
+            logger.debug ex.backtrace.join("\n")
+            false
           end
         end
         
@@ -98,8 +100,8 @@ module Mauve
           # FIXME: include alert.detail as multipart mime
           ##Thread.abort_on_exception = true
           m.body += "\n" + '-'*10 + " This is the detail field " + '-'*44 + "\n\n"
-          m.body += alert.get_details()
-          m.body += alert.get_details_plain_text()
+          m.body += alert.detail.to_s
+#'        m.body += alert.get_details_plain_text()
           m.body += "\n" + '-'*80 + "\n\n"
           
           if @suppressed_changed == true

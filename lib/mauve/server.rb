@@ -12,7 +12,6 @@ require 'mauve/processor'
 require 'mauve/http_server'
 require 'log4r'
 
-
 module Mauve
 
   class Server 
@@ -70,7 +69,7 @@ module Mauve
 
       #
       DataMapper.setup(:default, @config[:database])
-      DataObjects::Sqlite3.logger = Log4r::Logger.new("Mauve::DataMapper") 
+      # DataObjects::Sqlite3.logger = Log4r::Logger.new("Mauve::DataMapper") 
 
       #
       # Update any tables.
@@ -82,7 +81,7 @@ module Mauve
       #
       # Work out when the server was last stopped
       #
-      @stopped_at = self.last_heartbeat
+      # topped_at = self.last_heartbeat 
     end
    
     def last_heartbeat
@@ -91,7 +90,7 @@ module Mauve
       #
       [ Alert.last(:order => :updated_at.asc), 
         AlertChanged.last(:order => :updated_at.asc) ].
-        reject{|a| a.nil?}.
+        reject{|a| a.nil? or a.updated_at.nil? }.
         collect{|a| a.updated_at.to_time}.
         sort.
         last
@@ -108,24 +107,59 @@ module Mauve
     def stop
       @stop = true
 
+      thread_list = Thread.list 
+
+      thread_list.delete(Thread.current)
+
       THREAD_CLASSES.reverse.each do |klass|
-        klass.instance.stop
+        thread_list.delete(klass.instance)
+        klass.instance.stop unless klass.instance.nil?
       end
-      
+
+      thread_list.each do |t|
+        t.exit
+      end      
+
       @logger.info("All threads stopped")
     end
 
     def run
       loop do
+        thread_list = Thread.list 
+
+        thread_list.delete(Thread.current)
+
         THREAD_CLASSES.each do |klass|
+          thread_list.delete(klass.instance)
+
           next if @frozen or @stop
-          
+
           unless klass.instance.alive?
-            # ugh something has died.  
-            klass.instance.join
+            # ugh something has died.
+            #
+            begin
+              klass.instance.join
+            rescue StandardError => ex
+              @logger.warn "Caught #{ex.to_s} whilst checking #{klass} thread"
+              @logger.debug ex.backtrace.join("\n")
+            end
+            #
+            # Start the stuff.
             klass.instance.start unless @stop
           end
 
+        end
+
+        thread_list.each do |t|
+          next unless t.alive?
+          begin
+            t.join
+          rescue StandardError => ex
+            @logger.fatal "Caught #{ex.to_s} whilst checking threads"
+            @logger.debug ex.backtrace.join("\n")
+            self.stop
+            break
+          end
         end
 
         break if @stop
