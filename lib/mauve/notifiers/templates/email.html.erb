@@ -1,4 +1,7 @@
-<p><strong><%= alert.update_type.upcase %></strong> <% 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title></title></head><body>
+<p><strong><%= alert.update_type.upcase %>:</strong> <% 
 case alert.update_type 
 when :cleared 
 %><%= MauveTime.now.to_s_relative(alert.cleared_at.to_time) %><% 
@@ -11,18 +14,9 @@ end
 if alert.source != alert.subject 
 %> -- <em>from <%= alert.source %></em><%
 end 
-%>.
-
+%>.</p>
 <hr />
-
-<div>
-<%=alert.detail %>
-</div>
-
+<h2>Detail</h2>
+<div><%=alert.detail %></div>
 <hr />
-
-<address>
---<br />
-Love mauve<br />
-xxx.
-</address>
+<address>--<br />Love mauve<br />xxx.</address></body></html>

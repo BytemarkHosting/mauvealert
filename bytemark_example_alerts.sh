@@ -22,12 +22,12 @@ $PRE -o networkmonitor -i 2 -u cr01.thn.bytemark.co.uk \
   -s "cr02.man.bytemark.co.uk refused SSH connection" \
   -d "<pre>ssh: connect to host localhost port 1212: Connection refused</pre>"
 
-$PRE -o ventham.bytemark.co.uk -i heartbeat -r now -s "<b>heartbeat</b> <script>alert('arse')</script> failed for ventham.bytemark.co.uk" --detail="<p>The heartbeat wasn't sent for the host ventham.bytemark.co.uk</p><p>This indicates that the host might be down</p>" >/dev/null
+$PRE -o ventham.bytemark.co.uk -i heartbeat -r +10m -c now -s "<b>heartbeat</b> <script>alert('arse')</script> failed for ventham.bytemark.co.uk" --detail="<p>The heartbeat wasn't sent for the host ventham.bytemark.co.uk</p><p>This indicates that the host might be down</p>" >/dev/null
 
-$PRE -o networkmonitor -i ping-ventham -u ventham.bytemark.co.uk -r +10m -s "ping failed for ventham.bytemark.co.uk"
+$PRE -o networkmonitor -i ping-ventham -u ventham.bytemark.co.uk -r -s "ping failed for ventham.bytemark.co.uk"
 
 $PRE -o vmhs -i 12345 -u partridge.bytemark.co.uk \
-  -s "partridge.bytemark.co.uk heartbeat not received" -r +10m -c now
+  -s "partridge.bytemark.co.uk heartbeat not received" -r +10m -c 
 
 $PRE -o vmhs -i 12347 -u eider.bytemark.co.uk \
   -s "eider.bytemark.co.uk heartbeat not received" -r +2

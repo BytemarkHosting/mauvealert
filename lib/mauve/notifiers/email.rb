@@ -67,8 +67,21 @@ module Mauve
           end
           
           m = RMail::Message.new
-          
-          m.header.subject = "Arse"
+         
+          #
+          # Use a template for:
+          #
+          #   * The subject
+          #   * The text part
+          #   * The HTML part.
+          #
+          subject_template = File.join(File.dirname(__FILE__), "templates", "email_subject.txt.erb")
+          if File.exists?(subject_template)
+            m.header.subject = ERB.new(File.read(subject_template)).result(binding).chomp
+          else
+            m.header.subject = "Arse"
+          end
+
           m.header.to = destination
           m.header.from = @from
           m.header.date = MauveTime.now
