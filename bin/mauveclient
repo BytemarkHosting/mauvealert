@@ -72,7 +72,7 @@ def error(msg)
   exit 1
 end
 
-def parse_time_spec(spec)
+def parse_time_spec(spec = "now")
   now = Mauve::MauveTime.now
 
   return now if spec == 'now'
@@ -117,7 +117,7 @@ opts = GetoptLong.new(
   #
   # Can catch empty arguments better if we set the GetoptLong things to
   # "optional" rather than "required" and catch the empty arg here.
-  error "#{opt} cannot be empty" if arg.empty? and not %w(-h -p -v).include?(opt)
+  error "#{opt} cannot be empty" if arg.empty? and not %w(-h -p -v -c -r).include?(opt)
 
   case opt
     when '-h'
