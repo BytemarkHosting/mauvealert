@@ -73,13 +73,8 @@ module Mauve
       @alert_groups = []
       @source_lists = SourceList.new()
       @logger = Log4r::Logger.new("Mauve")
-
     end
     
-    def close
-      server.close
-    end
-
   end
 
   class LoggerOutputterBuilder < ObjectBuilder
@@ -442,7 +437,7 @@ module Mauve
     end
     
     def created_server(server)
-      raise ArgumentError.new("Only one 'server' clause can be specified") if 
+      raise BuildError.new("Only one 'server' clause can be specified") if 
         @result.server
       @result.server = server
     end

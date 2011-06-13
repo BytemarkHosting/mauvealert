@@ -9,12 +9,9 @@ rescue SyntaxError => no_blocks_with_procs
 end
   
 require 'mauve/configuration'
-include Mauve
 
 configuration_file = ARGV[0]
-
 configuration_file = [".", "/etc/mauvealert/"].find{|d| File.file?(File.join(d,"mauveserver.conf")) } if configuration_file.nil?
-
 configuration_file = File.expand_path(configuration_file)
 
 unless File.file?(configuration_file)
@@ -22,26 +19,35 @@ unless File.file?(configuration_file)
   Kernel.exit 1
 end
 
-Configuration.current = ConfigurationBuilder.load(configuration_file)
+Mauve::Configuration.current = Mauve::ConfigurationBuilder.load(configuration_file)
 
 %w(HUP).each do |sig|
   trap("HUP") do
     # this blows up if you do it twice in quick succession, but don't really 
     # care about that case as it's only for log rotation.
-    Configuration.current.logger.warn "#{sig} signal received.  Restarting."
-    Configuration.current.server.stop
+    Mauve::Server.instance.logger.warn "#{sig} signal received.  Stopping."
+    Mauve::Server.instance.stop
+
     #
     # Reload configuration
     #
-    Configuration.current = ConfigurationBuilder.load(configuration_file)
-    Configuration.current.server.start
+    Mauve::Server.instance.logger.warn "Restarting."
+
+    begin
+      new_config = Mauve::ConfigurationBuilder.load(configuration_file)
+      Mauve::Configuration.current = new_config
+    rescue BuildException => ex
+      Mauve::Server.instance.logger.warn "Reconfiguration failed: #{ex}.  Sticking with old one."
+    end
+    Mauve::Server.instance.logger.warn "Restarting."
+    Mauve::Server.instance.start
   end
 end
 
 %w(QUIT TERM INT).each do |sig|
   trap(sig) do
-    Configuration.current.logger.warn "#{sig} signal received.  Exiting."
-    Configuration.current.server.stop
+    Mauve::Server.instance.logger.warn "#{sig} signal received.  Stopping."
+    Mauve::Server.instance.stop
     exit 0
   end
 end

@@ -66,70 +66,30 @@ module Mauve
             @suppressed_changed = conditions[:suppressed_changed]
           end
           
-          other_alerts = all_alerts - [alert]
-          
           m = RMail::Message.new
           
-          m.header.subject = subject_prefix + 
-            case @suppressed_changed
-            when true
-              "Suppressing notifications (#{all_alerts.length} total)"
-            
-            else
-              alert.summary_one_line.to_s 
-          end
+          m.header.subject = "Arse"
           m.header.to = destination
           m.header.from = @from
           m.header.date = MauveTime.now
+          m.header['Content-Type'] = "multipart/alternative"
 
-          summary_formatted = "  * "+alert.summary_two_lines.join("\n  ")
-                    
-          case alert.update_type.to_sym
-            when :cleared
-              m.body = "An alert has been cleared:\n"+summary_formatted+"\n\n"
-            when :raised
-              m.body = "An alert has been raised:\n"+summary_formatted+"\n\n"
-            when :acknowledged
-              m.body = "An alert has been acknowledged by #{alert.acknowledged_by}:\n"+summary_formatted+"\n\n"
-            when :changed
-              m.body = "An alert has changed in nature:\n"+summary_formatted+"\n\n"
-            else
-              raise ArgumentError.new("Unknown update_type #{alert.update_type}")
+          txt_template = File.join(File.dirname(__FILE__), "templates", "email.txt.erb")
+          if File.exists?(txt_template)
+            txt = RMail::Message.new
+            txt.header['Content-Type'] = "text/plain; charset=\"utf-8\""
+            txt.body = ERB.new(File.read(txt_template)).result(binding).chomp
+            m.add_part(txt)
           end
-          
-          # FIXME: include alert.detail as multipart mime
-          ##Thread.abort_on_exception = true
-          m.body += "\n" + '-'*10 + " This is the detail field " + '-'*44 + "\n\n"
-          m.body += alert.detail.to_s
-#'        m.body += alert.get_details_plain_text()
-          m.body += "\n" + '-'*80 + "\n\n"
-          
-          if @suppressed_changed == true
-            m.body += <<-END
-IMPORTANT: I've been configured to suppress notification of individual changes
-to alerts until their rate decreases.  If you still need notification of evrey
-single alert, you must watch the web front-end instead.
 
-            END
-          elsif @suppressed_changed == false
-            m.body += "(Notifications have slowed down - you will now be notified of every change)\n\n"
+          html_template = File.join(File.dirname(__FILE__), "templates", "email.html.erb")
+          if File.exists?(html_template)
+            html = RMail::Message.new
+            html.header['Content-Type'] = "text/html; charset=\"utf-8\""
+            html.body = ERB.new(File.read(html_template)).result(binding).chomp
+            m.add_part(html)
           end
-          
-          if other_alerts.empty?
-            m.body += (alert.update_type == :cleared ? "That was" : "This is")+
-              " currently the only alert outstanding\n\n"
-          else
-            m.body += other_alerts.length == 1 ? 
-              "There is currently one other alert outstanding:\n\n" :
-              "There are currently #{other_alerts.length} other alerts outstanding:\n\n"
-            
-            other_alerts.each do |other|
-              m.body += "  * "+other.summary_two_lines.join("\n  ")+"\n\n"
-            end
-          end
-          
-          m.body += "-- \n"+@signature
-          
+
           m.to_s
         end
         include Debug

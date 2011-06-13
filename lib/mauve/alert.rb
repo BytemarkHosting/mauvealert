@@ -1,7 +1,7 @@
 require 'mauve/proto'
 require 'mauve/alert_changed'
 require 'mauve/datamapper'
-
+require 'sanitize'
 
 module Mauve
   class AlertEarliestDate
@@ -172,16 +172,14 @@ module Mauve
       self.alert_group.level
     end
     
-    def subject
-      attribute_get(:subject) || source
-    end
-    
-    def subject=(subject); set_changed_if_different(:subject, subject); end
-    def summary=(summary); set_changed_if_different(:summary, summary); end
-#  def detail=(detail); set_changed_if_different(:detail, detail); end
-   def detail=(detail);  attribute_set(:detail, detail) ; end
+    def subject=(subject); set_changed_if_different( :subject, subject ); end
+    def summary=(summary); set_changed_if_different( :summary, summary ); end
+
+    # def source=(source);   attribute_set( :source, source ); end 
+    # def detail=(detail);   attribute_set( :detail, detail ); end
     
     protected
+
     def set_changed_if_different(attribute, value)
       return if self.__send__(attribute) == value
       self.update_type ||= :changed
@@ -244,7 +242,7 @@ module Mauve
     end
     
     def raised?
-      !raised_at.nil? && cleared_at.nil?
+      !raised_at.nil? and (cleared_at.nil? or raised_at > cleared_at)
     end
     
     def acknowledged?
@@ -252,11 +250,32 @@ module Mauve
     end
     
     def cleared?
-      new? || !cleared_at.nil?
+      !raised? 
     end
     
     class << self
     
+      #
+      # Utility methods to clean/remove html
+      #
+      def remove_html(txt)
+        Sanitize.clean(
+          txt.to_s,
+          Sanitize::Config::DEFAULT
+        )
+      end
+
+      def clean_html(txt)
+        Sanitize.clean(
+          txt.to_s,
+         Sanitize::Config::RELAXED.merge({:remove_contents => true})
+        )
+      end
+    
+      #
+      # Find stuff
+      #
+      #
       def all_raised
         all(:raised_at.not => nil, :cleared_at => nil)
       end
@@ -341,19 +360,27 @@ module Mauve
 
           logger.debug("received at #{reception_time}, transmitted at #{transmission_time}, raised at #{raise_time}, clear at #{clear_time}")
 
-          do_clear = clear_time && clear_time <= reception_time
-          do_raise = raise_time && raise_time <= reception_time
-            
+          #
+          # Make sure there's no HTML in the ID... paranoia.  The rest of the
+          # HTML removal is done elsewhere.
+          #
+          alert.id = Alert.remove_html(alert.id)
+ 
           alert_db = first(:alert_id => alert.id, :source => update.source) ||
             new(:alert_id => alert.id, :source => update.source)
-          
-          pre_raised       = alert_db.raised?
-          pre_cleared      = alert_db.cleared?
-          pre_acknowledged = alert_db.acknowledged?
+         
+          #
+          # Work out what state the alert was in before receiving this update.
+          #
+          was_raised       = alert_db.raised?
+          was_cleared      = alert_db.cleared?
+          was_acknowledged = alert_db.acknowledged?
                     
           alert_db.update_type = nil
           
           ##
+          #
+          # Work out if we're raising now, or in the future.
           #
           # Allow a 5s offset in timings.
           #
@@ -372,9 +399,9 @@ module Mauve
               alert_db.will_clear_at = clear_time
             end
           end
-          
+
           # 
-          # Re-raise if raised_at and cleared_at are set.
+          # Clear old cleared_at time, if the raised_at time is newer
           #
           if alert_db.cleared_at && alert_db.raised_at && alert_db.cleared_at < alert_db.raised_at
             alert_db.cleared_at = nil 
@@ -383,24 +410,30 @@ module Mauve
           #
           # 
           #
-          if (pre_raised or pre_cleared) && alert_db.raised?
-            alert_db.update_type = :raised
-          elsif pre_raised && alert_db.cleared?
+          if alert_db.cleared?
             alert_db.update_type = :cleared
+          else
+            alert_db.update_type = :raised
           end
             
+          #
           # Changing any of these attributes causes the alert to be sent back
           # out to the notification system with an update_type of :changed.
           #
-          alert_db.subject = alert.subject if alert.subject && !alert.subject.empty?
-          alert_db.summary = alert.summary if alert.summary && !alert.summary.empty?
-          alert_db.detail  = alert.detail  if alert.detail  && !alert.detail.empty?
-
-          # These updates happen but do not sent the alert back to the
-          # notification system.
+          # Each of these should be just text, no HTML, so remove any tags we
+          # find.
           #
+
+          alert_db.subject = Alert.remove_html(alert.subject) if alert.subject && !alert.subject.empty?
+          alert_db.summary = Alert.remove_html(alert.summary) if alert.summary && !alert.summary.empty?
+
+          #
+          # The detail can be HTML -- scrub out unwanted parts.
+          #
+          alert_db.detail = Alert.clean_html(alert.detail)    if alert.detail  && !alert.detail.empty?
+
           alert_db.importance = alert.importance if alert.importance != 0 
- 
+
           # FIXME: this logic ought to be clearer as it may get more complicated
           #
           if alert_db.update_type

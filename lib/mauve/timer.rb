@@ -73,11 +73,6 @@ module Mauve
         # This is a rate-limiting step for alerts.
         #
         Kernel.sleep 0.1
-        #
-        # Not sure if this is needed or not.  But the timer thread seems to
-        # freeze here, apparently stuck on a select() statement.
-        #
-        Thread.pass
       end
 
       return if self.should_stop? or next_to_notify.nil?

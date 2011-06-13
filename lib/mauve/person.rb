@@ -139,19 +139,7 @@ module Mauve
           last_change.was_relevant = true if false == last_change.nil?
         end
 
-        # Send the notification is need be.
-        if !last_change || last_change.update_type.to_sym == :cleared
-          # Person has never heard of this alert before, or previously cleared.
-          #
-          # We don't send any alert if such a change isn't relevant to this
-          # Person at this time.
-          send_alert(level, alert) if is_relevant and [:raised, :changed].include?(alert.update_type.to_sym)
-
-        else
-          # Relevance is determined by whether the user heard of this alert
-          # being raised.
-          send_alert(level, alert) if last_change.was_relevant_when_raised? 
-        end
+        send_alert(level, alert  ) # if last_change.was_relevant_when_raised? 
     end
     
     def remind(alert, level)
@@ -163,7 +151,7 @@ module Mauve
     # This just wraps send_alert by sending the job to a queue.
     #
     def send_alert(level, alert)
-      Notifier.push([self, level, alert])
+      Server.notification_push([self, level, alert])
     end
 
     def do_send_alert(level, alert)

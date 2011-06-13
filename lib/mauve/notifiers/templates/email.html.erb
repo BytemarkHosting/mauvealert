@@ -1,0 +1,28 @@
+<p><strong><%= alert.update_type.upcase %></strong> <% 
+case alert.update_type 
+when :cleared 
+%><%= MauveTime.now.to_s_relative(alert.cleared_at.to_time) %><% 
+when :acknowleged 
+%><%= MauveTime.now.to_s_relative(alert.acknowledged_at.to_time) %><% 
+else
+%><%= MauveTime.now.to_s_relative(alert.raised_at.to_time) %><% 
+end 
+%>: <%= alert.summary %><%
+if alert.source != alert.subject 
+%> -- <em>from <%= alert.source %></em><%
+end 
+%>.
+
+<hr />
+
+<div>
+<%=alert.detail %>
+</div>
+
+<hr />
+
+<address>
+--<br />
+Love mauve<br />
+xxx.
+</address>

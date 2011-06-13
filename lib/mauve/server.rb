@@ -32,13 +32,12 @@ module Mauve
     THREAD_CLASSES = [UDPServer, HTTPServer, Processor, Notifier, Timer]
 
     attr_accessor :web_interface
-    attr_reader   :stopped_at, :started_at, :initial_sleep
+    attr_reader   :stopped_at, :started_at, :initial_sleep, :packet_buffer, :notification_buffer
 
     include Singleton
 
     def initialize
       # Set the logger up
-      @logger = Log4r::Logger.new(self.class.to_s)
 
       # Sleep time between pooling the @buffer buffer.
       @sleep = 1
@@ -50,7 +49,18 @@ module Mauve
       @started_at = MauveTime.now
       @initial_sleep = 300
 
+      #
+      # Keep these queues here to prevent a crash in a subthread losing all the
+      # subsquent things in the queue.
+      #
+      @packet_buffer       = Queue.new
+      @notification_buffer = Queue.new
+
       @config = DEFAULT_CONFIGURATION
+    end
+
+    def logger
+      @logger ||= Log4r::Logger.new(self.class.to_s)
     end
 
     def configure(config_spec = nil)
@@ -120,46 +130,61 @@ module Mauve
         t.exit
       end      
 
-      @logger.info("All threads stopped")
+      logger.info("All threads stopped")
     end
 
     def run
+      @stop = false
+
       loop do
         thread_list = Thread.list 
 
         thread_list.delete(Thread.current)
 
         THREAD_CLASSES.each do |klass|
-          thread_list.delete(klass.instance)
 
-          next if @frozen or @stop
+          #
+          # No need to double check ourselves.
+          #
+          thread_list.delete(klass.instance.thread)
 
-          unless klass.instance.alive?
-            # ugh something has died.
-            #
-            begin
-              klass.instance.join
-            rescue StandardError => ex
-              @logger.warn "Caught #{ex.to_s} whilst checking #{klass} thread"
-              @logger.debug ex.backtrace.join("\n")
-            end
-            #
-            # Start the stuff.
-            klass.instance.start unless @stop
+          # 
+          # Do nothing if we're frozen or supposed to be stopping or still alive!
+          #
+          next if @frozen or @stop or klass.instance.alive?
+
+          # 
+          # ugh something is beginnging to smell.
+          #
+          begin
+            klass.instance.join
+          rescue StandardError => ex
+            logger.warn "Caught #{ex.to_s} whilst checking #{klass} thread"
+            logger.debug ex.backtrace.join("\n")
           end
 
+          #
+          # (re-)start the klass.
+          #
+          klass.instance.start unless @stop
         end
 
+        #
+        # Now do the same with other threads.
+        #
         thread_list.each do |t|
-          next unless t.alive?
+
+          next if t.alive?
+
           begin
             t.join
           rescue StandardError => ex
-            @logger.fatal "Caught #{ex.to_s} whilst checking threads"
-            @logger.debug ex.backtrace.join("\n")
+            logger.fatal "Caught #{ex.to_s} whilst checking threads"
+            logger.debug ex.backtrace.join("\n")
             self.stop
             break
           end
+
         end
 
         break if @stop
@@ -170,6 +195,53 @@ module Mauve
     end
 
     alias start run
+
+    class << self
+
+      #
+      # BUFFERS
+      #
+      # These methods are here, so that if the threads that are popping and
+      # processing them crash, the buffer itself is not lost with the thread.
+      #
+
+      #
+      # These methods pop things on and off the packet_buffer
+      #
+      def packet_enq(a)
+        instance.packet_buffer.enq(a)
+      end
+
+      def packet_deq
+        instance.packet_buffer.deq
+      end
+
+      def packet_buffer_size
+        instance.packet_buffer.size
+      end
+
+      alias packet_push packet_enq
+      alias packet_pop  packet_deq
+      
+      #
+      # These methods pop things on and off the notification_buffer
+      #
+      def notification_enq(a)
+        instance.notification_buffer.enq(a)
+      end
+
+      def notification_deq
+        instance.notification_buffer.deq
+      end
+
+      def notification_buffer_size
+        instance.notification_buffer.size
+      end
+
+      alias notification_push notification_enq
+      alias notification_pop  notification_deq
+
+    end
 
   end
 

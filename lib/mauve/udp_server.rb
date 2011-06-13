@@ -70,8 +70,8 @@ module Mauve
       #
       i = 0
       begin
-        packet      = @socket.recvfrom_nonblock(65535)
-#       packet      = @socket.recvfrom(65535)
+#        packet      = @socket.recvfrom_nonblock(65535)
+        packet      = @socket.recvfrom(65535)
         received_at = MauveTime.now
       rescue Errno::EAGAIN, Errno::EWOULDBLOCK => ex
         puts "#{i += 1} + #{ex}"
@@ -91,9 +91,10 @@ module Mauve
         return
       end
 
-      
-
-      Processor.push([[packet[0], packet[1], received_at]])
+      #
+      # Push packet onto central queue
+      #
+      Server.packet_push([packet[0], packet[1], received_at])
     end
 
     def stop

@@ -165,18 +165,10 @@ module Mauve
           end
         end
         
+        # 
         # Takes an alert and converts it into a message.
         #
-        # @param [Alert] alert The alert to convert.
-        # @return [String] The message, either as HTML.
         def convert_alert_to_message(alert)
-          arr = alert.summary_three_lines
-          str = arr[0] + ": " + arr[1]
-          str += " -- " + arr[2] if false == arr[2].nil?
-          str += "."
-          return str
-          #return alert.summary_two_lines.join(" -- ")
-          #return "<p>" + alert.summary_two_lines.join("<br />") + "</p>"
         end
 
         # Attempt to send an alert using XMPP. 
@@ -201,8 +193,17 @@ module Mauve
             logger.info("Alert conditions not met, not sending XMPP alert to #{destination_jid}")
             return false
           end
+         
+          template_file = File.join(File.dirname(__FILE__),"templates","xmpp.txt.erb")
 
-          send_message(destination_jid, convert_alert_to_message(alert))
+          txt = if File.exists?(template_file) 
+            ERB.new(File.read(template_file)).result(binding).chomp
+          else
+            logger.error("Could not find xmpp.txt.erb template")
+            alert.to_s
+          end
+
+          send_message(destination_jid, txt)
         end
 
         # Sends a message to the destionation.
@@ -413,7 +414,7 @@ module Mauve
           if @mucs[msg.from.strip].is_a?(MUC::MUCClient) and
                 msg.from != @mucs[msg.from.strip].jid and
                 msg.x("jabber:x:delay") == nil and 
-                (msg.body =~ /\b#{Regexp.escape(@client.jid.resource)}\b/i or
+                (msg.body =~ /\b#{Regexp.escape(@mucs[msg.from.strip].jid.resource)}\b/i or
                 msg.body =~ /\b#{Regexp.escape(@client.jid.node)}\b/i)
             receive_normal_message(msg) 
           end

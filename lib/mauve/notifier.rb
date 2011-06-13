@@ -10,23 +10,23 @@ module Mauve
     
     include Singleton
 
-    attr_accessor :buffer, :sleep_interval
+    attr_accessor :sleep_interval
 
     def initialize
-      @buffer = Queue.new
     end
 
     def main_loop
-
       # 
       # Cycle through the buffer.
       #
-      sz = @buffer.size
+      sz = Server.notification_buffer_size
+
+      return if sz == 0
   
-      logger.debug("Notifier buffer is #{sz} in length") if sz > 1 
+      logger.debug("Notifier buffer is #{sz} in length") 
 
       (sz > 10 ? 10 : sz).times do
-        person, level, alert = @buffer.pop
+        person, level, alert = Server.notification_pop
         begin
           person.do_send_alert(level, alert) 
         rescue StandardError => ex
@@ -34,7 +34,6 @@ module Mauve
           logger.debug ex.backtrace.join("\n")
         end
       end
-
     end
 
     def start
@@ -74,16 +73,6 @@ module Mauve
       end
 
       super
-    end
-
-    class << self
-
-      def enq(a)
-        instance.buffer.enq(a)
-      end
-
-      alias push enq
-
     end
 
   end

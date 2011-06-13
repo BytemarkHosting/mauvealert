@@ -57,16 +57,19 @@ module Mauve
       logger.debug("Thread has not frozen!") unless @thread.stop?
     end
 
+    def frozen?
+      @frozen and @thread.stop?
+    end
+
     def thaw
       logger.debug("Thawing")
-
       @frozen = false
-
       @thread.wakeup if @thread.stop?
     end
 
     def start
       logger.debug("Starting")
+      @stop   = false
       @thread = Thread.new{ self.run_thread { self.main_loop } }
     end
     
@@ -83,12 +86,7 @@ module Mauve
     end
 
     def join(ok_exceptions=[])
-      begin
-        @thread.join if @thread.is_a?(Thread)
-      rescue StandardError => err
-        logger.debug "#{err.to_s} #{err.class}"
-        Kernel.raise err unless ok_exceptions.any?{|e| err.is_a?(e)}
-      end
+      @thread.join if @thread.is_a?(Thread)
     end
 
     def raise(ex)
@@ -125,6 +123,10 @@ module Mauve
       @frozen = true
       @thread.kill
       logger.debug("Killed")
+    end
+
+    def thread
+      @thread
     end
 
   end

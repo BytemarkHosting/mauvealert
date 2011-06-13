@@ -97,6 +97,9 @@ module Mauve
     # has undergone a significant change.  We resend this to every notify list.
     #    
     def notify(alert)
+      #
+      # The notifications are specified in the config file.
+      #
       notifications.each do |notification|
         notification.alert_changed(alert)
       end

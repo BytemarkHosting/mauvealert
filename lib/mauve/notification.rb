@@ -119,7 +119,6 @@ module Mauve
     end
 
     def logger ;  Log4r::Logger.new self.class.to_s ; end
-  
 
     # Updated code, now takes account of lists of people.
     #
@@ -142,10 +141,10 @@ module Mauve
         return
       end
 
-      # Should we notificy at all?
+      # Should we notify at all?
       is_relevant = DuringRunner.new(MauveTime.now, alert, &during).now?
 
-      to_notify = people.collect do |person|
+      people.collect do |person|
         case person
           when Person
             person
