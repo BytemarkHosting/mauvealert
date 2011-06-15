@@ -2,7 +2,7 @@
 - group, alerts = alerts_table_group unless alerts_table_group.nil?
 - hilight = cycle(nil,"hilight")
 - row_class = [ hilight, alerts.first.raised? && "triggered", alerts.first.acknowledged? && "acknowledged", alerts.first.level]
-=partial("alerts_table_alert_summary", :locals => {:alert => alerts.first, :row_class => row_class })
+=partial("alerts_table_alert_summary", :locals => {:alert => alerts.pop, :row_class => row_class })
 - if alerts.length > 1 
   %tr{ :class => [ hilight, alerts.first.raised? && "triggered", alerts.first.acknowledged? && "acknowledged"]}
     %td &nbsp;

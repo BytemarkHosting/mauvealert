@@ -6,5 +6,8 @@
     %label{ :for => "alerts[#{alert.id}]" }
       %strong= alert.subject
       = alert.summary
-    %a{ :id => ["a","detail", alert.id], :href => "/alert/#{alert.id}", :onclick => "fetchDetail('#{alert.id}'); return false;"} Details &darr;
+    %a{ :id => ["a","detail", alert.id], | 
+        :href => "/alert/#{alert.id}",   |
+        :onclick => "fetchDetail('#{alert.id}'); return false;"} 
+      Details &darr;
   %td= alert.raised_at.to_s_relative

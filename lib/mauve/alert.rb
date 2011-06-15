@@ -395,7 +395,7 @@ module Mauve
  
           alert_db = first(:alert_id => alert.id, :source => update.source) ||
             new(:alert_id => alert.id, :source => update.source)
-        
+
           #
           # Work out what state the alert was in before receiving this update.
           #
