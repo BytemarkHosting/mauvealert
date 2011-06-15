@@ -52,10 +52,6 @@ module Mauve
      Log4r::Logger.new self.class.to_s
     end
 
-##    def initialize
-#     logger = Log4r::Logger.new self.class.to_s
-#    end
-
     ## Checks to see if a raise was send to the person.
     #
     # @TODO: Recurence is broken in ruby, change this so that it does not 
@@ -100,14 +96,20 @@ module Mauve
         save
       else
         saved = false
-        
-        alert_group.notifications.each do |notification|
-          notification.people.each do |person|
-            if person.username == self.person
-              person.remind(alert, level)
-              self.remind_at = notification.remind_at_next(alert)
-              save
-              saved = true
+
+        unless alert_group.notifications.nil?
+
+          alert_group.notifications.each do |notification|
+            notification.people.each do |person|
+              # Not interested in nil people.
+              next if person.nil?
+  
+              if person.username == self.person
+                person.remind(alert, level)
+                self.remind_at = notification.remind_at_next(alert)
+                save
+                saved = true
+              end
             end
           end
         end
