@@ -10,12 +10,12 @@ end
   
 require 'mauve/configuration'
 
-configuration_file = ARGV[0]
+configuration_file = ARGV.shift
 configuration_file = [".", "/etc/mauvealert/"].find{|d| File.file?(File.join(d,"mauveserver.conf")) } if configuration_file.nil?
 configuration_file = File.expand_path(configuration_file)
 
 unless File.file?(configuration_file)
-  STDERR.print "Configuration file #{configuration_file} not found"
+  STDERR.print "Configuration file #{configuration_file} not found\n"
   Kernel.exit 1
 end
 
