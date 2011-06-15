@@ -2,23 +2,26 @@
 # stolen from http://github.com/cschneid/irclogger/blob/master/lib/partials.rb
 # and made a lot more robust by me
 #
-# this implementation uses erb by default. if you want to use any other template mechanism
-# then replace `erb` on line 13 and line 17 with `haml` or whatever
-#
 
 module Sinatra::Partials
+  def do_render(template, options={})
+    haml(template, options)
+  end
+
   def partial(template, *args)
     template_array = template.to_s.split('/')
     template = template_array[0..-2].join('/') + "/_#{template_array[-1]}"
     options = args.last.is_a?(Hash) ? args.pop : {}
     options.merge!(:layout => false)
     if collection = options.delete(:collection) then
+      # take a copy of the locals hash, so we don't overwrite it.
+      locals = (options.delete(:locals) || {})
       collection.inject([]) do |buffer, member|
-        buffer << erb(:"#{template}", options.merge(:layout =>
-        false, :locals => {template_array[-1].to_sym => member}))
+        buffer << do_render(:"#{template}", options.merge(:layout =>
+        false, :locals => {template_array[-1].to_sym => member}.merge(locals)))
       end.join("\n")
     else
-      haml(:"#{template}", options)
+      do_render(:"#{template}", options)
     end
   end
 end
