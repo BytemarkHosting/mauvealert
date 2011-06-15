@@ -1,0 +1,19 @@
+%form#alerts{:method => :post, :action => '/alerts/acknowledge'}
+  %table
+    %tr
+      %th#selector
+        %input#toggle_all{ :type => "checkbox" }
+        :javascript
+          // This just toggles all the checkboxes.
+          $('#toggle_all').change( function() {
+            $('input.alert').each( function(index) {
+              this.checked = !this.checked;
+            });
+          });
+      %th#time    At
+      %th#summary Summary
+    = partial("alerts_table_group", :collection => @grouped_alerts)
+    %tr
+      %td &nbsp;
+      %td{:colspan => 2}
+        = partial("acknowledge_input")

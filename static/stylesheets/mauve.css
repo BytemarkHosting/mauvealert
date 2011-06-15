@@ -1,41 +1,101 @@
-tr.hilight {
-  background-color: #eee;
-}
-
-tr.triggered.hilight {
-  background-color: #f98;
-}
-
-tr.acknowledged.triggered.hilight {
-  background-color: #fa5;
-}
-
-
-.triggered {
-  background-color: #fba;
-}
-
-.acknowledged {
-  color: #444;
-}
-
-.acknowledged.triggered {
-  background-color: #fb6;
-}
-
-.missing_data {
-
-}
 
 body {
-  min-width: 800px;
+  padding-left: 0px;
+  padding-right: 0px;
 }
 
-.out_of_date {
-  font-style: italic;
+h1 {
+  margin: 0px;
 }
 
-.detail {
-  background-color: white
+div#navbar {
+  margin-bottom: 0px;
+  padding-bottom: 0px;
 }
+
+div.container {
+  background-color: white;
+  padding: 5px 5px;
+}
+
+table {
+  border-collapse: collapse;
+  border: black thin solid;
+}
+
+tr {
+  border: black thin solid;
+  border-bottom: none;
+}
+
+tr.urgent {
+  background-color: #f88;
+}
+
+tr.normal {
+  /* Mauve, as defined by wikipedia. */
+  background-color: #ff8;
+}
+
+tr.low {
+  background-color: #8f8;
+}
+
+tr {
+  background-color: #fff;
+}
+
+tr.detail {
+  background-color: white !important;
+  border-top-style: dashed;
+  border-top-width: thin;
+}
+
+div.error {
+  border: #c66dff medium solid;
+  background-color: #e0b0ff;
+}
+
+div.notice {
+  border: #c66dff medium solid;
+  background-color: #e0b0ff;
+}
+
+div.error p, div.notice p {
+  background-color: transparent;
+}
+
+.hidden {
+  display: none;
+}
+
+/** Flash notices **/
+
+div.error {
+  background-color: #ffe;
+  border: solid 2px #ffc;
+  background-image: url('/images/error.png');
+}
+
+div.notice {
+  background-color: #eef;
+  border: solid 2px #ccf;
+  background-image: url('/images/information.png');
+}
+
+div.notice, div.error {
+  margin: 5px 5px 0px;
+  padding: 0px;
+  padding-left: 20px;
+  color: black;
+  font-size: 12px;
+  background-position: 5px;
+  background-repeat: no-repeat;
+  min-height: 20px;
+}
+
+div.error p, div.notice p {
+  background-color: transparent;
+}
+
 

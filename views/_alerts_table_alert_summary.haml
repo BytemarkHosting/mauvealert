@@ -1,0 +1,10 @@
+- alert = alerts_table_alert_summary if defined? alerts_table_alert_summary
+%tr{ :class => row_class, :id => ["tr", "summary", alert.id] }
+  %td
+    %input{ :type => "checkbox", :id => "alerts[#{alert.id}]", :name => "alerts[#{alert.id}]", :class => 'alert' }
+  %td
+    %label{ :for => "alerts[#{alert.id}]" }
+      %strong= alert.subject
+      = alert.summary
+    %a{ :id => ["a","detail", alert.id], :href => "/alert/#{alert.id}", :onclick => "fetchDetail('#{alert.id}'); return false;"} Details &darr;
+  %td= alert.raised_at.to_s_relative

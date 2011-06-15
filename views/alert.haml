@@ -1,56 +1,80 @@
-!!!
+!!!5
 %html
-  %head
-    %title #{@title}: Alert #{@alert.id}: #{@alert.get_safe_html_summary}
-    %link{:rel => "stylesheet", :href => "/alerts2.css"}/
-    %link{:rel => "stylesheet", :href => "/alerts-mobil.css", :media => "handheld"} /
-    %script{:type => "text/javascript", :src => "/prototype.js"}/
-    %script{:type => "text/javascript", :src => "/mauve_utils.js"}/
-    %script{:type => "text/javascript", :src => "/datadumper.js"}/
-  %body{:onLoad => "addAutoHover(); addRefresh();"}
-    .head= partial("head3")
-    #about_alert
-      %h1.summary #{@alert.get_safe_html_subject}: #{@alert.get_safe_html_summary}
-      %h2.details Alert Details
-      - if @alert.detail
-        .arse= partial("detail")
-      - if @alert.source != @alert.subject
-        %h2.source Source
-        .source= @alert.get_safe_html_source
-      %h2.external Alert ID external
-      = @alert.get_safe_html_alert_id
-      %h2.internal Alert ID internal
-      = @alert.id
-      %h2.raised_at Last raised
-      = @alert.raised? ? @alert.raised_at : "Not yet raised"
-      %h2.acknowledged_at Acknowledged
-      = @alert.acknowledged? ? @alert.acknowledged_at : "Not acknowledged"
-      %h2.cleared_at Cleared
-      = @alert.cleared? ? @alert.cleared_at : "Not cleared"
-      %h2.alert_group Alert group
-      The first matching one is used:
-      = AlertGroup.matches(@alert).map{|g| g.name}.join("; ")
-      %h2.changes Notifications sent out
-      .changes
-        %ul
-          - @alert.changes.each do |change|
-            - if change.was_relevant?
-              %li
-                %strong= change.level 
-                = change.update_type
-                notification to 
-                = change.person
-                at
-                = change.at
-      %h2.actions Actions (ugly)
+  = partial('head')
+  %body
+    =partial("navbar")
+    .container
+      %h1 Alert detail
+      %table
+        %tr
+          %th.summary{:title => "Text for humans describing the nature of the alert, first 100 characters are only ones guaranteed to make it to pagers, twitter, SMS etc."} Summary
+          %td= @alert.summary
+        %tr
+          %th.summary{:title => "The server/entity that this alert concerns"} Subject
+          %td= @alert.subject
+        %tr
+          %th{:title => "The server/entitiy that originated the alert"} Source
+          %td= @alert.source
+        %tr
+          %th{:title => "HTML fragment describing the alert in more detail, no limit on length."} Detail
+          %td= @alert.detail
+        %tr
+          %th{:title => "ID set by the source of the alert."} Alert ID
+          %td= @alert.alert_id
+        %tr
+          %th{:title => "The groups in the Mauve server configuration that match this alert"} Alert groups
+          %td= Mauve::AlertGroup.matches(@alert).map{|g| g.name}.join("; ")
+        %tr
+          %th{:title => "The level of the first group in the Mauve server configuration that matched this alert"} Alert level
+          %td= @alert.level.to_s.upcase
+        -if @alert.raised?
+          %tr
+            %th{:title => "The time at which the alert was raised"} Raised at
+            %td= @alert.raised_at.to_s_human
+          -if @alert.acknowledged?
+            %tr
+              %th{:title => "The time at which the alert was acknowledged"} Acknowledged at
+              %td= @alert.acknowledged_at.to_s_human + " by " + @alert.acknowledged_by + " until " + @alert.will_unacknowledge_at.to_s_human
+        -if @alert.will_raise_at
+          %tr
+            %th{:title => "The time at which the alert will be automatically raised"} Will raise at
+            %td= @alert.will_raise_at.to_s_human
+        -if @alert.cleared_at
+          %tr
+            %th{:title => "The time at which the alert was last cleared"} Last cleared at
+            %td= @alert.cleared_at.to_s_human
+        -if @alert.will_clear_at
+          %tr
+            %th{:title => "The time at which the alert will be automatically cleared"} Will clear
+            %td= @alert.will_raise_at.to_s_human
+        %tr
+          %th Notifications sent out
+          %td
+            %ul
+              - @alert.changes.each do |change|
+                - if change.was_relevant?
+                  %li
+                    %strong= change.level 
+                    = change.update_type
+                    notification to 
+                    = change.person
+                    at
+                    = change.at.to_s_human
+        
+      %h2 Actions
       - if !@alert.acknowledged?
         %form{:method => :post, :action => "/alert/#{@alert.id}/acknowledge"}
-          %input{:type => :submit, :value => "Acknowledge this alert"}                
-      %h2.actions_dangerous Dangerous actions (also ugly)
-      - if @alert.raised?
-        %form{:method => :post, :action => "/alert/#{@alert.id}/clear"}
-          %input.dangerous{:type => :submit, :value => "Clear this alert"}                
+          =partial("acknowledge_input")
+      - else
+        %form.hidden{:method => :post, :action => "/alert/#{@alert.id}/unacknowledge"}
+          %input{:type => :submit, :value => "Unacknowledge this alert"}                
+      %a#hide{:onclick => "$('form.hidden').toggle(); return false", :href=>"#"} Show other actions
       - if @alert.cleared?
-        %form{:method => :post, :action => "/alert/#{@alert.id}/raise"}
-          %input.dangerous{:type => :submit, :value => "Raise this alert"}
+        %form.hidden{:method => :post, :action => "/alert/#{@alert.id}/raise"}
+          %input{:type => :submit, :value => "Raise this alert"}
+      - if @alert.raised?
+        %form.hidden{:method => :post, :action => "/alert/#{@alert.id}/clear"}
+          %input{:type => :submit, :value => "Clear this alert"}                
+      %form.hidden{:method => :post, :action => "/alert/#{@alert.id}/destroy"}
+        %input{:type => :submit, :value => "Destroy this alert"}                
 

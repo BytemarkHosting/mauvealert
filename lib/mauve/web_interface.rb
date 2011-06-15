@@ -1,6 +1,7 @@
 # encoding: UTF-8
 require 'haml'
 require 'redcloth'
+require 'json'
 
 require 'sinatra/tilt'
 require 'sinatra/base'
@@ -17,16 +18,15 @@ module Mauve
   # Our Sinatra app proper
   #
   class WebInterface < Sinatra::Base
-  
-    class PleaseAuthenticate < Exception; end
+    
+    def self._logger
+      Log4r::Logger.new(self.to_s)
+    end
   
     use Rack::CommonLogger
     use Rack::Chunked
     use Rack::ContentLength
     use Rack::Flash
-
-#    Tilt.register :textile, RedClothTemplate
-
 
     # Ugh.. hacky way to dynamically configure the document root.
     set :root, Proc.new{ HTTPServer.instance.document_root }
@@ -35,36 +35,36 @@ module Mauve
     set :static, true
     set :show_exceptions, true
 
-    logger = Log4r::Logger.new("Mauve::WebInterface")
-
-    set :logging, true
-    set :logger, logger
+    logger = _logger
+    #
+    # The next two lines are not needed.
+    #
+    # set :logging, true
+    # set :logger, logger
     set :dump_errors, true      # ...will dump errors to the log
     set :raise_errors, false    # ...will not let exceptions out to main program
     set :show_exceptions, false # ...will not show exceptions
     
-    ########################################################################
+    ###########################################/alert#############################
     
     before do
-      @title = "Mauve alert panel"
+      @title = "Mauve:"
       @person = nil
       #
       # Make sure we're authenticated.
       #
-
       if session.has_key?('username') and Configuration.current.people.has_key?(session['username'].to_s)
         # 
         # Phew, we're authenticated
         #
         @person = Configuration.current.people[session['username']]
-
         #
-        # A bit wasteful maybe..?
+        # Set up some defaults.
         #
-        @alerts_raised  = Alert.all_raised
-        @alerts_cleared = Alert.all_cleared
-        @alerts_ackd    = Alert.all_acknowledged
-        @group_by       = "subject"
+        @group_by = "subject"
+        @alerts_ackd = []
+        @alerts_cleared = []
+        @alerts_raised = []
       else
         # Uh-oh.. Intruder alert!
         #
@@ -72,6 +72,7 @@ module Mauve
 
         unless ok_urls.include?(request.path_info) 
           flash['error'] = "You must be logged in to access that page."
+          status 403
           redirect "/login?next_page=#{request.path_info}"
         end
       end      
@@ -93,6 +94,7 @@ module Mauve
     # in the configuration file.
    
     get '/login' do
+      @title += " Login"
       if @person
         redirect '/'
       else
@@ -102,9 +104,10 @@ module Mauve
     end
  
     post '/login' do
-      usr = params['username']
-      pwd = params['password']
-      next_page = params['next_page']
+      usr = params['username'].to_s
+      pwd = params['password'].to_s
+      next_page = params['next_page'].to_s
+      
       #
       # Make sure we don't magically logout automatically :)
       #
@@ -114,15 +117,21 @@ module Mauve
         session['username'] = usr
         redirect next_page
       else
-        flash['error'] = "Access denied."
+        flash['error'] = "You must be logged in to access that page."
+        redirect "/login?next_page=#{next_page}"
       end
     end
     
     get '/logout' do
       session.delete('username')
+      flash['error'] = "You have logged out!"
       redirect '/login'
     end
-    
+ 
+    #=======
+    # This is the main alerts handler.
+    #
+       
     get '/alerts' do 
       redirect '/alerts/raised'
     end
@@ -132,6 +141,8 @@ module Mauve
     end
 
     get '/alerts/:alert_type/:group_by' do 
+      find_active_alerts
+
       if %w(raised cleared acknowledged).include?(params[:alert_type])
         @alert_type = params[:alert_type]
       else
@@ -144,101 +155,175 @@ module Mauve
         @group_by = "subject"
       end
 
+      @title += " Alerts "
+
       case @alert_type
         when "raised"
           @grouped_alerts = group_by(@alerts_raised, @group_by)
-        when "cleared"
-          @grouped_alerts = group_by(@alerts_cleared, @group_by)
+          haml(:alerts)
         when "acknowledged"
           @grouped_alerts = group_by(@alerts_ackd, @group_by)
+          haml(:alerts)
+        else
+          haml(:not_implemented)
+      end
+    end
+
+    post '/alerts/acknowledge' do
+      #
+      # TODO: error check inputs
+      #
+      # ack_until is in milliseconds!
+      ack_until  = params[:ack_until]
+      n_hours    = params[:n_hours]    || 2
+      type_hours = params[:type_hours] || "daylight"
+      alerts     = params[:alerts]     || []
+
+      if ack_until.to_s.empty?
+        ack_until = Time.now.in_x_hours(n_hours.to_i, type_hours.to_s)
+      else
+        ack_until = Time.at(ack_until.to_i)
       end
 
-      haml(:alerts)
+      succeeded = []
+      failed = []
+      
+      alerts.each do |k,v|
+        begin
+          a = Alert.get!(k.to_i)
+        rescue DataMapper::ObjectNotFoundError => ex
+          failed << ex
+        end
+
+        begin
+          a.acknowledge!(@person, ack_until)
+          succeeded << a
+        rescue StandardError => ex
+          failed << ex
+        end
+      end
+
+      flash["errors"] = "Failed to acknowledge #{failed.length} alerts." if failed.length > 0
+      flash["notice"] = "Successfully acknowledged #{succeeded.length} alerts" if succeeded.length > 0
+
+      redirect "/alerts/raised"
     end
     
-    get '/_alert_summary' do
-      find_active_alerts; partial("alert_summary")
+    #
+    # AJAX methods for returning snippets of stuff.
+    #
+
+    get '/ajax/time_in_x_hours/:n_hours/:type_hours' do
+      content_type :text
+
+      n_hours = params[:n_hours].to_i
+      type_hours = params[:type_hours].to_s
+
+      #
+      # Sanitise parameters
+      #
+      type_hours = "daytime" unless %w(daytime working wallclock).include?(type_hours)
+      ack_until = Time.now.in_x_hours(n_hours, type_hours)
+      
+      #
+      # Make sure we can't ack longer than a week.
+      #
+      max_ack   = (Time.now + 86400*8)
+      ack_until = max_ack if ack_until > max_ack
+
+      #
+      # Return answer as unix seconds.
+      #
+      ack_until.to_f.round.to_s
     end
 
-    get '/_alert_counts' do 
-      find_active_alerts; partial("alert_counts")
+    get '/ajax/time_to_s_human/:seconds' do
+      content_type :text
+      secs = params[:seconds].to_i
+      Time.at(secs).to_s_human
     end
 
-    get '/_head' do 
-      find_active_alerts()
-      partial("head")
-    end
-  
-    get '/alert/:id/_detail' do
+    get '/ajax/alerts_table_alert/:alert_id' do
       content_type "text/html"
-      alert = Alert.get(params[:id])
+      alert = Alert.get(params[:alert_id].to_i)
+      return status(404) unless alert
 
-      haml :_detail, :locals => { :alert => alert } unless alert.nil?
+      haml(:_alerts_table_alert, :locals => {:alert => alert})
     end
     
+    get '/ajax/alerts_table_alert_summary/:alert_id' do
+      content_type "text/html"
+      alert = Alert.get(params[:alert_id].to_i)
+      return status(404) unless alert
+
+      haml(:_alerts_table_alert_summary, :locals => {:alert => alert, :row_class => []})
+    end
+    
+    get '/ajax/alerts_table_alert_detail/:alert_id' do
+      content_type "text/html"
+      alert = Alert.get(params[:alert_id].to_i)
+      return status(404) unless alert
+
+      haml(:_alerts_table_alert_detail, :locals => {:alert => alert, :row_class => []})
+    end
+
+
+    ####
+    #
+    # Methods for the individual alerts.
+    #
+
     get '/alert/:id' do
       find_active_alerts
-      @alert = Alert.get(params['id'])
+      @alert = Alert.get!(params['id'])
       haml :alert
     end
     
     post '/alert/:id/acknowledge' do
-      
       alert = Alert.get(params[:id])
-      if alert.acknowledged?
-        alert.unacknowledge!
+      
+      ack_until  = params[:ack_until].to_i
+      n_hours    = params[:n_hours].to_i
+      type_hours = params[:type_hours].to_s
+      
+      if ack_until == 0
+        ack_until = Time.now.in_x_hours(n_hours, type_hours)
       else
-        alert.acknowledge!(@person, 0)
+        ack_until = Time.at(ack_until)
       end
-      content_type("application/json")
-      alert.to_json
-    end
-    
-    # Note that :until must be in seconds.
-    post '/alert/acknowledge/:id/:until' do
-      #now = MauveTime.now.to_f
 
-      alert = Alert.get(params[:id])
-      alert.acknowledge!(@person, params[:until].to_i())
+      alert.acknowledge!(@person, ack_until)
       
-      #print "Acknowledge request was processed in #{MauveTime.now.to_f - now} seconds\n"
-      content_type("application/json")
-      alert.to_json
+      flash['notice'] = "Successfully acknowleged alert <em>#{alert.alert_id}</em> from source #{alert.source}."
+      redirect "/alert/#{alert.id}"
+    end
+
+    post '/alert/:id/unacknowledge' do
+      alert = Alert.get!(params[:id])
+      alert.unacknowledge!
+      flash['notice'] = "Successfully raised alert #{alert.alert_id} from source #{alert.source}."
+      redirect "/alert/#{alert.id}"
     end
 
     post '/alert/:id/raise' do
-      #now = MauveTime.now.to_f
-      
-      alert = Alert.get(params[:id])
+      alert = Alert.get!(params[:id])
       alert.raise!
-      #print "Raise request was processed in #{MauveTime.now.to_f - now} seconds\n"
-      content_type("application/json")
-      alert.to_json
+      flash['notice'] = "Successfully raised alert #{alert.alert_id} from source #{alert.source}."
+      redirect "/alert/#{alert.id}"
     end
     
     post '/alert/:id/clear' do
-      
       alert = Alert.get(params[:id])
       alert.clear!
-      content_type("application/json")
-      alert.to_json
+      flash['notice'] = "Successfully cleared alert #{alert.alert_id} from source #{alert.source}."
+      redirect "/alert/#{alert.id}"
     end
-
-    post '/alert/:id/toggleDetailView' do 
-      
+    
+    post '/alert/:id/destroy' do
       alert = Alert.get(params[:id])
-      if nil != alert
-        id = params[:id].to_i()
-        session[:display_alerts][id] = (true == session[:display_alerts][id])? false : true
-        content_type("application/json")
-        'all is good'.to_json
-      end
-    end
-
-    post '/alert/fold/:subject' do 
-      session[:display_folding][params[:subject]] = (true == session[:display_folding][params[:subject]])? false : true
-      content_type("application/json")
-      'all is good'.to_json
+      alert.destroy!
+      flash['notice'] = "Successfully destroyed alert #{alert.alert_id} from source #{alert.source}."
+      redirect "/"
     end
 
     ########################################################################
@@ -276,73 +361,15 @@ module Mauve
       end
  
       def find_active_alerts
-
-        # FIXME: make sure alerts only appear once some better way
-        #@urgent = AlertGroup.all_alerts_by_level(:urgent)
-        #@normal = AlertGroup.all_alerts_by_level(:normal) - @urgent
-        #@low = AlertGroup.all_alerts_by_level(:low) - @normal - @urgent
-        ook = Alert.get_all()
-        @urgent = ook[:urgent]
-        @normal = ook[:normal]
-        @low = ook[:low]
-
-        # Get groups of alerts and count those acknowledged.
-        @grouped_ack_urgent = Hash.new()
-        @grouped_ack_normal = Hash.new()
-        @grouped_ack_low = Hash.new()
-        @grouped_new_urgent = Hash.new()
-        @grouped_new_normal = Hash.new()
-        @grouped_new_low = Hash.new()
-        @count_ack = Hash.new()
-        @count_ack[:urgent] = self.group_alerts(@grouped_ack_urgent, 
-                                                @grouped_new_urgent,
-                                                @urgent)
-        @count_ack[:normal] = self.group_alerts(@grouped_ack_normal,
-                                                @grouped_new_normal,
-                                                @normal)
-        @count_ack[:low] = self.group_alerts(@grouped_ack_low,
-                                             @grouped_new_low,
-                                             @low)
-        @grouped_ack = Hash.new()
-        @grouped_new = Hash.new()
-        @grouped_ack_urgent.each_pair {|k,v| @grouped_ack[k] = v}
-        @grouped_ack_normal.each_pair {|k,v| @grouped_ack[k] = v}
-        @grouped_ack_low.each_pair {|k,v| @grouped_ack[k] = v}
-        @grouped_new_urgent.each_pair {|k,v| @grouped_new[k] = v}
-        @grouped_new_normal.each_pair {|k,v| @grouped_new[k] = v}
-        @grouped_new_low.each_pair {|k,v| @grouped_new[k] = v}
-      end
-      
-      ## Fill two hashs with alerts that are acknowledged or not.
-      # @param [Hash] ack Acknowledge hash.
-      # @param [Hash] new Unacknowledged (aka new) hash.
-      # @param [List] list List of alerts.
-      # @return [Fixnum] The count of acknowledged alerts.
-      def group_alerts(ack, new, list)
-        count = 0
-        list.each do |alert| 
-          #key = alert.source + '::' + alert.subject
-          key = alert.subject
-          if true == alert.acknowledged?
-            count += 1
-            ack[key] = Array.new() if false == ack.has_key?(key)
-            ack[key] << alert
-          else
-            new[key] = Array.new() if false == new.has_key?(key)
-            new[key] << alert
-          end
-          if false == session[:display_alerts].has_key?(alert.id)
-            session[:display_alerts][alert.id] = false
-          end
-          if false == session[:display_folding].has_key?(key)
-            session[:display_folding][key] = false 
-          end
-          #session[:display_alerts][alert.id] = true if false == session[:display_alerts].has_key?(alert.id)
-          #session[:display_folding][key] = true if false == session[:display_folding].has_key?(key)
-          new.each_key {|k| new[k].sort!{|a,b| a.summary <=> b.summary} }
-          ack.each_key {|k| ack[k].sort!{|a,b| a.summary <=> b.summary} }
-        end
-        return count
+        @alerts_raised  = Alert.all_raised
+        @alerts_cleared = Alert.all_cleared
+        @alerts_ackd    = Alert.all_acknowledged
+        #
+        # Tot up the levels for raised alerts.
+        #
+        counts = Hash.new{|h,k| h[k] = 0}
+        @alerts_raised.each{|a| counts[a.level] += 1}
+        @title += " [ "+AlertGroup::LEVELS.reverse.collect{|l| counts[l]}.join(" / ") + " ]"
       end
 
       def find_recent_alerts
@@ -392,6 +419,7 @@ module Mauve
         else
           @logger.debug "Local authentication failed for #{usr}"
         end
+
         #
         # Rate limit logins.
         #
@@ -400,22 +428,20 @@ module Mauve
       end
 
     end
-    
-    ########################################################################
-    
-    error PleaseAuthenticate do
-      status 403
-      session[:display_alerts] = Hash.new()
-      session[:display_folding] = Hash.new()
+   
+    error DataMapper::ObjectNotFoundError do
+      status 404
+      env['sinatra.error'].message
     end
-    
+ 
     ########################################################################
     # @see http://stackoverflow.com/questions/2239240/use-rackcommonlogger-in-sinatra
+    def logger
+      @logger ||= self.class._logger
+    end
+
     def call(env)
-      if true == @logger.nil?
-        @logger = Log4r::Logger.new("Mauve::Rack")
-      end
-      env['rack.errors'] = RackErrorsProxy.new(@logger)
+      env['rack.errors'] = RackErrorsProxy.new(logger)
       super(env)
     end
     

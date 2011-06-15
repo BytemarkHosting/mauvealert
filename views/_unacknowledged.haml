@@ -1,6 +1,0 @@
-%h4 Unacknowledged alerts
-#treecontrolNew= partial("treecontrol")
-%ul{:id => "blackNew", :class => "treeview-black"}
-  = partial("get_list", :locals => {:level => "urgent", :alertsList => @grouped_new_urgent})
-  = partial("get_list", :locals => {:level => "normal", :alertsList => @grouped_new_normal})
-  = partial("get_list", :locals => {:level => "low", :alertsList => @grouped_new_low})

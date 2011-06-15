@@ -1,15 +1,21 @@
 #navbar
   %ul
-    %li
+    %li#nav_index
       %a{:href => "/"} Mauve
     - if @person
-      %li{:id => [ @alert_type == "raised" && "nav_selected"]}
+      %li{:class => [ @alert_type == "raised" && "nav_selected"]}
         %a{:href => '/alerts/raised/'+@group_by} Raised (#{@alerts_raised.length})
-      %li{:id => [ @alert_type == "acknowledged" && "nav_selected"]}
+      %li{:class => [ @alert_type == "acknowledged" && "nav_selected"]}
         %a{:href => '/alerts/acknowledged/'+@group_by} Ack'd (#{@alerts_ackd.length})
-      %li{:id => [ @alert_type == "cleared" && "nav_selected"]}
+      %li{:class => [ @alert_type == "cleared" && "nav_selected"]}
         %a{:href => '/alerts/cleared/'+@group_by} Cleared (#{@alerts_cleared.length})
       %li
         %a{:href => '/logout'} Log out
   %br
-
+- %w(notice error).each do |klass|
+  - unless flash[klass].to_s.empty?
+    %div{:class => ["flash", klass]}
+      :textile
+        #{flash[klass]}
+    :javascript
+      $(document).ready(function () { $('div.flash').delay(1000).fadeOut(2000);});

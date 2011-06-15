@@ -1,64 +1,12 @@
-!!! HTML5
+!!! 5
 %html
-  %head
-    %meta{:name=>"viewport", :content=>"width=device-width"}/
-    %title #{@title}: Alerts
-    %link{:rel => "stylesheet", :href => "/stylesheets/bytemark.css"}/
-    %link{:rel => "stylesheet", :href => "/stylesheets/mauve.css"}/
-    %script{:src => '/javascript/prototype/prototype.js', :type => 'text/javascript'}
-    %script{:src => '/javascript/scriptaculous/scriptaculous.js', :type => 'text/javascript'}
+  = partial('head')
   %body
-    = partial('navbar')
-    %h1 Mauve Alerts
-    %form
-      %table
-        %tr
-          %th 
-            %input{ :type => "checkbox", :name => "all" }
-          %th Lvl
-          %th Subject
-          %th Summary
-          %th Raised at
-          %th Actions
-        - count = 0
-        - @grouped_alerts.each do |group, alerts|
-          - count += 1
-          - row_class = [ count % 2 == 0 && "hilight", alerts.first.raised? && "triggered", alerts.first.acknowledged? && "acknowledged"]
-          - first_n = (alerts.length > 2 ? 1 : 2)
-          - alerts.first(first_n).each do |alert|
-            %tr{ :class => row_class, :id => ["summary", alert.id] }
-              %td
-                %input{ :type => "checkbox", :name => alert.id }
-              %td #{alert.level}
-              %td #{alert.subject}
-              %td 
-                #{alert.summary} 
-                %a{ :href => "/alert/#{alert.id}", :onclick => "$('detail_#{alert.id}').toggle(); return false;"} show details &darr; 
-              %td #{alert.raised_at}
-              %td arse
-            %tr{ :class => %w(detail) + row_class, :id => ["detail", alert.id], :style => "display: none;" }
-              %td &nbsp;
-              %td{:colspan => 5}
-                = partial(:detail, :locals => {:alert => alert})
-                %p 
-                  Source: #{alert.source} &bull; 
-                  %a{ :href => "/alert/#{alert.id}" } More details 
-                  &bull;
-                  %a{ :href => "#", :onclick => "$('detail_#{alert.id}').hide(); return false;"} Hide details &uarr;
-          - if alerts.length > 2
-            %tr{ :class => [ count % 2 == 0 && "hilight", alerts.first.raised? && "triggered", alerts.first.acknowledged? && "acknowledged"]}
-              %td &nbsp;
-              %td{:colspan => 5} There are #{alerts.length - 1} more alerts in this group.
-        %tr
-          %td{:colspan => 6}
-            Acknowledge these alerts for
-            %input{ :name => 'hours', :type => "number", :min => 1, :max => 24, :value => 2}
-            %select
-              %option{ :value => "daytime" } daytime
-              %option{ :value => "working" } working
-              %option{ :value => "wall" } wall
-            hours (until 
-            %span{:id => "ack_until"} 
-              = Time.now + 2
-            )
-            %input{ :type => 'submit' }
+    =partial("navbar")
+    .container
+      - if @grouped_alerts.length > 0
+        = partial('alerts_table')
+      - else
+        .notice
+          %p No alerts to display.
+

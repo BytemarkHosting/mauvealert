@@ -1,0 +1,14 @@
+%tr{:class => %w(detail) + row_class, :id => ["tr", "detail", alert.id] }
+  %td &nbsp;
+  %td{:colspan => 2}
+    .detail
+      = alert.detail
+      %address
+        - if alert.raised? or alert.acknowledged?
+          Raised at #{alert.raised_at.to_s_human} &bull;
+        - if alert.acknowledged?
+          Ack'd at #{alert.acknowledged_at.to_s_human} by #{alert.acknowledged_by} &bull;
+        Source: #{alert.source} &bull;
+        %a{ :href => "/alert/#{alert.id}" } More details
+        &bull;
+        %a{ :href => "#", :onclick => "$('#tr_detail_#{alert.id}').hide(); return false;"} Hide details

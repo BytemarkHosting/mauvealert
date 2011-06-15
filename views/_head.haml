@@ -1,22 +1,8 @@
-.colmask.threecol
-  .colmid
-    .colleft
-      .col1
-        .countdown{:id=>"reloadPage"}
-        %span.count
-          %span.urgent 
-            Urgent
-            %span.nbrUnacknowledged{:title=>"Urgent alert unacknowledged"} #{@urgent.length - @count_ack[:urgent]}
-            %span.nbrAcknowledged{:title=>"Urgent alert acknowledged"} (Seen #{@count_ack[:urgent]})
-          %span.normal
-            Normal
-            %span.nbrUnacknowledged{:title=>"Normal alert unacknowledged"} #{@normal.length - @count_ack[:normal]}
-            %span.nbrAcknowledged{:title=>"Normal alert acknowledged"} (Seen #{@count_ack[:normal]})
-          %span.low 
-            Low
-            %span.nbrUnacknowledged{:title=>"Low alert unacknowledged"} #{@low.length - @count_ack[:low]}
-            %span.nbrAcknowledged{:title=>"Low alert acknowledged"} (Seen #{@count_ack[:low]})
-      .col2
-        .title #{@title}
-      .col3
-        %img{:src => "/images/logo.png"}
+%head
+  %title= @title
+  %meta{:name => "viewport", :content => "width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes"}/
+  %link{:rel => "stylesheet", :href => "/stylesheets/bytemark.css"}/
+  %link{:rel => "stylesheet", :href => "/stylesheets/mauve.css", :media => "all", :type => "text/css"}/
+  %link{:rel => "stylesheet", :href => "/stylesheets/mauve-handheld.css", :media => "handheld, only screen and (max-width: 1000px), only screen and (max-device-width: 1000px)", :type => "text/css" }/
+  %script{:src => '/javascript/jquery/jquery.min.js', :type => 'text/javascript'}
+  %script{:src => '/mauve_utils.js', :type => 'text/javascript'}

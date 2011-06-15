@@ -1,6 +1,0 @@
-%h4 Acknowledged alerts
-#treecontrolAck= partial("treecontrol")
-%ul{:id => "blackAck", :class => "treeview-black-ack"}
-  = partial("get_list", :locals => {:level => "urgent", :alertsList => @grouped_ack_urgent})
-  = partial("get_list", :locals => {:level => "normal", :alertsList => @grouped_ack_normal})
-  = partial("get_list", :locals => {:level => "low", :alertsList => @grouped_ack_low})

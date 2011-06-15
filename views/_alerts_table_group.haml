@@ -1,0 +1,14 @@
+-# Sanity checking.
+- group, alerts = alerts_table_group unless alerts_table_group.nil?
+- hilight = cycle(nil,"hilight")
+- row_class = [ hilight, alerts.first.raised? && "triggered", alerts.first.acknowledged? && "acknowledged", alerts.first.level]
+=partial("alerts_table_alert_summary", :locals => {:alert => alerts.first, :row_class => row_class })
+- if alerts.length > 1 
+  %tr{ :class => [ hilight, alerts.first.raised? && "triggered", alerts.first.acknowledged? && "acknowledged"]}
+    %td &nbsp;
+    %td{:colspan => 2}
+      - if alerts.length == 2
+        There is one more alert in this group.
+      - else
+        There is #{alerts.length - 1} more alerts in this group.
+  =partial("alerts_table_alert_summary", :collection => alerts[1..-1], :locals => { :row_class => row_class + ["hidden"] })

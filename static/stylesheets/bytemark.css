@@ -31,12 +31,12 @@ ul {
 }
 
 .OK {
-  background-color: LawnGreen;
+  background-color: #7cfc00;
   color: black;
 }
 
 .Failed {
-  background-color: OrangeRed;
+  background-color: #ff6500;
   color: black;
 }
 
@@ -95,7 +95,6 @@ div#navbar {
   /* try to cancel out the body padding above, leaving a bit of a margin beneath */
   margin:  -5px -5px 5px -5px;
   padding-left: 15px;
-  width: 100%;
   background-color: #666;
   font-size: 14px;
 }
@@ -155,7 +154,6 @@ table {
   padding: 0px;
 }
 table.full {
-  width: 100%;
 }
 tr {
   margin: 0px;
