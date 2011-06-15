@@ -66,6 +66,8 @@ require 'mauve/proto'
 require 'mauve/mauve_time'
 require 'pp'
 
+NOW = Mauve::MauveTime.now
+
 def error(msg)
   STDERR.print "*** Error: #{msg}\n"
   STDERR.print "*** For help, type: #{$0} -h\n"
@@ -73,7 +75,7 @@ def error(msg)
 end
 
 def parse_time_spec(spec = "now")
-  now = Mauve::MauveTime.now
+  now = NOW
 
   return now if spec == 'now'
 
