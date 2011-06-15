@@ -1,23 +1,23 @@
 #!/usr/bin/ruby1.8
 
 require 'pp'
-pp $:
-
-Thread.abort_on_exception = true
 require 'irb'
 require 'thread'
-
-# hack for delving into test-generated configurations
-class AlertAndNotificationLogic; Alerts = Queue.new; end
-
 require 'mauve/configuration'
-include Mauve
-#raise "must specify config file" unless ARGV.length > 0
-unless ARGV.length > 0
-  STDERR.print("You must specify a configuration file as $arg[1]\n")
-  STDERR.print("  eg: ./mauve_starter ./bin/console ./test/local.conf\n")
-  exit 1
-end
-Configuration.current = ConfigurationBuilder.load(ARGV.shift)
-IRB.start
 
+Thread.abort_on_exception = true
+
+configuration_file = ARGV.shift
+configuration_file = [".", "/etc/mauvealert/"].find{|d| File.file?(File.join(d,"mauveserver.conf")) } if configuration_file.nil?
+configuration_file = File.expand_path(configuration_file)
+
+unless File.file?(configuration_file)
+  STDERR.print "Configuration file #{configuration_file} not found"
+  Kernel.exit 1
+end
+
+Mauve::Configuration.current = Mauve::ConfigurationBuilder.load(configuration_file)
+
+include Mauve
+
+IRB.start
