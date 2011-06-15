@@ -164,14 +164,19 @@ module Mauve
     end
 
 
+    #
+    # AlertGroup.matches must always return a an array of groups.
+    #
     def alert_group
-      AlertGroup.matches(self)[0]
+      AlertGroup.matches(self).first
     end
 
     def level
       self.alert_group.level
     end
-    
+   
+    def subject; attribute_get(:subject) || attribute_get(:source) ; end
+ 
     def subject=(subject); set_changed_if_different( :subject, subject ); end
     def summary=(summary); set_changed_if_different( :summary, summary ); end
 
@@ -188,11 +193,11 @@ module Mauve
     
     public
     
-    def acknowledge!(person)
+    def acknowledge!(person, ack_until = Time.now+3600)
       self.acknowledged_by = person.username
       self.acknowledged_at = MauveTime.now
       self.update_type = :acknowledged
-      self.will_unacknowledge_at = MauveTime.parse(acknowledged_at.to_s) + 
+      self.will_unacknowledge_at = ack_until
       logger.error("Couldn't save #{self}") unless save
       AlertGroup.notify([self])
     end
@@ -252,7 +257,21 @@ module Mauve
     def cleared?
       !raised? 
     end
-    
+  
+    def sort_tuple
+      #
+      # raised > cleared
+      # unacknowldged > acknowledged
+      # raise / clear time
+      # level
+      #
+      [(self.raised? ? 1 : 0),  AlertGroup::LEVELS.index(self.level), (self.raised? ? self.raised_at : self.cleared_at), self.subject, self.summary].collect{|x| x.nil? ? "" : x }
+    end
+ 
+    def <=>(other)
+      self.sort_tuple <=> other.sort_tuple
+    end
+ 
     class << self
     
       #
@@ -277,7 +296,7 @@ module Mauve
       #
       #
       def all_raised
-        all(:raised_at.not => nil, :cleared_at => nil)
+        all(:raised_at.not => nil, :cleared_at => nil) - all_acknowledged
       end
 
       def all_acknowledged
@@ -285,7 +304,7 @@ module Mauve
       end
 
       def all_cleared
-        all(:cleared_at.not => nil)
+        all(:cleared_at.not => nil) - all_acknowledged
       end
 
       # Returns a hash of all the :urgent, :normal and :low alerts.
@@ -303,6 +322,7 @@ module Mauve
         return hash
       end
 
+      # 
       # Returns the next Alert that will have a timed action due on it, or nil
       # if none are pending.
       #
@@ -317,6 +337,7 @@ module Mauve
         end
       end
      
+      #
       # Receive an AlertUpdate buffer from the wire.
       #
       def receive_update(update, reception_time = MauveTime.now)
@@ -340,9 +361,15 @@ module Mauve
 
         logger.debug("Update received from a host #{time_offset}s behind") if time_offset.abs > 5
 
+        #
+        # Make sure there is no HTML in the update source.
+        #
+        update.source = Alert.remove_html(update.source)
+
         # Update each alert supplied
         #
         update.alert.each do |alert|
+          # 
           # Infer some actions from our pure data structure (hmm, wonder if
           # this belongs in our protobuf-derived class?
           #
@@ -368,7 +395,7 @@ module Mauve
  
           alert_db = first(:alert_id => alert.id, :source => update.source) ||
             new(:alert_id => alert.id, :source => update.source)
-         
+        
           #
           # Work out what state the alert was in before receiving this update.
           #
@@ -416,15 +443,12 @@ module Mauve
             alert_db.update_type = :raised
           end
             
-          #
-          # Changing any of these attributes causes the alert to be sent back
-          # out to the notification system with an update_type of :changed.
-          #
-          # Each of these should be just text, no HTML, so remove any tags we
-          # find.
-          #
+          if alert.subject and !alert.subject.empty?
+            alert_db.subject = Alert.remove_html(alert.subject)
+          else
+            alert_db.subject = alert_db.source
+          end
 
-          alert_db.subject = Alert.remove_html(alert.subject) if alert.subject && !alert.subject.empty?
           alert_db.summary = Alert.remove_html(alert.summary) if alert.summary && !alert.summary.empty?
 
           #

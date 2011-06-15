@@ -84,7 +84,7 @@ module Mauve
 
     def working_hours? 
       now = (@time || MauveTime.now)
-      (8..17).include?(now.hour) and (1..5).include?(now.wday)
+      now.to_mauvetime.working_hours?
     end
 
     # Return true in the dead zone between 3 and 7 in the morning.
@@ -94,7 +94,7 @@ module Mauve
     # @return [Boolean] Whether now is a in the dead zone or not.
     def dead_zone?
       now = (@time || MauveTime.now)
-      (3..6).include?(now.hour)
+      now.to_mauvetime.dead_zone?
     end
 
   end

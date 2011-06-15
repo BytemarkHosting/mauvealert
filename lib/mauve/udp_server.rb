@@ -18,19 +18,18 @@ module Mauve
       # 
       # Set the logger up
       #
-      @logger = Log4r::Logger.new(self.class.to_s)
       @ip     = "127.0.0.1"
       @port   = 32741
       @socket = nil
       @closing_now = false
       @sleep_interval = 0
     end
-   
+  
     def open_socket
       @socket = UDPSocket.new
       @closing_now = false
       
-      @logger.debug("Trying to increase Socket::SO_RCVBUF to 10M.")
+      logger.debug("Trying to increase Socket::SO_RCVBUF to 10M.")
       old = @socket.getsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF).unpack("i").first
 
       @socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF, 10*1024*1024)
@@ -38,11 +37,11 @@ module Mauve
 
       raise "Could not increase Socket::SO_RCVBUF.  Had #{old} ended up with #{new}!" if old > new 
 
-      @logger.debug("Successfully increased Socket::SO_RCVBUF from #{old} to #{new}.")
+      logger.debug("Successfully increased Socket::SO_RCVBUF from #{old} to #{new}.")
 
       @socket.bind(@ip, @port)
 
-      @logger.debug("Successfully opened UDP socket on #{@ip}:#{@port}")
+      logger.debug("Successfully opened UDP socket on #{@ip}:#{@port}")
     end
 
     def close_socket
@@ -52,10 +51,10 @@ module Mauve
         @socket.close 
       rescue IOError => ex
         # Just in case there is some sort of explosion! 
-        @logger.debug("Caught IOError #{ex.to_s}")
+        logger.debug("Caught IOError #{ex.to_s}")
       end
 
-      @logger.debug("Successfully closed UDP socket")
+      logger.debug("Successfully closed UDP socket")
     end
 
     def main_loop
@@ -81,7 +80,7 @@ module Mauve
 
       return if packet.nil?
 
-      @logger.debug("Got new packet: #{packet.inspect}")
+      logger.debug("Got new packet: #{packet.inspect}")
 
       #
       # If we get a zero length packet, and we've been flagged to stop, we stop!

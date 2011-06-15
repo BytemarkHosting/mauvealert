@@ -4,13 +4,26 @@ require 'log4r'
 
 module Mauve
   class AlertGroup < Struct.new(:name, :includes, :acknowledgement_time, :level, :notifications)
-    def to_s
-      "#<AlertGroup:#{name} (level #{level})>"
-    end
+
+    # 
+    # Define some constants, and the ordering.
+    #
+    URGENT = :urgent
+    NORMAL = :normal
+    LOW    = :low
+    LEVELS = [LOW, NORMAL, URGENT]
     
     class << self
+
       def matches(alert)
-        all.select { |alert_group| alert_group.matches_alert?(alert) }
+        grps = all.select { |alert_group| alert_group.matches_alert?(alert) }
+
+        #
+        # Make sure we always match the last (and therefore default) group.
+        #
+        grps << all.last unless grps.include?(all.last)
+
+        grps
       end
 
       # If there is any significant change to a set of alerts, the Alert
@@ -26,18 +39,19 @@ module Mauve
           # 
           # Make sure we've got a matching group
           #
-          logger.warn "no groups found for #{alert.id}" if groups.empty?
+          if groups.empty?
+            logger.warn "no groups found for #{alert}" 
+            next
+          end
 
           #
           # Notify just the group that thinks this alert is the most urgent.
           #
-          %w(urgent normal low).each do |lvl|
-            this_group = groups.find{|grp| grp.level.to_s == lvl}
-            next if this_group.nil?
-            logger.info("notifying group #{this_group} of AlertID.#{alert.id} (matching #{lvl})")
-            this_group.notify(alert)
-            break
-          end
+          logger.warn "Found #{groups.length} matching groups for #{alert}" if groups.length > 1
+
+          this_group = groups.first
+          logger.info("notifying group #{this_group} of #{alert} (matching #{this_group.level})")
+          this_group.notify(alert)
         end
       end
  
@@ -70,6 +84,10 @@ module Mauve
       self.level = :normal
       self.includes = Proc.new { true }
     end
+    
+    def to_s
+      "#<AlertGroup:#{name} (level #{level})>"
+    end
   
     # The list of current raised alerts in this group.
     #
@@ -98,11 +116,27 @@ module Mauve
     #    
     def notify(alert)
       #
+      # If there are no notifications defined. 
+      #
+      if  notifications.nil?
+        logger.warn("No notifications found for #{alert}")
+        return
+      end
+
+      #
       # The notifications are specified in the config file.
       #
       notifications.each do |notification|
         notification.alert_changed(alert)
       end
+    end
+
+    #
+    # This sorts by priority (urgent first), and then alphabetically, so the
+    # first match is the most urgent.
+    #
+    def <=>(other)
+      [LEVELS.index(self.level), self.name]  <=> [LEVELS.index(other.level), other.name]
     end
 
   end

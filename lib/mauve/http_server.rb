@@ -57,7 +57,6 @@ class RackErrorsProxy
   def initialize(l); @logger = l; end
 
   def write(msg)
-    #@logger.debug "NEXT LOG LINE COURTESY OF: "+caller.join("\n")
     case msg
       when String then @logger.info(msg.chomp)
       when Array then @logger.info(msg.join("\n"))
@@ -68,6 +67,7 @@ class RackErrorsProxy
   
   alias_method :<<, :write
   alias_method :puts, :write
+
   def flush; end
 end
 
@@ -84,7 +84,7 @@ module Mauve
     include Singleton
 
     attr_accessor :port, :ip, :document_root
-    attr_accessor :session_secret # not used yet
+    attr_accessor :session_secret 
     
     def initialize
       @port = 1288
@@ -94,6 +94,9 @@ module Mauve
     end
    
     def main_loop
+      # 
+      # Sessions are kept for 8 days.
+      #
       @server = ::Thin::Server.new(@ip, @port, Rack::Session::Cookie.new(WebInterface.new, {:key => "mauvealert", :secret => @session_secret, :expire_after => 691200}), :signals => false)
       @server.start
     end

@@ -35,6 +35,8 @@ class AuthBytemark
     raise ArgumentError.new("Password must be a string, not a #{password.class}") if String != password.class
     raise ArgumentError.new("Login or/and password is/are empty.") if login.empty? || password.empty?
 
+    return false if ENV['RACK_ENV'].to_s == "development"
+
     client = XMLRPC::Client.new(@srv,"/",@port,nil,nil,nil,nil,true,@timeout).proxy("bytemark.auth")
 
     begin
