@@ -1,6 +1,6 @@
 div#navbar li#nav_index a {
   background-image: none;
-  background-repeat inherit;
+  background-repeat: inherit;
   background-position: inherit;
   padding-left: inherit;
   width: inherit;

@@ -134,7 +134,7 @@ div#navbar li#nav_index a {
   overflow: hidden;
 }
 
-div#navbar li#nav_index, div#navbar li#nav_selected {
+div#navbar li#nav_index, div#navbar li.nav_selected {
   background-color: white;
   color: #333;
 }
