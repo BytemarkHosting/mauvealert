@@ -17,7 +17,9 @@
           %td= @alert.source
         %tr
           %th{:title => "HTML fragment describing the alert in more detail, no limit on length."} Detail
-          %td= @alert.detail
+          %td
+            :textile
+              #{@alert.detail}
         %tr
           %th{:title => "ID set by the source of the alert."} Alert ID
           %td= @alert.alert_id

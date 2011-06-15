@@ -2,7 +2,8 @@
   %td &nbsp;
   %td{:colspan => 2}
     .detail
-      = alert.detail
+      :textile
+        #{alert.detail}
       %address
         - if alert.raised? or alert.acknowledged?
           Raised at #{alert.raised_at.to_s_human} &bull;

@@ -116,54 +116,6 @@ module Mauve
       end
     end
 
-    def summary_one_line
-      subject ? "#{subject} #{summary}" : "#{source} #{summary}"
-    end
-
-    def summary_two_lines
-      msg = ""
-      msg += "from #{source} " if source != subject
-      if cleared_at
-        msg += "cleared #{time_relative(MauveTime.now - cleared_at.to_time)}"
-      elsif acknowledged_at
-        msg += "acknowledged #{time_relative(MauveTime.now - acknowledged_at.to_time)} by #{acknowledged_by}"
-      else
-        msg += "raised #{time_relative(MauveTime.now - raised_at.to_time)}"
-      end
-      [summary_one_line, msg]
-    end
-
-    # Returns a better array with information about the alert.
-    #
-    # @return [Array] An array of three elements: status, message, source.
-    def summary_three_lines
-      status = String.new
-      if "cleared" == update_type
-        status += "CLEARED #{time_relative(MauveTime.now - cleared_at.to_time)}"
-      elsif "acknowledged" == update_type
-        status += "ACKNOWLEDGED #{time_relative(MauveTime.now - acknowledged_at.to_time)} by #{acknowledged_by}"
-      elsif "changed" == update_type
-        status += "CHANGED #{time_relative(MauveTime.now - updated_at.to_time)}"
-      else
-        status += "RAISED #{time_relative(MauveTime.now - raised_at.to_time)}"
-      end
-      src = (source != subject)?  "from #{source}" : nil
-      return [status, summary_one_line, src]
-=begin
-      status = String.new
-      if cleared_at
-        status += "CLEARED #{time_relative(MauveTime.now - cleared_at.to_time)}"
-      elsif acknowledged_at
-        status += "ACKNOWLEDGED #{time_relative(MauveTime.now - acknowledged_at.to_time)} by #{acknowledged_by}"
-      else
-        status += "RAISED #{time_relative(MauveTime.now - raised_at.to_time)}"
-      end
-      src = (source != subject)?  "from #{source}" : nil
-      return [status, summary_one_line, src]
-=end
-    end
-
-
     #
     # AlertGroup.matches must always return a an array of groups.
     #
@@ -176,6 +128,7 @@ module Mauve
     end
    
     def subject; attribute_get(:subject) || attribute_get(:source) ; end
+    def detail;  attribute_get(:detail)  || "_No detail set._" ; end
  
     def subject=(subject); set_changed_if_different( :subject, subject ); end
     def summary=(summary); set_changed_if_different( :summary, summary ); end
