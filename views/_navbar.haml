@@ -4,11 +4,20 @@
       %a{:href => "/"} Mauve
     - if @person
       %li{:class => [ @alert_type == "raised" && "nav_selected"]}
-        %a{:href => '/alerts/raised/'+@group_by} Raised (#{@alerts_raised.length})
+        %a{:href => '/alerts/raised/'+@group_by} 
+          Raised (
+          %span#count_raised><= @alerts_raised.length
+          )
       %li{:class => [ @alert_type == "acknowledged" && "nav_selected"]}
-        %a{:href => '/alerts/acknowledged/'+@group_by} Ack'd (#{@alerts_ackd.length})
+        %a{:href => '/alerts/acknowledged/'+@group_by} 
+          Ack'd (
+          %span#count_ackd><= @alerts_ackd.length
+          )
       %li{:class => [ @alert_type == "cleared" && "nav_selected"]}
-        %a{:href => '/alerts/cleared/'+@group_by} Cleared (#{@alerts_cleared.length})
+        %a{:href => '/alerts/cleared/'+@group_by} 
+          Cleared (
+          %span#count_cleared><= @alerts_cleared.length
+          )
       %li
         %a{:href => '/logout'} Log out
   %br

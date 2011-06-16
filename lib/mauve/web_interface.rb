@@ -44,7 +44,23 @@ module Mauve
     set :dump_errors, true      # ...will dump errors to the log
     set :raise_errors, false    # ...will not let exceptions out to main program
     set :show_exceptions, false # ...will not show exceptions
-    
+
+    #
+    # Default template.
+    #
+    template :layout do
+      <<EOF
+!!! 5
+%html
+  = partial('head')
+  %body
+    =partial("navbar")
+    =yield 
+EOF
+    end   
+
+
+ 
     ###########################################/alert#############################
     
     before do
@@ -63,6 +79,11 @@ module Mauve
         # Set remote user for logging.
         #
         env['REMOTE_USER'] = @person.username
+
+        #
+        # Don't cache ajax requests
+        #
+        cache_control :no_cache if request.xhr?
 
         #
         # Set up some defaults.
@@ -147,33 +168,12 @@ module Mauve
     end
 
     get '/alerts/:alert_type/:group_by' do 
-      find_active_alerts
 
-      if %w(raised cleared acknowledged).include?(params[:alert_type])
-        @alert_type = params[:alert_type]
-      else
-        @alert_type = "raised"
-      end
+      return haml(:not_implemented) unless %w(raised acknowledged).include?(params[:alert_type])
 
-      if %w(subject source summary id alert_id level).include?(params[:group_by])
-        @group_by = params[:group_by]
-      else
-        @group_by = "subject"
-      end
+      alerts_table(params)
 
-      @title += " Alerts "
-
-
-      case @alert_type
-        when "raised"
-          @grouped_alerts = group_by(@alerts_raised, @group_by)
-          haml(:alerts)
-        when "acknowledged"
-          @grouped_alerts = group_by(@alerts_ackd, @group_by)
-          haml(:alerts)
-        else
-          haml(:not_implemented)
-      end
+      haml(:alerts)
     end
 
     post '/alerts/acknowledge' do
@@ -216,7 +216,7 @@ module Mauve
       redirect "/alerts/raised"
     end
     
-    #
+    ######################################################
     # AJAX methods for returning snippets of stuff.
     #
 
@@ -246,8 +246,28 @@ module Mauve
 
     get '/ajax/time_to_s_human/:seconds' do
       content_type :text
+
       secs = params[:seconds].to_i
       Time.at(secs).to_s_human
+    end
+
+    #
+    # This returns an array of 5 numbers.
+    #
+    get '/ajax/alert_counts' do
+      content_type :json
+      
+      counts = Hash.new{|h,k| h[k] = 0}
+
+      Alert.all_raised.each{|a| counts[a.level] += 1}
+
+      (AlertGroup::LEVELS.reverse.collect{|l| counts[l]}+
+        [Alert.all_acknowledged.length, Alert.all_cleared.length]).to_json
+    end
+
+    get '/ajax/alerts_table/:alert_type/:group_by' do
+      alerts_table(params)
+      haml(:_alerts_table)
     end
 
     get '/ajax/alerts_table_alert/:alert_id' do
@@ -361,7 +381,6 @@ module Mauve
         results = Hash.new{|h,k| h[k] = Array.new}
 
         things.sort.each do |thing|
-          self.class._logger.debug [AlertGroup::LEVELS.index(thing.level), (thing.raised_at || thing.cleared_at) ].inspect
           results[thing.__send__(meth)] << thing
         end
 
@@ -369,6 +388,35 @@ module Mauve
           [a[1].first, a[0]] <=> [b[1].first, b[0]]
         end
       end
+
+      def alerts_table(params)
+        find_active_alerts
+
+        if %w(raised cleared acknowledged).include?(params[:alert_type])
+          @alert_type = params[:alert_type]
+        else
+          @alert_type = "raised"
+        end
+
+        if %w(subject source summary id alert_id level).include?(params[:group_by])
+          @group_by = params[:group_by]
+        else
+          @group_by = "subject"
+        end
+
+        @title += " Alerts "
+
+
+        case @alert_type
+          when "raised"
+            @grouped_alerts = group_by(@alerts_raised, @group_by)
+          when "acknowledged"
+            @grouped_alerts = group_by(@alerts_ackd, @group_by)
+            haml(:alerts)
+          else
+            haml(:not_implemented)
+        end
+      end  
  
       def find_active_alerts
         @alerts_raised  = Alert.all_raised

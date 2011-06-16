@@ -1,17 +1,11 @@
-!!! 5
-%html
-  =partial("head")
-  %body
-    = partial('navbar')
-    .container
-      %form{:action => '/login', :method => :POST}
-        %fieldset
-          %legend Please log in
-          %label{:for => "username"} Username
-          %input{:name => 'username', :type => 'text', :autocorrect => "off", :autocapitalize => "off"}/
-          %br
-          %label{:for => "password", :title => "This is either your Single Sign On password or a PIN."} Password / PIN
-          %input{:name => 'password', :type => 'password'}/
-          %br
-          %input{:type => 'hidden', :name => 'next_page', :value => @next_page}/
-          %input{:type => 'submit', :value => 'Log in'}/
+%form{:action => '/login', :method => :POST}
+  %fieldset
+    %legend Please log in
+    %label{:for => "username"} Username
+    %input{:name => 'username', :type => 'text', :autocorrect => "off", :autocapitalize => "off"}/
+    %br
+    %label{:for => "password", :title => "This is either your Single Sign On password or a PIN."} Password / PIN
+    %input{:name => 'password', :type => 'password'}/
+    %br
+    %input{:type => 'hidden', :name => 'next_page', :value => @next_page}/
+    %input{:type => 'submit', :value => 'Log in'}/

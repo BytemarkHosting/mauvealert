@@ -1,12 +1,31 @@
-!!! 5
-%html
-  = partial('head')
-  %body
-    =partial("navbar")
-    .container
-      - if @grouped_alerts.length > 0
-        = partial('alerts_table')
-      - else
-        .notice
-          %p No alerts to display.
+- if @grouped_alerts.length > 0
+  %form#alerts{:method => :post, :action => '/alerts/acknowledge'}
+    = partial('alerts_table')
+    %h2 Actions
+    %p= partial('acknowledge_input')
+- else
+  .notice#alerts_table
+    %p No alerts to display.
+:javascript
+  $(document).ready( function() {
+    $.PeriodicalUpdater({
+      url:        '/ajax/alerts_table/#{@alert_type}/#{@group_by}',
+      minTimeout: 10000,
+      maxTimeout: 30000,
+    }, function(alerts_table, success, xhr, handle){
+      $('#alerts_table').replaceWith(alerts_table);
+    });
+    $.PeriodicalUpdater({
+      url:        '/ajax/alert_counts',
+      minTimeout: 10000,
+      maxTimeout: 30000,
+    }, function(alert_counts, success, xhr, handle){
+      var counts = jQuery.parseJSON( alert_counts );
+      $('#count_raised').html(counts[0]+counts[1]+counts[2]);
+      $('#count_ackd').html(counts[3]);
+      $('#count_cleared').html(counts[4]);
+      return false;
+    });
+
+  }); 
 
