@@ -70,20 +70,19 @@ module Mauve
 
               list.each do |d,p|
                 r = []
-
                 #
-                # Try IPv4 first.
-                #
-                dns.getresources(d, A).each do |a|
-                  r << [a.address.to_s, p]
-                end
-
-                #
-                # Try IPv6 too.
+                # Try IPv6 first.
                 #  
                 dns.getresources(d, AAAA).map do |a|
                    r << [a.address.to_s, p]
                 end 
+
+                #
+                # Try IPv4 too.
+                #
+                dns.getresources(d, A).each do |a|
+                  r << [a.address.to_s, p]
+                end
 
                 results += r unless r.empty?
               end
@@ -102,7 +101,10 @@ module Mauve
       end
 
     end
-    
+
+    #
+    # Returns the number of packets sent.
+    #
     def send(update, verbose=0)
 
       #
@@ -131,15 +133,24 @@ module Mauve
         print "Sending #{update.inspect.chomp} to #{@destinations.join(", ")}\n"
       end
 
+      #
+      # Keep a count of the number of alerts sent.
+      #
+      sent = 0
+
       @destinations.each do |ip, port|
         begin
-          UDPSocket.open(ip.family) do |sock|
-            sock.send(data, 0, ip.to_s, port)
-          end
-        rescue StandardError => ex
-          warn "Got #{ex.to_s} whilst trying to send to #{ip} #{port}"
+          UDPSocket.open(ip.family).send(data, 0, ip.to_s, port)
+          sent += 1
+        rescue Errno::ENETUNREACH => ex
+          # Catch and ignore unreachable network errors.
+          warn "Got #{ex.to_s} whilst trying to send to #{ip} #{port}" if verbose > 0
         end
       end
+
+      raise "Failed to send any packets to any destinations!" unless sent > 0
+
+      sent
     end
   end
 end

@@ -48,7 +48,7 @@ module Mauve
           update.parse_from_string(data)
   
           if @transmission_id_cache[update.transmission_id.to_s]
-            @logger.debug("Ignoring duplicate transmission id #{data.transmission_id}")
+            @logger.debug("Ignoring duplicate transmission id #{update.transmission_id}")
             #
             # Continue with next packet.
             #
