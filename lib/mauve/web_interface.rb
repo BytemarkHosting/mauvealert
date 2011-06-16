@@ -57,7 +57,13 @@ module Mauve
         # 
         # Phew, we're authenticated
         #
-        @person = Configuration.current.people[session['username']]
+        @person = Configuration.current.people[session['username'].to_s]
+
+        #
+        # Set remote user for logging.
+        #
+        env['REMOTE_USER'] = @person.username
+
         #
         # Set up some defaults.
         #
