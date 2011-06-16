@@ -170,9 +170,11 @@ update.transmission_id = rand(2**63)
 
 begin
   Mauve::Sender.new(ARGV).send(update, verbose)
-rescue ArgumentError => ae
-  error ae.message
 rescue Protobuf::NotInitializedError => bad
   error "Alert not initialized fully - you must supply an ID"
+rescue ArgumentError => ae
+  error ae.message
+rescue StandardError => ae
+  error ae.message
 end
 

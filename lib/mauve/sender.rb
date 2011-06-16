@@ -3,10 +3,12 @@ require 'ipaddr'
 require 'resolv'
 require 'socket'
 require 'mauve/mauve_time'
+require 'pp'
 
 module Mauve 
   class Sender
     DEFAULT_PORT = 32741
+
     include Resolv::DNS::Resource::IN
     
     def initialize(*destinations)
@@ -22,35 +24,83 @@ module Mauve
         raise ArgumentError.new("No destinations specified, and could not read any destinations from /etc/mauvealert/mauvesend.destination")
       end
     
-      @destinations = destinations.map do |spec|
-        next_spec = begin
-          # FIXME: for IPv6
-          port = spec.split(":")[1] || DEFAULT_PORT
-          IPAddr.new(spec.split(":")[0])
-          ["#{spec}:#{port}"]
-        rescue ArgumentError => not_an_ip_address
-          Resolv::DNS.open do |dns|
-            srv_spec = spec[0] == ?_ ? spec : "_mauvealert._udp.#{spec}"
-            list = dns.getresources(srv_spec, SRV).map do |srv|
-              srv.target.to_s + ":#{srv.port}"
-            end
-            list = [spec] if list.empty?
-            list.map do |spec2|
-              spec2_addr, spec2_port = spec2.split(":")
-              spec2_port ||= DEFAULT_PORT
-              dns.getresources(spec2_addr, A).map do |a|
-                "#{a.address}:#{spec2_port}"
+      #
+      # Resolv results
+      #
+      results = []
+      destinations.each do |spec|
+        case spec
+          when /^((?:\d{1,3}\.){3}\d{1,3})(?::(\d+))?$/
+            #
+            # IPv4 with a port
+            #
+            results << [$1, $2 || DEFAULT_PORT]
+
+          when /^\[?([0-9a-f:]{2,39})\]??$/i
+            #
+            # IPv6 without a port
+            #
+            results << [$1, $2 || DEFAULT_PORT]
+
+          when /^\[([0-9a-f:]{2,39})\](?::(\d+))?$/i
+            #
+            # IPv6 with a port
+            #
+            results << [$1, $2 || DEFAULT_PORT]
+
+          when /^([^: ]+)(?::(\d+))?/
+            domain = $1
+            port   = $2 || DEFAULT_PORT
+
+            Resolv::DNS.open do |dns|
+              #
+              # Search for SRV records first.  If the first character of the
+              # domain is an underscore, assume that it is a SRV record
+              #
+              srv_domain = (domain[0] == ?_ ? domain : "_mauvealert._udp.#{domain}")
+
+              list = dns.getresources(srv_domain, SRV).map do |srv|
+                [srv.target.to_s, srv.port]
               end
-            end
-          end
-        end.flatten
 
-        error "Can't resolve destination #{spec}" if next_spec.empty?
+              #
+              # If nothing found, just use the domain and port
+              #
+              list = [[domain, port]] if list.empty?
 
-        next_spec
-      end.
-      flatten.
-      uniq
+              list.each do |d,p|
+                r = []
+
+                #
+                # Try IPv4 first.
+                #
+                dns.getresources(d, A).each do |a|
+                  r << [a.address.to_s, p]
+                end
+
+                #
+                # Try IPv6 too.
+                #  
+                dns.getresources(d, AAAA).map do |a|
+                   r << [a.address.to_s, p]
+                end 
+
+                results += r unless r.empty?
+              end
+           end
+        end
+      end
+
+      #
+      # Validate results.
+      #
+      @destinations = []
+
+      results.each do |ip, port|
+        ip = IPAddr.new(ip)
+        @destinations << [ip, port.to_i]
+      end
+
     end
     
     def send(update, verbose=0)
@@ -81,11 +131,13 @@ module Mauve
         print "Sending #{update.inspect.chomp} to #{@destinations.join(", ")}\n"
       end
 
-      @destinations.each do |spec|
-        UDPSocket.open do |sock|
-          ip = spec.split(":")[0]
-          port = spec.split(":")[1].to_i
-          sock.send(data, 0, ip, port)
+      @destinations.each do |ip, port|
+        begin
+          UDPSocket.open(ip.family) do |sock|
+            sock.send(data, 0, ip.to_s, port)
+          end
+        rescue StandardError => ex
+          warn "Got #{ex.to_s} whilst trying to send to #{ip} #{port}"
         end
       end
     end

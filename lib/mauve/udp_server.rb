@@ -4,7 +4,7 @@ require 'socket'
 require 'mauve/datamapper'
 require 'mauve/proto'
 require 'mauve/alert'
-require 'log4r'
+require 'ipaddr'
 
 module Mauve
 
@@ -26,7 +26,15 @@ module Mauve
     end
   
     def open_socket
-      @socket = UDPSocket.new
+      # 
+      # check the IP address
+      #
+      _ip = IPAddr.new(@ip)
+
+      #
+      # Specify the family when opening the socket.
+      #
+      @socket = UDPSocket.new(_ip.family)
       @closing_now = false
       
       logger.debug("Trying to increase Socket::SO_RCVBUF to 10M.")
@@ -101,7 +109,7 @@ module Mauve
       #
       # Triggers loop to close socket.
       #
-      UDPSocket.open.send("", 0, @socket.addr[2], @socket.addr[1]) unless @socket.nil? or @socket.closed?
+      UDPSocket.open(Socket.const_get(@socket.addr[0])).send("", 0, @socket.addr[2], @socket.addr[1]) unless @socket.nil? or @socket.closed?
 
       super
     end

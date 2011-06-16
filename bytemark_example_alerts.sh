@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PRE="ruby -I lib ./bin/mauveclient 127.0.0.1 "
+PRE="ruby -I lib ./bin/mauveclient 127.0.0.1"
 
 $PRE -o supportbot -i 173123 \
  -s "My server is not responding" \
