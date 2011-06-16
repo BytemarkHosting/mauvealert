@@ -163,6 +163,7 @@ module Mauve
 
       @title += " Alerts "
 
+
       case @alert_type
         when "raised"
           @grouped_alerts = group_by(@alerts_raised, @group_by)
@@ -359,17 +360,21 @@ module Mauve
         
         results = Hash.new{|h,k| h[k] = Array.new}
 
-        things.each do |thing|
+        things.sort.each do |thing|
+          self.class._logger.debug [AlertGroup::LEVELS.index(thing.level), (thing.raised_at || thing.cleared_at) ].inspect
           results[thing.__send__(meth)] << thing
         end
 
-        results
+        results.sort do |a,b|
+          [a[1].first, a[0]] <=> [b[1].first, b[0]]
+        end
       end
  
       def find_active_alerts
         @alerts_raised  = Alert.all_raised
         @alerts_cleared = Alert.all_cleared
         @alerts_ackd    = Alert.all_acknowledged
+
         #
         # Tot up the levels for raised alerts.
         #

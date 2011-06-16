@@ -36,8 +36,14 @@ $PRE -o thresholds -i 1 -u bl1-1.bytemark.co.uk \
   -s "bl1-1 exceeded 10Mb/s on bond0" \
   -d "<h1>Hello there</h1><p>Here is a paragraph</p><p>And another one</p>"
 
-$PRE -o thresholds -i 2 -u bl1-11.bytemark.co.uk \
-  -s "bl1-11 has less than 1GB free memory"
+$PRE -o thresholds -i 2 -u bl1-1.bytemark.co.uk \
+  -s "bl1-1 has less than 1GB free memory"
+
+$PRE -o vmhs -i 3 -u bl1-1.bytemark.co.uk \
+  -s "bl1-1 is shagged."
+
+$PRE -o networkmonitor -i 4 -u bl1-1.bytemark.co.uk \
+  -s "bl1-1 is shagged.  Awooga"
 
 $PRE -o thresholds -i 3 -u rom.sh.bytemark.co.uk \
   -s "rom.sh.bytemark.co.uk has 1/2 discs available in /dev/md0" \

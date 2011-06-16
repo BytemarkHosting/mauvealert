@@ -65,7 +65,7 @@ module Mauve
                DataObjects::IntegrityError => ex
 
           @logger.error "#{ex} (#{ex.class}) while parsing #{data.length} bytes "+
-            "starting '#{data[0..16].inspect}' from #{ip_source}"
+            "starting '#{data[0..15].inspect}' from #{ip_source}"
 
           @logger.debug ex.backtrace.join("\n")
 

@@ -120,13 +120,24 @@ module Mauve
     # AlertGroup.matches must always return a an array of groups.
     #
     def alert_group
-      AlertGroup.matches(self).first
+      @alert_group ||= AlertGroup.matches(self).first
     end
 
+    #
+    #
+    #
     def level
-      self.alert_group.level
+      @level ||= self.alert_group.level
     end
-   
+  
+    def sort_tuple
+      [AlertGroup::LEVELS.index(self.level), (self.raised_at.to_time || self.cleared_at.to_time || Time.now)]
+    end
+
+    def <=>(other)
+      other.sort_tuple <=> self.sort_tuple
+    end
+ 
     def subject; attribute_get(:subject) || attribute_get(:source) ; end
     def detail;  attribute_get(:detail)  || "_No detail set._" ; end
  
@@ -147,8 +158,11 @@ module Mauve
     public
     
     def acknowledge!(person, ack_until = Time.now+3600)
+      raise ArgumentError unless person.is_a?(Person)
+      raise ArgumentError unless ack_until.is_a?(Time)
+  
       self.acknowledged_by = person.username
-      self.acknowledged_at = MauveTime.now
+      self.acknowledged_at = Time.now
       self.update_type = :acknowledged
       self.will_unacknowledge_at = ack_until
       logger.error("Couldn't save #{self}") unless save
@@ -211,20 +225,6 @@ module Mauve
       !raised? 
     end
   
-    def sort_tuple
-      #
-      # raised > cleared
-      # unacknowldged > acknowledged
-      # raise / clear time
-      # level
-      #
-      [(self.raised? ? 1 : 0),  AlertGroup::LEVELS.index(self.level), (self.raised? ? self.raised_at : self.cleared_at), self.subject, self.summary].collect{|x| x.nil? ? "" : x }
-    end
- 
-    def <=>(other)
-      self.sort_tuple <=> other.sort_tuple
-    end
- 
     class << self
     
       #
