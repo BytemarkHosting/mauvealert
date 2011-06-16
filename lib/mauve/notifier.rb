@@ -25,7 +25,7 @@ module Mauve
   
       logger.debug("Notifier buffer is #{sz} in length") 
 
-      (sz > 10 ? 10 : sz).times do
+      (sz > 50 ? 50 : sz).times do
         person, level, alert = Server.notification_pop
         begin
           person.do_send_alert(level, alert) 

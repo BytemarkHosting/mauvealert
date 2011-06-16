@@ -36,7 +36,7 @@ module Mauve
       # Only do the loop a maximum of 10 times every @sleep_interval seconds
       #
 
-      (sz > 10 ? 10 : sz).times do
+      (sz > 50 ? 50 : sz).times do
         data, client, received_at = Server.packet_pop
 
         @logger.debug("Got #{data.inspect} from #{client.inspect}")

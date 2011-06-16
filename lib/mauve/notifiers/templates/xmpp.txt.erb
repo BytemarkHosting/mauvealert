@@ -7,7 +7,7 @@ when :acknowleged
 else
 %><%= MauveTime.now.to_s_relative(alert.raised_at.to_time) %><% 
 end 
-%>: <%= alert.summary %><%
+%>: <%= alert.subject %> <%= alert.summary %><%
 if alert.source != alert.subject 
 %> -- from <%= alert.source %><%
 end 

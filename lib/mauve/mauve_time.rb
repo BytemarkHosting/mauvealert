@@ -124,7 +124,7 @@ class Time
     #
     # Make sure now is the correct class
     #
-    now now.to_time if now.is_a?(DateTime)
+    now = now.to_time if now.is_a?(DateTime)
 
     raise ArgumentError, "now must be a Time" unless now.is_a?(Time)
 

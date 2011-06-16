@@ -366,16 +366,20 @@ module Mauve
           #
           if raise_time
             if raise_time <= (reception_time + 5)
-              alert_db.raised_at = raise_time
+              alert_db.raised_at     = raise_time
+              alert_db.will_raise_at = nil
             else
+              alert_db.raised_at     = nil
               alert_db.will_raise_at = raise_time
             end
           end
 
           if clear_time
             if clear_time <= (reception_time + 5)
-              alert_db.cleared_at = clear_time
+              alert_db.cleared_at    = clear_time
+              alert_db.will_clear_at = nil
             else
+              alert_db.cleared_at    = nil
               alert_db.will_clear_at = clear_time
             end
           end
@@ -386,7 +390,7 @@ module Mauve
           if alert_db.cleared_at && alert_db.raised_at && alert_db.cleared_at < alert_db.raised_at
             alert_db.cleared_at = nil 
           end
-          
+         
           #
           # 
           #
@@ -402,6 +406,8 @@ module Mauve
             alert_db.subject = alert_db.source
           end
 
+          logger.debug [alert_db.source, alert_db.subject].inspect
+
           alert_db.summary = Alert.remove_html(alert.summary) if alert.summary && !alert.summary.empty?
 
           #
@@ -411,17 +417,25 @@ module Mauve
 
           alert_db.importance = alert.importance if alert.importance != 0 
 
-          # FIXME: this logic ought to be clearer as it may get more complicated
+          alert_db.update_type = :changed unless alert_db.update_type
+
           #
-          if alert_db.update_type
-            if alert_db.update_type.to_sym == :changed && !alert_db.raised?
-              # do nothing
+          # This decides if we notify.
+          #
+          should_notify = case alert_db.update_type.to_sym
+            when :raised
+              !was_raised
+            when :acknowledged
+              !was_acknowledged
+            when :cleared
+              !was_cleared
             else
-              alerts_updated << alert_db
-            end
-          else
-            alert_db.update_type = :changed
+              alert_db.raised?              
           end
+
+          alerts_updated << alert_db if should_notify
+
+          alert_db.updated_at = reception_time 
 
           logger.debug "Saving #{alert_db}"
 
@@ -431,7 +445,7 @@ module Mauve
             else
               msg = alert_db.errors.inspect
             end
-            logger.error "Couldn't save update #{alert} because of #{msg}" unless alert_db.save
+            logger.error "Couldn't save update #{alert} because of #{msg}" 
           end
         end
         

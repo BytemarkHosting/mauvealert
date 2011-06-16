@@ -30,7 +30,7 @@ $PRE -o vmhs -i 12345 -u partridge.bytemark.co.uk \
   -s "partridge.bytemark.co.uk heartbeat not received" -r +10m -c 
 
 $PRE -o vmhs -i 12347 -u eider.bytemark.co.uk \
-  -s "eider.bytemark.co.uk heartbeat not received" -r +2
+  -s "eider.bytemark.co.uk heartbeat not received" -r +2m
 
 $PRE -o thresholds -i 1 -u bl1-1.bytemark.co.uk \
   -s "bl1-1 exceeded 10Mb/s on bond0" \
