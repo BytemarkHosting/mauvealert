@@ -267,7 +267,7 @@ EOF
 
     get '/ajax/alerts_table/:alert_type/:group_by' do
       alerts_table(params)
-      haml(:_alerts_table)
+      haml :_alerts_table, :layout => false
     end
 
     get '/ajax/alerts_table_alert/:alert_id' do
@@ -275,7 +275,7 @@ EOF
       alert = Alert.get(params[:alert_id].to_i)
       return status(404) unless alert
 
-      haml(:_alerts_table_alert, :locals => {:alert => alert})
+      haml :_alerts_table_alert, :locals => {:alert => alert}, :layout => false
     end
     
     get '/ajax/alerts_table_alert_summary/:alert_id' do
@@ -283,7 +283,7 @@ EOF
       alert = Alert.get(params[:alert_id].to_i)
       return status(404) unless alert
 
-      haml(:_alerts_table_alert_summary, :locals => {:alert => alert, :row_class => []})
+      haml :_alerts_table_alert_summary, :locals => {:alert => alert, :row_class => []}, :layout => false
     end
     
     get '/ajax/alerts_table_alert_detail/:alert_id' do
@@ -291,7 +291,7 @@ EOF
       alert = Alert.get(params[:alert_id].to_i)
       return status(404) unless alert
 
-      haml(:_alerts_table_alert_detail, :locals => {:alert => alert, :row_class => []})
+      haml :_alerts_table_alert_detail, :locals => {:alert => alert, :row_class => []}, :layout => false
     end
 
 
