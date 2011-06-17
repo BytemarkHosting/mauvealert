@@ -116,6 +116,7 @@ module Mauve
 
         # Deals with AlertChange database entry.
         last_change = AlertChanged.first(:alert_id => alert.id, :person => username)
+
         if not last_change.nil?
           if not last_change.remind_at.nil? and not remind_at.nil?
             if last_change.remind_at.to_time < remind_at
@@ -139,7 +140,7 @@ module Mauve
           last_change.was_relevant = true if false == last_change.nil?
         end
 
-        send_alert(level, alert  ) # if last_change.was_relevant_when_raised? 
+        send_alert(level, alert) if is_relevant # last_change.was_relevant_when_raised? 
     end
     
     def remind(alert, level)

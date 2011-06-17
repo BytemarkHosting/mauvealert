@@ -83,7 +83,7 @@ module Mauve
     end
 
     def working_hours? 
-      now.working_hours?
+      @time.working_hours?
     end
 
     # Return true in the dead zone between 3 and 7 in the morning.
@@ -92,7 +92,7 @@ module Mauve
     #
     # @return [Boolean] Whether now is a in the dead zone or not.
     def dead_zone?
-      now.dead_zone?
+      @time.dead_zone?
     end
 
   end
