@@ -13,6 +13,9 @@ function updateDate() {
 function workoutDate(h, t) {
   var new_date = null;
 
+  h = new Number(h);
+  h = ( h > 300 ? 300 : h );
+
   // 
   // Use a synchronous ajax request to fetch the date.  Note that
   // Date.getTime() returns milliseconds..
@@ -29,6 +32,11 @@ function workoutDate(h, t) {
 
 function humanDate(d) {
   var new_date = null;
+
+  if ( d == null ) {
+    d = new Date();
+  }
+
   // 
   // Use a synchronous ajax convert a date to a human string.  NB Date.getTime()
   // returns *milliseconds*

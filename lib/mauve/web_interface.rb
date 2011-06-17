@@ -231,6 +231,7 @@ EOF
       #
       # Sanitise parameters
       #
+      n_hours    = ( n_hours > 300 ? 300 : n_hours )
       type_hours = "daytime" unless %w(daytime working wallclock).include?(type_hours)
       ack_until = Time.now.in_x_hours(n_hours, type_hours)
       
