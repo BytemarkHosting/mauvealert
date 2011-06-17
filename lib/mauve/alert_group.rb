@@ -101,6 +101,13 @@ module Mauve
     # @param [Alert] alert An alert to test for belongness to group.
     # @return [Boolean] Success or failure.
     def matches_alert?(alert)
+
+      unless alert.is_a?(Alert)
+        logger.warn "Got given a #{alert.class} instead of an Alert!"
+	logger.debug caller.join("\n")
+        return false
+      end
+
       result = alert.instance_eval(&self.includes)
       if true == result or
          true == result.instance_of?(MatchData)

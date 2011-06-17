@@ -82,6 +82,13 @@ module Mauve
     # the alert has been acknowledged
     #
     def remind
+      unless alert.is_a?(Alert)
+        logger.debug "#{self.inspect} lost alert #{alert_id}.  Killing self."
+        destroy!
+        return false
+      end
+
+
       logger.debug "Reminding someone about #{self.inspect}"
       
       alert_group = AlertGroup.matches(alert)[0]

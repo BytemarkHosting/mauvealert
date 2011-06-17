@@ -328,6 +328,10 @@ module Mauve
     def xmpp(x)
       @result.xmpp = x.to_s
     end
+    
+    def sms(x)
+      @result.sms = x.to_s
+    end
  
     def suppress_notifications_after(h)
       raise ArgumentError.new("notification_threshold must be specified as e.g. (10 => 1.minute)") unless

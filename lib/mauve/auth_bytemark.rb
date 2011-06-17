@@ -35,15 +35,19 @@ class AuthBytemark
     raise ArgumentError.new("Password must be a string, not a #{password.class}") if String != password.class
     raise ArgumentError.new("Login or/and password is/are empty.") if login.empty? || password.empty?
 
-    return false if ENV['RACK_ENV'].to_s == "development"
-
     client = XMLRPC::Client.new(@srv,"/",@port,nil,nil,nil,nil,true,@timeout).proxy("bytemark.auth")
 
     begin
       challenge = client.getChallengeForUser(login)
       response = Digest::SHA1.new.update(challenge).update(password).hexdigest
       client.login(login, response)
+      return true
+    rescue XMLRPC::FaultException => fault
+      Mauve::Server.instance.logger.warn "Fault code is #{fault.faultCode} stating #{fault.faultString}"
+      return false
     rescue Exception => ex
+      Mauve::Server.instance.logger.warn "Caught #{ex.to_s} whilst trying to loging for #{login}"
+      Mauve::Server.instance.logger.debug ex.backtrace.join("\n")
       return false
     end
   end

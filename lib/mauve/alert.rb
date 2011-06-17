@@ -138,7 +138,7 @@ module Mauve
       other.sort_tuple <=> self.sort_tuple
     end
  
-    def subject; attribute_get(:subject) || attribute_get(:source) ; end
+    def subject; attribute_get(:subject) || attribute_get(:source) || "not set" ; end
     def detail;  attribute_get(:detail)  || "_No detail set._" ; end
  
     def subject=(subject); set_changed_if_different( :subject, subject ); end
