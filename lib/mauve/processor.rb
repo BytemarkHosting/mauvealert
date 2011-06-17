@@ -19,25 +19,25 @@ module Mauve
       #
       @transmission_id_cache = {}
       @transmission_cache_expire_time = 300
-      @sleep_interval = 1
+      @transmission_cache_checked_at = Time.now
     end
 
     def main_loop
 
-      sz = Server.packet_buffer_size
-
-      return if sz == 0
-  
-      Timer.instance.freeze unless Timer.instance.frozen?
-
-      logger.info("Buffer has #{sz} packets waiting...")
+      logger.info("Buffer has packets waiting...") if Server.packet_buffer_size > 0
 
       #
       # Only do the loop a maximum of 10 times every @sleep_interval seconds
       #
-
-      (sz > 50 ? 50 : sz).times do
+      10.times do
         data, client, received_at = Server.packet_pop
+
+        #
+        # Uh-oh.  Nil data?  That's craaaazy
+        #
+        break if data.nil?
+        
+        Timer.instance.freeze unless Timer.instance.frozen?
 
         @logger.debug("Got #{data.inspect} from #{client.inspect}")
 
@@ -71,7 +71,6 @@ module Mauve
 
         ensure
           @transmission_id_cache[update.transmission_id.to_s] = MauveTime.now
-
         end
 
       end
@@ -85,6 +84,11 @@ module Mauve
 
     def expire_transmission_id_cache
       now = MauveTime.now
+      #
+      # Only check once every minute.
+      #
+      return unless (now - @transmission_cache_checked_at) > 60
+
       to_delete = []
 
       @transmission_id_cache.each do |tid, received_at|
@@ -94,7 +98,17 @@ module Mauve
       to_delete.each do |tid|
         @transmission_id_cache.delete(tid)
       end
+      
+      @transmission_cache_checked_at = now
     end
 
+    def stop
+      super
+
+      # 
+      # flush the queue
+      #
+      main_loop
+    end
   end   
 end

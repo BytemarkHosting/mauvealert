@@ -162,9 +162,10 @@ module Mauve
       raise ArgumentError unless ack_until.is_a?(Time)
   
       self.acknowledged_by = person.username
-      self.acknowledged_at = Time.now
-      self.update_type = :acknowledged
+      self.acknowledged_at = MauveTime.now
       self.will_unacknowledge_at = ack_until
+      self.update_type = :acknowledged
+
       logger.error("Couldn't save #{self}") unless save
       AlertGroup.notify([self])
     end
@@ -172,7 +173,9 @@ module Mauve
     def unacknowledge!
       self.acknowledged_by = nil
       self.acknowledged_at = nil
-      self.update_type = :raised
+      self.will_unacknowledge_at = nil
+      self.update_type = (raised? ? :raised : :cleared)
+
       logger.error("Couldn't save #{self}") unless save
       AlertGroup.notify([self])
     end
@@ -182,19 +185,27 @@ module Mauve
       self.acknowledged_by = nil
       self.acknowledged_at = nil
       self.will_unacknowledge_at = nil
-      self.will_raise_at = nil
-      self.update_type = :raised
       self.raised_at = MauveTime.now
+      self.will_raise_at = nil
       self.cleared_at = nil
+      # Don't clear will_clear_at
+      self.update_type = :raised
+
       logger.error("Couldn't save #{self}") unless save
       AlertGroup.notify([self]) unless already_raised
     end
     
     def clear!(notify=true)
       already_cleared = cleared?
+      self.acknowledged_by = nil
+      self.acknowledged_at = nil
+      self.will_unacknowledge_at = nil
+      self.raised_at = nil
+      # Don't clear will_raise_at
       self.cleared_at = MauveTime.now
       self.will_clear_at = nil
       self.update_type = :cleared
+
       logger.error("Couldn't save #{self}") unless save
       AlertGroup.notify([self]) unless !notify || already_cleared
     end
@@ -208,8 +219,8 @@ module Mauve
     end
     
     def poll
-      raise! if will_unacknowledge_at && will_unacknowledge_at.to_time <= MauveTime.now ||
-        will_raise_at && will_raise_at.to_time <= MauveTime.now
+      raise! if (will_unacknowledge_at and will_unacknowledge_at.to_time <= MauveTime.now) or
+        (will_raise_at and will_raise_at.to_time <= MauveTime.now)
       clear! if will_clear_at && will_clear_at.to_time <= MauveTime.now
     end
     
@@ -338,8 +349,6 @@ module Mauve
             raise_time = reception_time 
           end
 
-          logger.debug("received at #{reception_time}, transmitted at #{transmission_time}, raised at #{raise_time}, clear at #{clear_time}")
-
           #
           # Make sure there's no HTML in the ID... paranoia.  The rest of the
           # HTML removal is done elsewhere.
@@ -406,8 +415,6 @@ module Mauve
             alert_db.subject = alert_db.source
           end
 
-          logger.debug [alert_db.source, alert_db.subject].inspect
-
           alert_db.summary = Alert.remove_html(alert.summary) if alert.summary && !alert.summary.empty?
 
           #
@@ -465,7 +472,7 @@ module Mauve
           end
         end
        
-        logger.debug "Got #{alerts_updated.length} alerts to notify about"
+        logger.debug "Got #{alerts_updated.length} alerts to notify about" if alerts_updated.length > 0
  
         AlertGroup.notify(alerts_updated)
       end

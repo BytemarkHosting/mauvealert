@@ -1,5 +1,5 @@
 <%= alert.update_type.upcase %>: <% 
-case alert.update_type 
+case alert.update_type.to_sym
 when :cleared 
 %><%= alert.cleared_at.to_s_relative %><%
 when :acknowleged 
@@ -7,7 +7,7 @@ when :acknowleged
 else
 %><%= alert.raised_at.to_s_relative %><% 
 end 
-%>: <%= alert.summary %><%
+%>: <%= alert.subject %>: <%= alert.summary %><%
 if alert.source != alert.subject 
 %> -- from <%= alert.source %><%
 end 

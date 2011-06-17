@@ -8,7 +8,7 @@ module Mauve
     attr_reader :notification_thresholds
   
     def initialize(*args) 
-      @notification_thresholds = { 60 => Array.new(10) }
+      @notification_thresholds = { } # 60 => Array.new(10) }
       @suppressed = false
       super(*args)
     end
@@ -151,10 +151,6 @@ module Mauve
     # This just wraps send_alert by sending the job to a queue.
     #
     def send_alert(level, alert)
-      Server.notification_push([self, level, alert])
-    end
-
-    def do_send_alert(level, alert)
       now = MauveTime.now
       suppressed_changed = nil
       threshold_breached = @notification_thresholds.any? do |period, previous_alert_times|
@@ -185,6 +181,10 @@ module Mauve
       
       return if suppressed? or this_alert_suppressed
 
+      Server.notification_push([self, level, alert, suppressed_changed])
+    end
+
+    def do_send_alert(level, alert, suppressed_changed)
       result = NotificationCaller.new(
         self,
         alert,
@@ -198,7 +198,11 @@ module Mauve
         # Remember that we've sent an alert
         #
         @notification_thresholds.each do |period, previous_alert_times|
-          @notification_thresholds[period].replace(previous_alert_times[1..period-1] + [now])
+          #
+          # Hmm.. not sure how to make this thread-safe.
+          #
+          @notification_thresholds[period].push MauveTime.now
+          @notification_thresholds[period].shift
         end
 
         logger.info("Notification for #{username} of #{alert} at level #{level} has been successful")

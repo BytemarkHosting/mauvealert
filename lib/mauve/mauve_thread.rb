@@ -12,7 +12,7 @@ module Mauve
       @logger ||= Log4r::Logger.new(self.class.to_s) 
     end
 
-    def run_thread(interval = 0.2)
+    def run_thread(interval = 0.1)
       #
       # Good to go.
       #
@@ -98,7 +98,7 @@ module Mauve
       self.stop
       self.start
     end
-
+    
     def stop
       logger.debug("Stopping")
 
@@ -116,6 +116,7 @@ module Mauve
 
       self.join 
     end
+
 
     alias exit stop
 

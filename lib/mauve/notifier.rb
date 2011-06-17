@@ -25,12 +25,24 @@ module Mauve
   
       logger.debug("Notifier buffer is #{sz} in length") 
 
-      (sz > 50 ? 50 : sz).times do
-        person, level, alert = Server.notification_pop
+      my_threads = []
+      sz.times do
+        person, *args = Server.notification_pop
+        
+        #
+        # Nil person.. that's craaazy too!
+        #
+        break if person.nil?
+        my_threads << Thread.new {
+          person.do_send_alert(*args) 
+        }
+      end
+
+      my_threads.each do |t|
         begin
-          person.do_send_alert(level, alert) 
+          t.join
         rescue StandardError => ex
-          logger.debug ex.to_s
+          logger.error ex.to_s
           logger.debug ex.backtrace.join("\n")
         end
       end
@@ -73,6 +85,11 @@ module Mauve
       end
 
       super
+
+      # 
+      # flush the queue
+      #
+      main_loop
     end
 
   end

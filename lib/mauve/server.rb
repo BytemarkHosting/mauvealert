@@ -53,8 +53,8 @@ module Mauve
       # Keep these queues here to prevent a crash in a subthread losing all the
       # subsquent things in the queue.
       #
-      @packet_buffer       = Queue.new
-      @notification_buffer = Queue.new
+      @packet_buffer       = []
+      @notification_buffer = []
 
       @config = DEFAULT_CONFIGURATION
     end
@@ -115,13 +115,18 @@ module Mauve
     end
 
     def stop
+      if @stop
+        logger.debug("Stop already called!")
+        return
+      end
+
       @stop = true
 
       thread_list = Thread.list 
 
       thread_list.delete(Thread.current)
 
-      THREAD_CLASSES.reverse.each do |klass|
+      THREAD_CLASSES.each do |klass|
         thread_list.delete(klass.instance)
         klass.instance.stop unless klass.instance.nil?
       end
@@ -209,11 +214,11 @@ module Mauve
       # These methods pop things on and off the packet_buffer
       #
       def packet_enq(a)
-        instance.packet_buffer.enq(a)
+        instance.packet_buffer.push(a)
       end
 
       def packet_deq
-        instance.packet_buffer.deq
+        instance.packet_buffer.shift
       end
 
       def packet_buffer_size
@@ -227,11 +232,11 @@ module Mauve
       # These methods pop things on and off the notification_buffer
       #
       def notification_enq(a)
-        instance.notification_buffer.enq(a)
+        instance.notification_buffer.push(a)
       end
 
       def notification_deq
-        instance.notification_buffer.deq
+        instance.notification_buffer.shift
       end
 
       def notification_buffer_size
