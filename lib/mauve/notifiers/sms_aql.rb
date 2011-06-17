@@ -57,9 +57,15 @@ module Mauve
               ""
           end
           
-          txt += "#{alert.update_type.upcase}: "
-          txt += alert.summary_one_line
-          
+          template_file = File.join(File.dirname(__FILE__),"templates","sms.txt.erb")
+
+          txt += if File.exists?(template_file)
+            ERB.new(File.read(template_file)).result(binding).chomp
+          else
+            logger.error("Could not find sms.txt.erb template")
+            alert.to_s
+          end
+
           others = all_alerts-[alert]
           if !others.empty?
             txt += (1 == others.length)? 
