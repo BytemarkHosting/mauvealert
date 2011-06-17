@@ -42,6 +42,11 @@ module Mauve
           })
           
           raise response unless response.kind_of?(Net::HTTPSuccess)
+
+          #
+          # Woo -- return true!
+          #
+          true
         end
         
         protected
