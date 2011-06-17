@@ -1,7 +1,8 @@
 ~$
-test.log$
-test.db$
-test.conf$
-mauveserver.conf$
-alerts.db
-.*.swp$
+^test\..*$
+^.*\.db
+.*\.sw.$
+^debian/mauvealert-.*/
+^debian/mauvealert-.*\.debhelper(.log)?$
+^debian/mauvealert-.*.substvars$
+^debian/files
