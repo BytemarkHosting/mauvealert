@@ -186,10 +186,10 @@ EOF
       type_hours = params[:type_hours] || "daylight"
       alerts     = params[:alerts]     || []
 
-      n_hours = (n_hours > 188 ? 188 : n_hours)
+      n_hours = (n_hours.to_i > 188 ? 188 : n_hours.to_i)
 
       if ack_until.to_s.empty?
-        ack_until = Time.now.in_x_hours(n_hours.to_i, type_hours.to_s)
+        ack_until = Time.now.in_x_hours(n_hours, type_hours.to_s)
       else
         ack_until = Time.at(ack_until.to_i)
       end

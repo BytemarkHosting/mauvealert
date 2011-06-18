@@ -11,4 +11,4 @@
         :href => "/alert/#{alert.id}",   |
         :onclick => "fetchDetail('#{alert.id}'); return false;"} 
       Details &darr;
-  %td= alert.raised_at.to_s_relative
+  %td= (alert.raised_at || alert.cleared_at || Time.now).to_s_relative

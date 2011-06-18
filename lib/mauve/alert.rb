@@ -131,7 +131,7 @@ module Mauve
     end
   
     def sort_tuple
-      [AlertGroup::LEVELS.index(self.level), (self.raised_at.to_time || self.cleared_at.to_time || Time.now)]
+      [AlertGroup::LEVELS.index(self.level), (self.raised_at || self.cleared_at || Time.now).to_time]
     end
 
     def <=>(other)
@@ -167,7 +167,7 @@ module Mauve
       self.update_type = :acknowledged
 
       logger.error("Couldn't save #{self}") unless save
-      AlertGroup.notify([self])
+      AlertGroup.notify([self]) if self.raised?
     end
     
     def unacknowledge!
@@ -177,7 +177,7 @@ module Mauve
       self.update_type = (raised? ? :raised : :cleared)
 
       logger.error("Couldn't save #{self}") unless save
-      AlertGroup.notify([self])
+      AlertGroup.notify([self]) if self.raised?
     end
     
     def raise!
@@ -400,15 +400,22 @@ module Mauve
             alert_db.cleared_at = nil 
           end
          
-          #
-          # 
-          #
           if alert_db.cleared?
             alert_db.update_type = :cleared
           else
             alert_db.update_type = :raised
           end
-            
+          
+          #
+          # If the alert is cleared ,or has just been raised unset the acknowledge dates. 
+          #
+          if alert_db.acknowledged? and (alert_db.cleared? or (alert_db.raised? and !was_raised))
+            alert_db.acknowledged_at = nil 
+          end
+
+          #
+          # Set the subject
+          #
           if alert.subject and !alert.subject.empty?
             alert_db.subject = Alert.remove_html(alert.subject)
           else
