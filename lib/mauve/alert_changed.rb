@@ -109,6 +109,7 @@ module Mauve
         unless alert_group.notifications.nil?
 
           alert_group.notifications.each do |notification|
+
             #
             # Build an array of people that could/should be notified.
             #
@@ -128,7 +129,12 @@ module Mauve
             #
             notification_people.sort.uniq.each do |np|
               if np == self.person
-                Configuration.current.people[np].remind(alert, level)
+                #
+                # Only remind if the time is right. 
+                #
+                if DuringRunner.new(Time.now, alert, &notification.during).now?
+                  Configuration.current.people[np].remind(alert, level)
+                end
                 self.remind_at = notification.remind_at_next(alert)
                 save
                 saved = true
