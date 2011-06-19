@@ -106,16 +106,29 @@ module Mauve
         save
       else
         saved = false
-
         unless alert_group.notifications.nil?
 
           alert_group.notifications.each do |notification|
-            notification.people.each do |person|
-              # Not interested in nil people.
-              next if person.nil?
-  
-              if person.username == self.person
-                person.remind(alert, level)
+            #
+            # Build an array of people that could/should be notified.
+            #
+            notification_people = []
+
+            notification.people.each do |np|
+              case np
+                when Person
+                  notification_people << np.username
+                when PeopleList
+                  notification_people += np.list
+              end
+            end
+
+            #
+            # For each person, send a notification
+            #
+            notification_people.sort.uniq.each do |np|
+              if np == self.person
+                Configuration.current.people[np].remind(alert, level)
                 self.remind_at = notification.remind_at_next(alert)
                 save
                 saved = true
