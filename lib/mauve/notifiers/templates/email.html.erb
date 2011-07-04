@@ -5,7 +5,7 @@
 case alert.update_type.to_sym 
 when :cleared 
 %><%= alert.cleared_at.to_s_relative %><% 
-when :acknowleged 
+when :acknowledged 
 %><%= alert.acknowledged_at.to_s_relative %><% 
 else
 %><%= alert.raised_at.to_s_relative %><% 

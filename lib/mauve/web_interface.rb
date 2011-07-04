@@ -324,7 +324,7 @@ EOF
 
       alert.acknowledge!(@person, ack_until)
       
-      flash['notice'] = "Successfully acknowleged alert <em>#{alert.alert_id}</em> from source #{alert.source}."
+      flash['notice'] = "Successfully acknowledged alert <em>#{alert.alert_id}</em> from source #{alert.source}."
       redirect "/alert/#{alert.id}"
     end
 
