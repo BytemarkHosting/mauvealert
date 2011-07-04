@@ -17,6 +17,6 @@ end
 %>.</p>
 <hr />
 <h2>Detail</h2>
-<div><%=alert.detail %></div>
+<div><%= RedCloth.new(alert.detail).to_html %></div>
 <hr />
 <address>--<br />Love mauve<br />xxx.</address></body></html>

@@ -375,7 +375,12 @@ module Mauve
           #
           if raise_time
             if raise_time <= (reception_time + 5)
-              alert_db.raised_at     = raise_time
+              #
+              # Don't reset the raised_at time if the alert is already raised.
+              # This prevents the raised time constantly changing on alerts
+              # that are already raised.
+              #
+              alert_db.raised_at     = raise_time unless was_raised or alert_db.raised_at.nil?
               alert_db.will_raise_at = nil
             else
               alert_db.raised_at     = nil
@@ -385,7 +390,10 @@ module Mauve
 
           if clear_time
             if clear_time <= (reception_time + 5)
-              alert_db.cleared_at    = clear_time
+              #
+              # Don't reset the cleared_at time (see above for raised_at timings).
+              #
+              alert_db.cleared_at    = clear_time unless was_cleared or alert_db.cleared_at.nil?
               alert_db.will_clear_at = nil
             else
               alert_db.cleared_at    = nil
