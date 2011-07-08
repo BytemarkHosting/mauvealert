@@ -1,20 +1,13 @@
 #! /usr/bin/ruby1.8
 # NAME
-#
-# mauveclient  send alert(s) to a given alert station
+#   mauveclient - send alert(s) to a given alert station
 #
 # SYNOPSIS
-#
-# mauveclient [<destination>]
-#   [--source | -o <source>] [--replace | -p] [--verbose | -v]
-#   [--id <alertid> ... ]
-#
-# DESCRIPTION
-#
-# Blah.
+#   mauveclient [<destination>]
+#               [--source | -o <source>] [--replace | -p] [--verbose | -v]
+#               [--id <alertid> ... ]
 #
 # OPTIONS
-#
 # <destination>   Where the alert should go. This can be either a hostname or
 #                 an IP address, and optionally a port, separated by a colon.
 #                 The default port is 32741.
@@ -255,7 +248,7 @@ begin
   #
   if help
     # Open the file, stripping the shebang line
-    lines = File.open(__FILE__){|fh| fh.readlines}[2..-1]
+    lines = File.open(__FILE__){|fh| fh.readlines}[1..-1]
 
     lines.each do |line|
     line.chomp!

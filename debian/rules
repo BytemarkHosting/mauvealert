@@ -1,9 +1,14 @@
 #!/usr/bin/make -f
 #
 
-include /usr/share/cdbs/1/rules/debhelper.mk
-# include /usr/share/ruby-pkg-tools/1/class/ruby-setup-rb.mk
+build:
+	make all
+	dh $@
+	
+clean:
+	make clean
+	dh $@
 
-# in which directory to build
-# BUILDDIR = debian/tmp
+%:
+	dh $@
 
