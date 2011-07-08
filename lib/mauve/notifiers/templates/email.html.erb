@@ -2,10 +2,10 @@
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"><head><title></title></head><body>
 <p><strong><%= alert.update_type.upcase %>:</strong> <% 
-case alert.update_type.to_sym 
-when :cleared 
+case alert.update_type
+when "cleared" 
 %><%= alert.cleared_at.to_s_relative %><% 
-when :acknowledged 
+when "acknowledged"
 %><%= alert.acknowledged_at.to_s_relative %> by <%= alert.acknowledged_by%><% 
 else
 %><%= alert.raised_at.to_s_relative %><% 

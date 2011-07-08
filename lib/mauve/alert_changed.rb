@@ -61,11 +61,11 @@ module Mauve
     # @return [Boolean] true if it was relevant, false otherwise.
     def was_relevant_when_raised?
 
-      if :acknowledged == update_type.to_sym and true == was_relevant
+      if "acknowledged" == update_type and true == was_relevant
         return true 
       end
 
-      return was_relevant if update_type.to_sym == :raised
+      return was_relevant if update_type == "raised"
 
       previous = AlertChanged.first(:id.lt => id, 
                                     :alert_id => alert_id,

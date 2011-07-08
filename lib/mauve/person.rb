@@ -217,7 +217,7 @@ module Mauve
     def current_alerts
       Alert.all_raised.select do |alert|
         my_last_update = AlertChanged.first(:person => username, :alert_id => alert.id)
-        my_last_update && my_last_update.update_type != :cleared
+        my_last_update && my_last_update.update_type != "cleared"
       end
     end
     

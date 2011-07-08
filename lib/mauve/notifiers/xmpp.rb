@@ -203,7 +203,17 @@ module Mauve
             alert.to_s
           end
 
-          send_message(destination_jid, txt)
+          history = Mauve::History.new(:alert_id => alert.id, :type => :notification)
+
+          if send_message(destination_jid, txt)
+            history.event = "Sent XMPP message to #{destination_jid}"
+            history.save
+            true
+          else
+            history.event = "Failed to send XMPP message to #{destination_jid}"
+            history.save
+            false
+          end
         end
 
         # Sends a message to the destionation.

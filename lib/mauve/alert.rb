@@ -1,5 +1,6 @@
 require 'mauve/proto'
 require 'mauve/alert_changed'
+require 'mauve/history'
 require 'mauve/datamapper'
 require 'sanitize'
 
@@ -60,7 +61,7 @@ module Mauve
     property :id, Serial
     property :alert_id, String, :required => true, :unique_index => :alert_index, :length=>256
     property :source, String, :required => true, :unique_index => :alert_index, :length=>512
-    property :subject, String, :length=>512, :length=>512
+    property :subject, String, :length=>512 
     property :summary, String, :length=>1024
     property :detail, Text, :length=>65535
     property :importance, Integer, :default => 50
@@ -75,10 +76,12 @@ module Mauve
     property :will_clear_at, DateTime
     property :will_raise_at, DateTime
     property :will_unacknowledge_at, DateTime
-#    property :will_unacknowledge_after, Integer
-    
     has n, :changes, :model => AlertChanged
+    has n, :histories, :model => Mauve::History
     has 1, :alert_earliest_date
+
+    before :save, :take_copy_of_changes
+    after  :save, :notify_if_needed
 
     validates_with_method :check_dates
     
@@ -141,73 +144,121 @@ module Mauve
     def subject; attribute_get(:subject) || attribute_get(:source) || "not set" ; end
     def detail;  attribute_get(:detail)  || "_No detail set._" ; end
  
-    def subject=(subject); set_changed_if_different( :subject, subject ); end
-    def summary=(summary); set_changed_if_different( :summary, summary ); end
+    # def subject=(subject); set_changed_if_different( :subject, subject ); end
+    # def summary=(summary); set_changed_if_different( :summary, summary ); end
 
     # def source=(source);   attribute_set( :source, source ); end 
     # def detail=(detail);   attribute_set( :detail, detail ); end
     
     protected
 
-    def set_changed_if_different(attribute, value)
-      return if self.__send__(attribute) == value
-      self.update_type ||= :changed
-      attribute_set(attribute.to_sym, value)
+    #def set_changed_if_different(attribute, value)
+    #  return if self.__send__(attribute) == value
+    #  self.update_type ||= "changed"
+    #  attribute_set(attribute.to_sym, value)
+    #end
+
+    #
+    # This allows us to take a copy of the changes before we save.
+    #
+    def take_copy_of_changes
+      @changes_before_save = Hash.new
+      self.original_attributes.each do |k,v| 
+        @changes_before_save[k.name] = v
+      end
     end
-    
+
+    #
+    # This sends notifications.  It is called after each save.
+    #
+    def notify_if_needed
+      #
+      # Make sure we don't barf
+      #
+      @changes_before_save ||= Hash.new
+
+      is_a_change = [:subject, :summary].any?{|k| @changes_before_save.keys.include?(k)}
+
+      #
+      # We notify if the update type has changed, or if the update type is
+      # "raised", and the above is_a_change condition is true
+      #
+      if @changes_before_save.has_key?(:update_type) or (self.update_type == "raised" and is_a_change)
+        self.notify
+
+        h = History.new(:alert => self, :type => "update")
+
+        if self.update_type == "acknowledged"
+            h.event = "ACKNOWLEDGED by #{self.acknowledged_by} until #{self.will_unacknowledge_at}"
+
+        elsif is_a_change
+          h.event = "CHANGED: "
+          h.event += @changes_before_save.keys.collect{|k| "#{k.to_s}: #{@changes_before_save[k]} -> #{self.__send__(k)}"}.join(", ") 
+
+        else
+          h.event = self.update_type.upcase
+
+        end
+
+        h.save
+      end
+
+      true
+    end
+
     public
     
+    def notify
+      self.alert_group.notify(self)
+    end
+
     def acknowledge!(person, ack_until = Time.now+3600)
       raise ArgumentError unless person.is_a?(Person)
       raise ArgumentError unless ack_until.is_a?(Time)
-  
+      raise ArgumentError, "Cannot acknowledge a cleared alert" if self.cleared?
+ 
       self.acknowledged_by = person.username
       self.acknowledged_at = MauveTime.now
       self.will_unacknowledge_at = ack_until
-      self.update_type = :acknowledged
+      self.update_type = "acknowledged"
 
       logger.error("Couldn't save #{self}") unless save
-      AlertGroup.notify([self]) if self.raised?
     end
     
     def unacknowledge!
       self.acknowledged_by = nil
       self.acknowledged_at = nil
       self.will_unacknowledge_at = nil
-      self.update_type = (raised? ? :raised : :cleared)
+      self.update_type = (raised? ? "raised" : "cleared")
 
       logger.error("Couldn't save #{self}") unless save
-      AlertGroup.notify([self]) if self.raised?
     end
     
-    def raise!
-      already_raised = raised? && !acknowledged?
+    def raise!(at = MauveTime.now)
       self.acknowledged_by = nil
       self.acknowledged_at = nil
       self.will_unacknowledge_at = nil
-      self.raised_at = MauveTime.now
+      self.raised_at = at if self.raised_at.nil?
       self.will_raise_at = nil
       self.cleared_at = nil
       # Don't clear will_clear_at
-      self.update_type = :raised
-
+      self.update_type = "raised" if self.update_type.nil? or self.update_type != "changed" or self.original_attributes[Alert.properties[:update_type]] == "cleared"
+      
+      logger.debug("saving #{self.inspect}")
       logger.error("Couldn't save #{self}") unless save
-      AlertGroup.notify([self]) unless already_raised
     end
     
-    def clear!(notify=true)
-      already_cleared = cleared?
+    def clear!(at = MauveTime.now)
       self.acknowledged_by = nil
       self.acknowledged_at = nil
       self.will_unacknowledge_at = nil
       self.raised_at = nil
       # Don't clear will_raise_at
-      self.cleared_at = MauveTime.now
+      self.cleared_at = at if self.cleared_at.nil?
       self.will_clear_at = nil
-      self.update_type = :cleared
+      self.update_type = "cleared"
 
       logger.error("Couldn't save #{self}") unless save
-      AlertGroup.notify([self]) unless !notify || already_cleared
     end
       
     # Returns the time at which a timer loop should call poll_event to either
@@ -223,19 +274,29 @@ module Mauve
         (will_raise_at and will_raise_at.to_time <= MauveTime.now)
       clear! if will_clear_at && will_clear_at.to_time <= MauveTime.now
     end
-    
+
+
+    #
+    # Tests to see if an alert is raised/acknowledged given a certain set of
+    # dates/times.
+    #
+    #
+
     def raised?
       !raised_at.nil? and (cleared_at.nil? or raised_at > cleared_at)
     end
-    
+
     def acknowledged?
       !acknowledged_at.nil?
     end
-    
+
+    #
+    # Cleared is just the opposite of raised.
+    #
     def cleared?
-      !raised? 
+      !raised?
     end
-  
+ 
     class << self
     
       #
@@ -310,7 +371,7 @@ module Mauve
 
         alerts_updated = []
         
-        logger.debug("Alert update received from wire: #{update.inspect.split.join(", ")}")
+        logger.debug("Alert update received from wire: #{update.inspect.split("\n").join(" ")}")
         
         #
         # Transmission time helps us determine any time offset
@@ -357,14 +418,6 @@ module Mauve
  
           alert_db = first(:alert_id => alert.id, :source => update.source) ||
             new(:alert_id => alert.id, :source => update.source)
-
-          #
-          # Work out what state the alert was in before receiving this update.
-          #
-          was_raised       = alert_db.raised?
-          was_cleared      = alert_db.cleared?
-          was_acknowledged = alert_db.acknowledged?
-                    
           alert_db.update_type = nil
           
           ##
@@ -380,7 +433,7 @@ module Mauve
               # This prevents the raised time constantly changing on alerts
               # that are already raised.
               #
-              alert_db.raised_at     = raise_time unless was_raised or alert_db.raised_at.nil?
+              alert_db.raised_at     = raise_time if alert_db.raised_at.nil?
               alert_db.will_raise_at = nil
             else
               alert_db.raised_at     = nil
@@ -393,32 +446,12 @@ module Mauve
               #
               # Don't reset the cleared_at time (see above for raised_at timings).
               #
-              alert_db.cleared_at    = clear_time unless was_cleared or alert_db.cleared_at.nil?
+              alert_db.cleared_at    = clear_time if alert_db.cleared_at.nil?
               alert_db.will_clear_at = nil
             else
               alert_db.cleared_at    = nil
               alert_db.will_clear_at = clear_time
             end
-          end
-
-          # 
-          # Clear old cleared_at time, if the raised_at time is newer
-          #
-          if alert_db.cleared_at && alert_db.raised_at && alert_db.cleared_at < alert_db.raised_at
-            alert_db.cleared_at = nil 
-          end
-         
-          if alert_db.cleared?
-            alert_db.update_type = :cleared
-          else
-            alert_db.update_type = :raised
-          end
-          
-          #
-          # If the alert is cleared ,or has just been raised unset the acknowledge dates. 
-          #
-          if alert_db.acknowledged? and (alert_db.cleared? or (alert_db.raised? and !was_raised))
-            alert_db.acknowledged_at = nil 
           end
 
           #
@@ -427,7 +460,10 @@ module Mauve
           if alert.subject and !alert.subject.empty?
             alert_db.subject = Alert.remove_html(alert.subject)
           else
-            alert_db.subject = alert_db.source
+            #
+            # Use the source, Luke, but only when the subject hasn't already been set.
+            #
+            alert_db.subject = alert_db.source if alert_db.subject.nil? 
           end
 
           alert_db.summary = Alert.remove_html(alert.summary) if alert.summary && !alert.summary.empty?
@@ -439,35 +475,24 @@ module Mauve
 
           alert_db.importance = alert.importance if alert.importance != 0 
 
-          alert_db.update_type = :changed unless alert_db.update_type
-
+          # 
+          # This will probably get overwritten below.
           #
-          # This decides if we notify.
-          #
-          should_notify = case alert_db.update_type.to_sym
-            when :raised
-              !was_raised
-            when :acknowledged
-              !was_acknowledged
-            when :cleared
-              !was_cleared
-            else
-              alert_db.raised?              
-          end
-
-          alerts_updated << alert_db if should_notify
+          # alert_db.update_type = "changed" unless alert_db.update_type
 
           alert_db.updated_at = reception_time 
 
-          logger.debug "Saving #{alert_db}"
-
-          if !alert_db.save
-            if alert_db.errors.respond_to?("full_messages")
-              msg = alert_db.errors.full_messages
+          if alert_db.raised? 
+            #
+            # If we're acknowledged, just save.
+            #
+            if alert_db.acknowledged?
+              alert_db.save
             else
-              msg = alert_db.errors.inspect
+              alert_db.raise! 
             end
-            logger.error "Couldn't save update #{alert} because of #{msg}" 
+          else
+            alert_db.clear!
           end
         end
         
@@ -481,15 +506,10 @@ module Mauve
               :alert_id.not => alert_ids_mentioned,
               :cleared_at => nil
               ).each do |alert_db|
-            logger.debug "Replace: clearing #{alert_db.id}"
-            alert_db.clear!(false)
-            alerts_updated << alert_db
+            alert_db.clear!
           end
         end
        
-        logger.debug "Got #{alerts_updated.length} alerts to notify about" if alerts_updated.length > 0
- 
-        AlertGroup.notify(alerts_updated)
       end
 
       def logger

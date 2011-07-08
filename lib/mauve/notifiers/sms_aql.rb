@@ -41,12 +41,19 @@ module Mauve
             'Content-Length' => opts_string.length.to_s
           })
           
-          raise response unless response.kind_of?(Net::HTTPSuccess)
-
-          #
-          # Woo -- return true!
-          #
-          true
+          history = Mauve::History.new(:alert => alert, :type => :notification)
+          if response.kind_of?(Net::HTTPSuccess)
+            history.event = "Sent SMS via AQL to #{destination}"
+            history.save
+            #
+            # Woo -- return true!
+            #
+            true
+          else
+            history.event = "Failed to send SMS via AQL to #{destination} due to #{response.class.to_s}"
+            history.save
+            false
+          end
         end
         
         protected

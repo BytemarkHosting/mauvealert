@@ -104,7 +104,7 @@ module Mauve
 
       unless alert.is_a?(Alert)
         logger.warn "Got given a #{alert.class} instead of an Alert!"
-	logger.debug caller.join("\n")
+      	logger.debug caller.join("\n")
         return false
       end
 

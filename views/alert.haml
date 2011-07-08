@@ -56,7 +56,15 @@
               = change.person
               at
               = change.at.to_s_human
-  
+  %tr
+    %th History
+    %td
+      %ul
+        - @alert.histories.each do |history|
+          %li
+            = history.event
+            at
+            = (history.created_at.nil? ? "unkown" : history.created_at.to_s_human)
 %h2 Actions
 - if !@alert.acknowledged?
   %form{:method => :post, :action => "/alert/#{@alert.id}/acknowledge"}

@@ -4,6 +4,7 @@ require 'socket'
 # require 'mauve/datamapper'
 require 'mauve/proto'
 require 'mauve/alert'
+require 'mauve/history'
 require 'mauve/mauve_thread'
 require 'mauve/mauve_time'
 require 'mauve/timer'
@@ -86,6 +87,7 @@ module Mauve
       #
       Alert.auto_upgrade!
       AlertChanged.auto_upgrade!
+      History.auto_upgrade!
       Mauve::AlertEarliestDate.create_view!
 
       #
