@@ -1,64 +1,158 @@
 #! /usr/bin/ruby1.8
-# == Synopsis
+# NAME
 #
-# mauvesend: send alert(s) to a given alert station
+# mauveclient  send alert(s) to a given alert station
 #
-# == Usage
+# SYNOPSIS
 #
-# mauvesend [destination]
+# mauveclient [<destination>]
 #   [--source | -o <source>] [--replace | -p] [--verbose | -v]
-#   [--id <alert ID> [alert options] ... ]
+#   [--id <alertid> ... ]
 #
-# <destination>:
-#   where the alert should go, can be one of:
-#     SRV record from DNS (we add _mauvealert._udp to record name)
-#     normal hostname (i.e. A record)
-#     IP address:port number
+# DESCRIPTION
 #
-#   if no destination is supplied, reads parameter from file 
-#   /etc/mauvealert/mauvesend.destination (otherwise throws an error).
-# 
-# --source | -o <source>:
-#   identify the source of the alert (defaults to hostname, but you might
-#   want to name your monitoring systems more explicitly).
+# Blah.
 #
-# --replace | -p:
-#   Send an update replacing all other alerts for this source - any previous
-#   alerts not specified in this update are assumed to be cleared.  If you
-#   specify this option, you don't have to supply *any* alerts to raise or 
-#   clear (in which case all alerts from that source will be cleared).
+# OPTIONS
 #
-# --verbose | -v:
-#   If you specify this option once, it will print the transmission ID
-#   of the packet for debugging.  If you specify it twice, it will print
-#   the entire data structure.
+# <destination>   Where the alert should go. This can be either a hostname or
+#                 an IP address, and optionally a port, separated by a colon.
+#                 The default port is 32741.
+#
+#                 If no destination is supplied, the value from the file
+#                 /etc/mauvealert/mauveclient.destination is used. If no
+#                 destination can be determined, an error is raised.
+#
+#                 If a hostname is given and no port is specified, SRV records
+#                 are used to determine where the alerts should go to. The SRV
+#                 prefix is _mauvealert._udp. If no SRV records are found, A
+#                 records are used instead.
+#                
+#                 IPv6 addresses can be used, but must be enclosed in square
+#                 brackets, e.g. [2001:41c8::12].
+#
+# --source, -o <source>  identify the source of the alert (defaults to
+#                        hostname, but you might want to name your monitoring
+#                        systems more explicitly).
+#
+# --replace, -p          Send an update replacing all other alerts for this
+#                        source -- any previous alerts not specified in this
+#                        update are assumed to be cleared. If you specify this
+#                        option, you don't have to supply *any* alerts to raise
+#                        or clear (in which case all alerts from that source
+#                        will be cleared).
+#
+# --verbose, -v          If you specify this option once, it will print the
+#                        transmission ID of the packet for debugging. If you
+#                        specify it twice, it will print the entire data
+#                        structure.
 #
 # You can specify any number of alerts in an update - every time you specify
 # --id starts a new alert.
 #
-# --id | -i <alert ID>:
-#   alert ID; unique specified for each alert raised.
+# --id, -i <alertid>       Unique specified for each alert raised. This should
+#                          be unique on a per-source basis, i.e. for an
+#                          individual application or host.
 #
-# --summary | -s <summary>:
-#   text for humans describing the nature of the alert, first 100 characters
-#   are only ones guaranteed to make it to pagers, twitter, SMS etc.
+# --summary, -s <summary>  Text for humans describing the nature of the alert,
+#                          first 100 characters are only ones guaranteed to make
+#                          it to pagers, twitter, SMS etc.
 #
-# --detail | -d <detail>:
-#   HTML fragment describing the alert in more detail, no limit on length.
+# --detail, -d <detail>    HTML fragment describing the alert in more detail,
+#                          no limit on length.
 #
-# --subject | -u <subject>:
-#   set the subject of the alert (i.e. the server/entity that this alert
-#   concerns).
+# --subject, -u <subject>  Set the subject of the alert (i.e. the server/entity
+#                          that this alert concerns). If no subject is
+#                          specified, it is assumed to be the same as <source>,
+#                          detailed above.
 #
-# --clear | -c <time>:
-#   mark the alert to be cleared at the given time, or +N where N is a number
-#   of seconds, or 'now'.  If not supplied, the alert is deemed to be raised 
-#   until explicitly cleared.
+# --raise, -r <time>       Mark the alert to be (re)raised at the given time.
+#                          If no time is supplied, "now" is assumed. See
+#                          SPECIFYING TIMES below for the format of <time>.
 #
-# --raise | -r <time>:
-#   mark the alert to be (re)raised at the given time.  If not supplied, the
-#   alert will be raised immediately.
+# --clear, -c <time>       Mark the alert to be cleared at the given time. If
+#                          no time is specified, "now" is assumed. See
+#                          SPECIFYING TIMES below for the format of <time>.
+#
+#
+# SPECIFYING TIMES
+#
+# Times can be specified for an alert to be raised or cleared. This can be
+# specified as any time in the past or future. The format is + or -, followed
+# by a number, followed by a letter determining the units, one of s, m, h, d,
+# representing seconds, minutes, hours, and days, respectively. If no units are
+# specified, seconds is assumed. If no sign is specified, "+" is assumed.
+#
+# Some example times are:
+#
+# now   Immediately
+# 10    In 10 seconds time
+# +10m  In 10 minutes time
+# -10h  10 Hours ago
+#
+# SENISBLE USAGE
+#
+# Mauve uses UDP to transmit data, which means that there is no guarrantee a
+# single packet will reach the server. Therefore:
+#
+#  * The host/application should send "raise" notification regularly until the
+#    alert clears, whereupon it should regularly send "cleared" notifications.
+#
+#  * When setting a heartbeat-type alert, make sure that the raise time is more
+#    than double the period of the "clear" notifications. For example, if the
+#    host is sending a clear every 120 seconds, the raise time should be
+#    greater than 240 seconds, preferably greater than 360 seconds to allow for
+#    packets going missing, reducing the likelihood of false alerts.
 # 
+# Try to convey salient details about the alerts in the relevant fields. A
+# typical short alert from Mauve might read
+#
+#   RAISED: <subject>: <summary> -- <source>
+#
+# Make sure that the alert will be understood with just those three fields
+# displayed.
+#
+#  * Keep the summary brief and salient. 
+#  
+#  * Keep the summary constant, unless there has been a material change to the
+#    nature of the alert. Mauve may re-send any messages when the subject
+#    changes. If something is changing quickly, like load averages, best not
+#    to put them in the summary.
+#
+#  * Make sure that the subject is set correctly. Remember if no subject is
+#    set, then the source of the alert is used instead. 
+#
+#  * Make sure that the source is correct too -- nothing worse than an alert
+#    that comes in with an ambiguous origin. 
+#
+#  * The alert ID is used internally by Mauve to keep alerts consistent. This
+#    must be unique on a per-source basis. It is OK to have many alerts with the
+#    ID "heartbeat" as long as the source of the alert is different in each case.
+#
+# The raise and clear times can be specified, if needed, but generally leaving
+# them empty, i.e. setting them to "now" is sufficient. Mauve remembers when
+# an alert is first raised.
+#
+# EXAMPLES
+#
+# To raise an alert:
+#
+#   mauveclient -s smtp-out-1.example.com -i mailqueue \\ 
+#     -d "Mail queue has <b>54232</b> messages in it. That's <em>LOADS</em>" \\
+#     -u "Mail queue too big on outgoing SMTP server" -r
+# 
+# To clear an alert:
+#
+#   mauveclient -s smtp-out-1.example.com  -i mailqueue -c
+#
+# To create a "heartbeat" alert, i.e. one that says "Currently OK, but raise in the future if nothing more is heard":
+#
+#   mauveclient -i heartbeat -d "No heartbeat received for 1.2.3.4. Could be down!" -s "heartbeat failed"  -c -r +10m
+#
+# AUTHOR
+#
+# Patrick J Cherry <patrick@bytemark.co.uk>
+#
 
 require 'getoptlong'
 require 'mauve/sender'
@@ -75,106 +169,116 @@ def error(msg)
 end
 
 def parse_time_spec(spec = "now")
-  now = NOW
+  case spec
+    when "now"
+      NOW
 
-  return now if spec == 'now'
-
-  case spec[0]
-    when ?+ then multiplier = 1
-    when ?- then multiplier = -1
-    else
-      return Mauve::MauveTime.parse(spec)
-  end
-  multiplier *= case spec[-1]
-    when ?m then 60
-    when ?h then 3600
-    when ?d then 86400
-    else
-      1
-  end
-
-  now + spec[1..-1].to_i * multiplier
-end
-
-update = Mauve::Proto::AlertUpdate.new
-update.replace = false
-update.alert = []
-message = nil
-verbose = 0
-help    = false
-
-opts = GetoptLong.new(
-  ['-h', '--help',    GetoptLong::NO_ARGUMENT], 
-  ['-o', '--source',  GetoptLong::OPTIONAL_ARGUMENT],
-  ['-p', '--replace', GetoptLong::NO_ARGUMENT],
-  ['-i', '--id',      GetoptLong::OPTIONAL_ARGUMENT],
-  ['-s', '--summary', GetoptLong::OPTIONAL_ARGUMENT],
-  ['-u', '--subject', GetoptLong::OPTIONAL_ARGUMENT],
-  ['-c', '--clear',   GetoptLong::OPTIONAL_ARGUMENT],
-  ['-r', '--raise',   GetoptLong::OPTIONAL_ARGUMENT],
-  ['-d', '--detail',  GetoptLong::OPTIONAL_ARGUMENT],
-  ['-v', '--verbose', GetoptLong::NO_ARGUMENT]
-).each do |opt,arg|
-
-  #
-  # Can catch empty arguments better if we set the GetoptLong things to
-  # "optional" rather than "required" and catch the empty arg here.
-  error "#{opt} cannot be empty" if arg.empty? and not %w(-h -p -v -c -r).include?(opt)
-
-  case opt
-    when '-h'
-      help = true
-    when '-p'
-      update.replace = true
-    when '-i'
-      message = Mauve::Proto::Alert.new
-      message.id = arg
-      update.alert << message
-    when '-o'
-      error "Can only specify one source" if update.source
-      update.source = arg
-    when '-v'
-      verbose += 1
-    else
-      error "Must specify --id before message" unless message
-      case opt
-        when '-s' then message.summary = arg
-        when '-u' then message.subject = arg
-        when '-d' then message.detail = arg
-        when '-c' then message.clear_time = parse_time_spec(arg).to_i
-        when '-r' then message.raise_time = parse_time_spec(arg).to_i
-        else
-          error "Unknown option #{opt}"
+    when /^(\+|-)?(\d+)([smhd])?$/
+      if $1 == "-"
+        multiplier = -1
+      else
+        multiplier = 1
       end
+
+      multiplier *= case $3
+        when ?m then 60
+        when ?h then 3600
+        when ?d then 86400
+        else
+          1
+      end
+
+      NOW + $2.to_i * multiplier
+
+    else
+      raise ArgumentError, "Unrecognised time format #{spec.inspect}"
+
   end
 end
-
-# CAUTION! Kwality kode.
-#
-if help
-  # Open the file, stripping the shebang line
-  lines = File.open(__FILE__){|fh| fh.readlines}[2..-1]
-
-  lines.each do |line|
-  line.chomp!
-    break if line.empty?
-    puts line[2..-1].to_s
-  end
-
-  exit 0
-end
-
-error "No alerts specified" unless !update.alert.empty? || update.replace
-
-update.transmission_id = rand(2**63)
 
 begin
+  update = Mauve::Proto::AlertUpdate.new
+  update.replace = false
+  update.alert = []
+  message = nil
+  verbose = 0
+  help    = false
+
+  opts = GetoptLong.new(
+    ['-h', '--help',    GetoptLong::NO_ARGUMENT], 
+    ['-o', '--source',  GetoptLong::OPTIONAL_ARGUMENT],
+    ['-p', '--replace', GetoptLong::NO_ARGUMENT],
+    ['-i', '--id',      GetoptLong::OPTIONAL_ARGUMENT],
+    ['-s', '--summary', GetoptLong::OPTIONAL_ARGUMENT],
+    ['-u', '--subject', GetoptLong::OPTIONAL_ARGUMENT],
+    ['-c', '--clear',   GetoptLong::OPTIONAL_ARGUMENT],
+    ['-r', '--raise',   GetoptLong::OPTIONAL_ARGUMENT],
+    ['-d', '--detail',  GetoptLong::OPTIONAL_ARGUMENT],
+    ['-v', '--verbose', GetoptLong::NO_ARGUMENT]
+  ).each do |opt,arg|
+
+    #
+    # Can catch empty arguments better if we set the GetoptLong things to
+    # "optional" rather than "required" and catch the empty arg here.
+    error "#{opt} cannot be empty" if arg.empty? and not %w(-h -p -v -c -r).include?(opt)
+
+    case opt
+      when '-h'
+        help = true
+      when '-p'
+        update.replace = true
+      when '-i'
+        error "Cannot specify the same ID twice in one update -- ID #{arg}" if update.alert.any?{|a| a.id == arg}
+        message = Mauve::Proto::Alert.new
+        message.id = arg
+        update.alert << message
+      when '-o'
+        error "Can only specify one source" if update.source
+        update.source = arg
+      when '-v'
+        verbose += 1
+      else
+        error "Must specify --id before message" unless message
+        case opt
+          when '-s' then message.summary = arg
+          when '-u' then message.subject = arg
+          when '-d' then message.detail = arg
+          when '-c' then message.clear_time = parse_time_spec(arg).to_i
+          when '-r' then message.raise_time = parse_time_spec(arg).to_i
+          else
+            error "Unknown option #{opt}"
+        end
+    end
+  end
+
+  # CAUTION! Kwality kode.
+  #
+  if help
+    # Open the file, stripping the shebang line
+    lines = File.open(__FILE__){|fh| fh.readlines}[2..-1]
+
+    lines.each do |line|
+    line.chomp!
+      break if line.empty?
+      puts line[2..-1].to_s
+    end
+
+    exit 0
+  end
+
+  error "No alerts specified" unless !update.alert.empty? || update.replace
+
+  update.transmission_id = rand(2**63)
+
   Mauve::Sender.new(ARGV).send(update, verbose)
 rescue Protobuf::NotInitializedError => bad
-  error "Alert not initialized fully - you must supply an ID"
+  error "Alert not initialized fully -- you must supply an ID"
+
 rescue ArgumentError => ae
   error ae.message
+
 rescue StandardError => ae
   error ae.message
+
 end
 

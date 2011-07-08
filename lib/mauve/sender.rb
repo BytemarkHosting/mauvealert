@@ -36,13 +36,7 @@ module Mauve
             #
             results << [$1, $2 || DEFAULT_PORT]
 
-          when /^\[?([0-9a-f:]{2,39})\]??$/i
-            #
-            # IPv6 without a port
-            #
-            results << [$1, $2 || DEFAULT_PORT]
-
-          when /^\[([0-9a-f:]{2,39})\](?::(\d+))?$/i
+          when /^\[([0-9a-f:\.]{2,39})\](?::(\d+))?$/i
             #
             # IPv6 with a port
             #
@@ -50,17 +44,30 @@ module Mauve
 
           when /^([^: ]+)(?::(\d+))?/
             domain = $1
-            port   = $2 || DEFAULT_PORT
+
+            #
+            # If no port is specified, set it to the default, and also try to
+            # use SRV records.
+            #
+            if $2.nil?
+              port = DEFAULT_PORT
+              use_srv = true
+            else
+              port = $2
+              use_srv = false
+            end
 
             Resolv::DNS.open do |dns|
-              #
-              # Search for SRV records first.  If the first character of the
-              # domain is an underscore, assume that it is a SRV record
-              #
-              srv_domain = (domain[0] == ?_ ? domain : "_mauvealert._udp.#{domain}")
-
-              list = dns.getresources(srv_domain, SRV).map do |srv|
-                [srv.target.to_s, srv.port]
+              if use_srv
+                #
+                # Search for SRV records first.  If the first character of the
+                # domain is an underscore, assume that it is a SRV record
+                #
+                srv_domain = (domain[0] == ?_ ? domain : "_mauvealert._udp.#{domain}")
+  
+                list = dns.getresources(srv_domain, SRV).map do |srv|
+                  [srv.target.to_s, srv.port]
+                end
               end
 
               #
@@ -126,11 +133,14 @@ module Mauve
 
       data = update.serialize_to_string
 
-
       if verbose == 1
-        print "#{update.transmission_id}\n"
+        summary = "#{update.transmission_id} from #{update.source}"
       elsif verbose >= 2
-        print "Sending #{update.inspect.chomp} to #{@destinations.join(", ")}\n"
+        summary = update.inspect.split("\n").join(" ")
+      end
+
+      if verbose > 0
+        puts "Sending #{summary} to #{@destinations.collect{|i,p| (i.ipv6? ? "[#{i}]" : i.to_s )+":#{p}"}.join(", ")}"
       end
 
       #
@@ -144,7 +154,7 @@ module Mauve
           sent += 1
         rescue Errno::ENETUNREACH => ex
           # Catch and ignore unreachable network errors.
-          warn "Got #{ex.to_s} whilst trying to send to #{ip} #{port}" if verbose > 0
+          warn "Got #{ex.to_s} whilst trying to send to "+(ip.ipv6? ? "[#{ip}]" : ip.to_s )+":#{port}" if verbose > 0
         end
       end
 
