@@ -162,6 +162,11 @@ def error(msg)
 end
 
 def parse_time_spec(spec = "now")
+  #
+  # Default to now
+  #
+  spec = "now" if spec.empty?
+
   case spec
     when "now"
       NOW
