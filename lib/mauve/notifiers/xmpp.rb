@@ -258,12 +258,12 @@ module Mauve
         # Joins a chat, and returns the stripped JID of the chat joined.
         #
         def join_muc(jid, password=nil) 
-          if jid.is_a?(String) 
-            jid = JID.new($1) if jid =~ /^muc:(.*)/
+          if jid.is_a?(String) and jid =~ /^muc:(.*)/
+            jid = JID.new($1) 
           end
             
           unless jid.is_a?(JID)
-            logger.warn "I don't think #{jid} is a MUC"
+            logger.warn "#{jid} is not a MUC"
             return
           end
 
@@ -271,7 +271,7 @@ module Mauve
 
           if !@mucs[jid.strip]
 
-            logger.info("Adding new MUC client for #{jid}")
+            logger.debug("Adding new MUC client for #{jid}")
             
             @mucs[jid.strip] = Jabber::MUC::MUCClient.new(@client)
             

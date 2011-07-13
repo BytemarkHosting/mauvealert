@@ -44,19 +44,6 @@
       %th{:title => "The time at which the alert will be automatically cleared"} Will clear
       %td= @alert.will_raise_at.to_s_human
   %tr
-    %th Notifications sent out
-    %td
-      %ul
-        - @alert.changes.first(10).each do |change|
-          - if change.was_relevant?
-            %li
-              %strong= change.level 
-              = change.update_type
-              notification to 
-              = change.person
-              at
-              = change.at.to_s_human
-  %tr
     %th History
     %td
       %ul#histories

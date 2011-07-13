@@ -38,8 +38,6 @@ module Mauve
         
         Timer.instance.freeze unless Timer.instance.frozen?
 
-        raise ArgumentError, "arse"
-
         logger.debug("Got #{data.inspect} from #{client.inspect}")
 
         ip_source = "#{client[3]}:#{client[1]}"

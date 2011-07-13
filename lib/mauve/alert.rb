@@ -404,8 +404,6 @@ module Mauve
             #
             # Make sure that we raise if neither raise nor clear is set
             #
-            logger.warn("No clear time or raise time set.  Assuming raised!")
-
             raise_time = reception_time 
           end
 

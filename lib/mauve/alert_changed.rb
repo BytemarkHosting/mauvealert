@@ -92,7 +92,6 @@ module Mauve
       end
 
 
-      logger.info "Reminding someone about #{self.inspect}"
       
       alert_group = AlertGroup.matches(alert)[0]
       
@@ -100,11 +99,13 @@ module Mauve
         logger.info((alert_group ? 
           "Alert already acknowledged" : 
           "No alert group matches any more"
-          ) + ", no reminder due"
+          ) + " => no reminder due for #{self.alert.inspect}"
         )
         self.remind_at = nil
         save
       else
+        logger.info "Sending a reminder for #{self.alert.inspect}"
+
         saved = false
         unless alert_group.notifications.nil?
 
