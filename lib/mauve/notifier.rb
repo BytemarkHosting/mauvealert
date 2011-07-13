@@ -13,6 +13,7 @@ module Mauve
     attr_accessor :sleep_interval
 
     def initialize
+      super
     end
 
     def main_loop
@@ -22,9 +23,7 @@ module Mauve
       sz = Server.notification_buffer_size
 
       return if sz == 0
-  
-      logger.debug("Notifier buffer is #{sz} in length") 
-
+ 
       my_threads = []
       sz.times do
         person, *args = Server.notification_pop

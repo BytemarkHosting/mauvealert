@@ -15,6 +15,7 @@ module Mauve
     attr_accessor :ip, :port, :sleep_interval
 
     def initialize
+      super
       # 
       # Set the logger up
       #
@@ -49,7 +50,7 @@ module Mauve
 
       @socket.bind(@ip, @port)
 
-      logger.debug("Successfully opened UDP socket on #{@ip}:#{@port}")
+      logger.info("Successfully opened UDP socket on #{@ip}:#{@port}")
     end
 
     def close_socket
@@ -59,10 +60,11 @@ module Mauve
         @socket.close 
       rescue IOError => ex
         # Just in case there is some sort of explosion! 
-        logger.debug("Caught IOError #{ex.to_s}")
+        logger.error "Caught IOError #{ex.to_s}"
+        logger.debug ex.backtrace.join("\n")
       end
 
-      logger.debug("Successfully closed UDP socket")
+      logger.info("Successfully closed UDP socket")
     end
 
     def main_loop

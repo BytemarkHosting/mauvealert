@@ -12,10 +12,16 @@ module Mauve
     property :id, Serial
     property :alert_id, Integer, :required  => true
     property :type,  String, :required => true, :default => "unknown"
-    property :event, Text, :required => true
-    property :created_at, DateTime
+    property :event, Text, :required => true, :default => "Nothing set"
+    property :created_at, DateTime, :required => true
 
     belongs_to :alert
+
+    before :valid?, :set_created_at
+
+    def set_created_at(context = :default)
+      self.created_at = Time.now unless self.created_at.is_a?(Time) or self.created_at.is_a?(DateTime)
+    end
     
     def logger
      Log4r::Logger.new self.class.to_s

@@ -104,7 +104,7 @@ module Mauve
     default_scope(:default).update(:order => [:source, :importance])
    
     def logger
-      Log4r::Logger.new(self.class.to_s)
+      @logger ||= self.class.logger
     end
 
     def time_relative(secs)
@@ -186,7 +186,7 @@ module Mauve
       if @changes_before_save.has_key?(:update_type) or (self.update_type == "raised" and is_a_change)
         self.notify
 
-        h = History.new(:alert => self, :type => "update")
+        h = History.new(:alert_id => self.id, :type => "update")
 
         if self.update_type == "acknowledged"
             h.event = "ACKNOWLEDGED by #{self.acknowledged_by} until #{self.will_unacknowledge_at}"
@@ -200,7 +200,9 @@ module Mauve
 
         end
 
-        h.save
+        if !h.save
+          logger.error "Unable to save history due to #{h.errors.inspect}"
+        end
       end
 
       true
@@ -244,7 +246,6 @@ module Mauve
       # Don't clear will_clear_at
       self.update_type = "raised" if self.update_type.nil? or self.update_type != "changed" or self.original_attributes[Alert.properties[:update_type]] == "cleared"
       
-      logger.debug("saving #{self.inspect}")
       logger.error("Couldn't save #{self}") unless save
     end
     
@@ -384,8 +385,6 @@ module Mauve
 
         time_offset = (reception_time - transmission_time).round
 
-        logger.debug("Update received from a host #{time_offset}s behind") if time_offset.abs > 5
-
         #
         # Make sure there is no HTML in the update source.
         #
@@ -457,13 +456,14 @@ module Mauve
           #
           # Set the subject
           #
-          if alert.subject and !alert.subject.empty?
+          if alert.subject and !alert.subject.empty? 
             alert_db.subject = Alert.remove_html(alert.subject)
-          else
+
+          elsif alert_db.subject.nil? 
             #
             # Use the source, Luke, but only when the subject hasn't already been set.
             #
-            alert_db.subject = alert_db.source if alert_db.subject.nil? 
+            alert_db.subject = alert_db.source
           end
 
           alert_db.summary = Alert.remove_html(alert.summary) if alert.summary && !alert.summary.empty?
@@ -501,7 +501,7 @@ module Mauve
         #
         if update.replace
           alert_ids_mentioned = update.alert.map { |alert| alert.id }
-          logger.debug "Replacing all alerts from #{update.source} except "+alert_ids_mentioned.join(",")
+          logger.info "Replacing all alerts from #{update.source} except "+alert_ids_mentioned.join(",")
           all(:source => update.source, 
               :alert_id.not => alert_ids_mentioned,
               :cleared_at => nil
@@ -513,7 +513,7 @@ module Mauve
       end
 
       def logger
-        Log4r::Logger.new("Mauve::Alert")
+        Log4r::Logger.new(self.to_s)
       end
     end
   end

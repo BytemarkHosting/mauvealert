@@ -66,10 +66,10 @@ module Mauve
         include Jabber
 
         # Atrtribute.
-        attr_reader :name
+        attr_reader :name, :jid
 
         # Atrtribute.
-        attr_accessor :jid, :password
+        attr_accessor :password
 
         def initialize(name)
           Jabber::logger = self.logger       
@@ -80,7 +80,7 @@ module Mauve
           @mucs = {}
           @roster = nil
           @closing = false
-
+          @client = nil
         end
 
         def logger
@@ -93,7 +93,7 @@ module Mauve
         end
  
         def connect
-          logger.info "Jabber starting connection to #{@jid}"
+          logger.debug "Starting connection to #{@jid}"
 
           # Make sure we're disconnected.
           self.close if @client.is_a?(Client)
@@ -110,7 +110,6 @@ module Mauve
           # already
           @roster.add_subscription_request_callback do |ri, presence|
             Thread.new do
-              logger.debug "Known? #{is_known_contact?(presence.from).inspect}"
               if is_known_contact?(presence.from)
                 logger.info("Accepting subscription request from #{presence.from}")
                 @roster.accept_subscription(presence.from)
@@ -127,9 +126,10 @@ module Mauve
           end
 
           @roster.wait_for_roster
-          logger.debug "Jabber authenticated, setting presence"
 
           @client.send(Presence.new(nil, "Woo!").set_type(nil))
+
+          logger.info "Connected as #{@jid}"
 
           @client.on_exception do |ex, stream, where|
             #
@@ -203,17 +203,7 @@ module Mauve
             alert.to_s
           end
 
-          history = Mauve::History.new(:alert_id => alert.id, :type => :notification)
-
-          if send_message(destination_jid, txt)
-            history.event = "Sent XMPP message to #{destination_jid}"
-            history.save
-            true
-          else
-            history.event = "Failed to send XMPP message to #{destination_jid}"
-            history.save
-            false
-          end
+          send_message(destination_jid, txt)
         end
 
         # Sends a message to the destionation.
@@ -297,12 +287,12 @@ module Mauve
           end
 
           if !@mucs[jid.strip].active?
-            logger.info("Joining #{jid}")
             #
             # Make sure we have a resource.
             #
             @mucs[jid.strip].join(jid, password)
 
+            logger.info("Joined #{jid}")
           else
             logger.debug("Already joined #{jid}.")
           end

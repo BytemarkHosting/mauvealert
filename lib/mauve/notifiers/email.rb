@@ -7,17 +7,9 @@ module Mauve
   module Notifiers
     module Email
     
-      
-      class Default        
+      class Default
         attr_reader :name
-        attr :server, true
-        attr :port, true
-        attr :username, true
-        attr :password, true
-        attr :login_method, true
-        attr :from, true
-        attr :subject_prefix, true
-        attr :email_suffix, true
+        attr_writer :server, :port, :password, :login_method, :from, :subject_prefix, :email_suffix
         
         def username=(username)
           @login_method ||= :plain
@@ -47,20 +39,15 @@ module Mauve
           message = prepare_message(destination, alert, all_alerts, conditions)
           args  = [@server, @port]
           args += [@username, @password, @login_method.to_sym] if @login_method
-          history = Mauve::History.new(:alert => alert, :type => :notification) 
 
           begin
             Net::SMTP.start(*args) do |smtp|
               smtp.send_message(message, @from, destination)
             end
-            history.event = "Sent mail to #{destination}."
-            history.save
             true
           rescue StandardError => ex
             logger.error "SMTP failure: #{ex.to_s}"
             logger.debug ex.backtrace.join("\n")
-            history.event = "Failed to send mail to #{destination} due to #{ex.to_s}"
-            history.save
             false
           end
         end

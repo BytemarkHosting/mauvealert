@@ -40,17 +40,15 @@ module Mauve
           # Make sure we've got a matching group
           #
           if groups.empty?
-            logger.warn "no groups found for #{alert}" 
+            logger.warn "no groups found for #{alert}!" 
             next
           end
 
           #
-          # Notify just the group that thinks this alert is the most urgent.
+          # Notify just the first group 
           #
-          logger.warn "Found #{groups.length} matching groups for #{alert}" if groups.length > 1
-
           this_group = groups.first
-          logger.info("notifying group #{this_group} of #{alert} (matching #{this_group.level})")
+          logger.info("notifying group #{this_group} of #{alert}")
           this_group.notify(alert)
         end
       end
@@ -103,7 +101,7 @@ module Mauve
     def matches_alert?(alert)
 
       unless alert.is_a?(Alert)
-        logger.warn "Got given a #{alert.class} instead of an Alert!"
+        logger.error "Got given a #{alert.class} instead of an Alert!"
       	logger.debug caller.join("\n")
         return false
       end
@@ -126,7 +124,7 @@ module Mauve
       # If there are no notifications defined. 
       #
       if  notifications.nil?
-        logger.warn("No notifications found for #{alert}")
+        logger.warn("No notifications found for #{self.inspect}")
         return
       end
 

@@ -46,7 +46,7 @@ class AuthBytemark
       Mauve::Server.instance.logger.warn "Fault code is #{fault.faultCode} stating #{fault.faultString}"
       return false
     rescue Exception => ex
-      Mauve::Server.instance.logger.warn "Caught #{ex.to_s} whilst trying to loging for #{login}"
+      Mauve::Server.instance.logger.error "Caught #{ex.to_s} whilst trying to loging for #{login}"
       Mauve::Server.instance.logger.debug ex.backtrace.join("\n")
       return false
     end

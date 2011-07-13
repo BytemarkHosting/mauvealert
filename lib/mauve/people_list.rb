@@ -34,11 +34,16 @@ module Mauve
     # Return the array of people
     #
     def people
-      logger.warn "No-one found in the people list for #{self.label}" if self.list.empty?
 
-      list.collect do |name|
+      l = list.collect do |name|
         Configuration.current.people.has_key?(name) ? Configuration.current.people[name] : nil
       end.reject{|person| person.nil?}
+      #
+      # Hmm.. no-one in the list?!
+      #
+      logger.warn "No-one found in the people list for #{self.label}" if l.empty?
+
+      l
     end
 
   end

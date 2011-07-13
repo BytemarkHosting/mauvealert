@@ -6,6 +6,7 @@ module Mauve
   class MauveThread
 
     def initialize
+      @thread = nil
     end
 
     def logger
@@ -58,7 +59,7 @@ module Mauve
     end
 
     def frozen?
-      @frozen and @thread.stop?
+      defined? @frozen and @frozen and @thread.stop?
     end
 
     def thaw
@@ -86,12 +87,20 @@ module Mauve
       @thread.is_a?(Thread) and @thread.alive?
     end
 
+    def stop?
+      @thread.is_a?(Thread) and @thread.stop?
+    end
+
     def join(ok_exceptions=[])
       @thread.join if @thread.is_a?(Thread)
     end
 
     def raise(ex)
       @thread.raise(ex)
+    end
+
+    def backtrace
+      @thread.backtrace if @thread.is_a?(Thread)
     end
 
     def restart

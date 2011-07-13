@@ -3,11 +3,13 @@
 #
 ##
 
-all: man/mauveclient.1
+all: man man/mauveclient.1 man/mauveserver.1 man/mauveconsole.1
+
+man:
+	mkdir -p man
 
 man/%.1: bin/%
-	mkdir -p man
-	ruby -I lib $< --help | txt2man -t $(notdir $<) -s 1  > $@; \
+	ruby -I lib $< --help | txt2man -t $(notdir $<) -s 1  > $@
 
 clean:
 	$(RM) -r man

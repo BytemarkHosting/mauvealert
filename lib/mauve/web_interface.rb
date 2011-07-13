@@ -185,6 +185,7 @@ EOF
       n_hours    = params[:n_hours]    || 2
       type_hours = params[:type_hours] || "daylight"
       alerts     = params[:alerts]     || []
+      note       = params[:note]       || nil
 
       n_hours = (n_hours.to_i > 188 ? 188 : n_hours.to_i)
 
@@ -196,18 +197,28 @@ EOF
 
       succeeded = []
       failed = []
-      
+
       alerts.each do |k,v|
         begin
           a = Alert.get!(k.to_i)
         rescue DataMapper::ObjectNotFoundError => ex
           failed << ex
+          next
         end
+
+        logger.debug "arse"
 
         begin
           a.acknowledge!(@person, ack_until)
+          logger.debug note
+          unless note.to_s.empty?
+            h = History.new(:alert_id => a.id, :type => "note", :event => note.to_s)
+            logger.debug h.errors unless h.save
+          end
           succeeded << a
         rescue StandardError => ex
+          logger.error "Caught #{ex.to_s} when trying to save #{a.inspect}"
+          logger.debug ex.backtrace.join("\n")
           failed << ex
         end
       end
@@ -454,14 +465,15 @@ EOF
         result = begin
           auth.authenticate(usr,pwd)
         rescue Exception => ex
-          @logger.debug "Caught exception during Bytemark auth for #{usr} (#{ex.to_s})"
+          logger.error "Caught exception during Bytemark auth for #{usr} (#{ex.to_s})"
+          logger.debug ex.backtrace.join("\n")
           false
         end
 
         if true == result
           return true
         else
-          @logger.debug "Bytemark authentication failed for #{usr}"
+          logger.warn "Bytemark authentication failed for #{usr}"
         end
 
         # 
@@ -472,14 +484,15 @@ EOF
             Digest::SHA1.hexdigest(params['password']) == Configuration.current.people[usr].password
           end
         rescue Exception => ex
-          @logger.debug "Caught exception during local auth for #{usr} (#{ex.to_s})"
+          logger.error "Caught exception during local auth for #{usr} (#{ex.to_s})"
+          logger.debug ex.backtrace.join("\n")
           false
         end
 
         if true == result
           return true
         else
-          @logger.debug "Local authentication failed for #{usr}"
+          logger.warn "Local authentication failed for #{usr}"
         end
 
         #

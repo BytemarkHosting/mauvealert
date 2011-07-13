@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -e
+
+##
+# Add a mauve user
+##
+RUNASUSER=mauvealert
+
+if [ "$1" = "purge" ] ; then
+  ##
+  # Remove the system user
+  ##
+  deluser --system $RUNASUSER > /dev/null
+
+  ##
+  # remove default directories
+  ##
+  rm -rf /var/log/mauvealert/
+  rm -rf /var/lib/mauvealert/
+fi
+
+#DEBHELPER#

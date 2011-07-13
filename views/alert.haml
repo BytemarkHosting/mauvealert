@@ -47,7 +47,7 @@
     %th Notifications sent out
     %td
       %ul
-        - @alert.changes.each do |change|
+        - @alert.changes.first(10).each do |change|
           - if change.was_relevant?
             %li
               %strong= change.level 
@@ -59,8 +59,8 @@
   %tr
     %th History
     %td
-      %ul
-        - @alert.histories.each do |history|
+      %ul#histories
+        - @alert.histories.first(10).each do |history|
           %li
             = history.event
             at

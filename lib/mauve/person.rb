@@ -63,9 +63,13 @@ module Mauve
         # and turn them into false.
         #
         res = notification_method.send_alert(destination, @alert, @other_alerts, conditions)
+
         #
         # Log the result
-        logger.debug "Notification " +  (res ? "succeeded" : "failed" ) + " for #{@person.username} using notifier '#{name}' to '#{destination}'"
+        note =  "#{@alert.update_type.upcase}: notification " +  (res ? "succeeded" : "failed" ) + " for #{@person.username} using notifier '#{name}' to '#{destination}'."
+        logger.info note
+        h = History.new(:alert_id => @alert.id, :type => "notification", :event => note)
+        logger.error "Unable to save history due to #{h.errors.inspect}" if !h.save
 
         res
       end
@@ -144,7 +148,6 @@ module Mauve
     end
     
     def remind(alert, level)
-      logger.debug("Reminder for #{alert} send at level #{level}.")
       send_alert(level, alert)
     end
    
@@ -153,45 +156,45 @@ module Mauve
     #
     def send_alert(level, alert)
       now = MauveTime.now
-      suppressed_changed = nil
+
       threshold_breached = @notification_thresholds.any? do |period, previous_alert_times|
           first = previous_alert_times.first
           first.is_a?(MauveTime) and (now - first) < period
         end
 
-      this_alert_suppressed = false
+      was_suppressed        = self.suppressed?
 
       if Server.instance.started_at > alert.updated_at.to_time and (Server.instance.started_at + Server.instance.initial_sleep) > MauveTime.now
-        logger.warn("Alert last updated in prior run of mauve -- ignoring for initial sleep period.")
-        this_alert_suppressed = true
-      elsif threshold_breached
-        unless suppressed?
-          logger.warn("Suspending notifications to #{username} until further notice.") 
-          suppressed_changed = true 
-        end
+        logger.info("Alert last updated in prior run of mauve -- ignoring for initial sleep period.")
+        return
+      end
+
+      if threshold_breached
+        logger.info("Suspending notifications to #{username} until further notice.") unless was_suppressed
         @suppressed = true
+        
       else
-        if suppressed?
-          suppressed_changed = false
-          logger.warn "Starting to send notifications again for #{username}."
-        else
-          logger.info "Notifying #{username} of #{alert} at level #{level}"
-        end
+        logger.info "Starting to send notifications again for #{username}." if was_suppressed
         @suppressed = false
+
       end
       
-      return if suppressed? or this_alert_suppressed
+      #
+      # We only suppress notifications if we were suppressed before we started,
+      # and are still suppressed.
+      #
+      return if was_suppressed and self.suppressed?
 
-      Server.notification_push([self, level, alert, suppressed_changed])
+      Server.notification_push([self, level, alert, was_suppressed])
     end
 
-    def do_send_alert(level, alert, suppressed_changed)
+    def do_send_alert(level, alert, was_suppressed)
       result = NotificationCaller.new(
         self,
         alert,
         current_alerts,
         Configuration.current.notification_methods,
-        :suppressed_changed => suppressed_changed
+        :was_suppressed => was_suppressed
       ).instance_eval(&__send__(level))
 
       if result
@@ -205,10 +208,9 @@ module Mauve
           @notification_thresholds[period].push MauveTime.now
           @notification_thresholds[period].shift
         end
-
-        logger.info("Notification for #{username} of #{alert} at level #{level} has been successful")
+        true
       else
-        logger.error("Failed to notify #{username} about #{alert} at level #{level}")
+        false
       end
     end
     

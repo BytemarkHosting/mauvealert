@@ -14,6 +14,7 @@ module Mauve
     attr_accessor :sleep_interval, :last_run_at
 
     def initialize
+      super
       @initial_sleep = 300
       @initial_sleep_threshold = 300
     end
@@ -29,7 +30,6 @@ module Mauve
       # look for the next alert_changed object.
       #
       if next_alert.nil? or next_alert.due_at > MauveTime.now
-        logger.debug("Next alert was #{next_alert} due at #{next_alert.due_at}") unless next_alert.nil?
         next_alert_changed = AlertChanged.find_next_with_event
       end
 
@@ -51,12 +51,12 @@ module Mauve
         #
         # Sleep indefinitely
         #
-        logger.debug("Nothing to notify about -- snoozing indefinitely.")
+        logger.info("Nothing to notify about -- snoozing indefinitely.")
       else
         #
         # La la la nothing to do.
         #
-        logger.debug("Next to notify: #{next_to_notify} -- snoozing until #{next_to_notify.due_at}")
+        logger.info("Next to notify: #{next_to_notify} -- snoozing until #{next_to_notify.due_at}")
       end
 
       #

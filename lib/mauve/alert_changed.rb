@@ -39,7 +39,7 @@ module Mauve
       )
       if old_changed
         if !old_changed.update(:remind_at => nil)
-          logger.error "Couldn't save #{old_changed}, will get duplicate reminders"
+          logger.info "Couldn't save #{old_changed}, will get duplicate reminders"
         end
       end
     end
@@ -74,7 +74,7 @@ module Mauve
         previous.was_relevant_when_raised?
       else
         # a bug, but hardly inconceivable :)
-        logger.warn("Could not see that #{alert} was raised with #{person} "+
+        logger.info("Could not see that #{alert} was raised with #{person} "+
                      "but further updates exist (e.g. #{self}) "+
                      "- you may see spurious notifications as a result")
         true
@@ -86,18 +86,18 @@ module Mauve
     #
     def remind
       unless alert.is_a?(Alert)
-        logger.debug "#{self.inspect} lost alert #{alert_id}.  Killing self."
+        logger.info "#{self.inspect} lost alert #{alert_id}.  Killing self."
         destroy!
         return false
       end
 
 
-      logger.debug "Reminding someone about #{self.inspect}"
+      logger.info "Reminding someone about #{self.inspect}"
       
       alert_group = AlertGroup.matches(alert)[0]
       
       if !alert_group || alert.acknowledged?
-        logger.debug((alert_group ? 
+        logger.info((alert_group ? 
           "Alert already acknowledged" : 
           "No alert group matches any more"
           ) + ", no reminder due"

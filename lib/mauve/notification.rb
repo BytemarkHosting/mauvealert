@@ -44,10 +44,7 @@ module Mauve
       plus_one_week = MauveTime.now + 604800 # ish
       while offset < plus_one_week
         offset += interval
-        if DuringRunner.new(offset, @alert, &@during).now?
-          @logger.debug("Found reminder time of #{offset}")
-          return offset 
-        end
+        return offset if DuringRunner.new(offset, @alert, &@during).now?
       end
       @logger.info("Could not find a reminder time less than a week "+
                    "for #{@alert}.")

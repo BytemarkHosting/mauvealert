@@ -3,7 +3,6 @@ require 'ipaddr'
 require 'resolv'
 require 'socket'
 require 'mauve/mauve_time'
-require 'pp'
 
 module Mauve 
   class Sender

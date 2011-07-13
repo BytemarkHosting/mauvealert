@@ -43,7 +43,7 @@ module Mauve
       # Sleep time between pooling the @buffer buffer.
       @sleep = 1
 
-      @freeze     = false
+      @frozen     = false
       @stop       = false
 
       @stopped_at = MauveTime.now
@@ -166,7 +166,7 @@ module Mauve
           begin
             klass.instance.join
           rescue StandardError => ex
-            logger.warn "Caught #{ex.to_s} whilst checking #{klass} thread"
+            logger.error "Caught #{ex.to_s} whilst checking #{klass} thread"
             logger.debug ex.backtrace.join("\n")
           end
 
@@ -177,7 +177,8 @@ module Mauve
         end
 
         #
-        # Now do the same with other threads.
+        # Now do the same with other threads.  However if these ones crash, the
+        # server has to stop, as there is no method to restart them.
         #
         thread_list.each do |t|
 

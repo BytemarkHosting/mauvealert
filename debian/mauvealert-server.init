@@ -32,8 +32,6 @@ SCRIPTNAME=/etc/init.d/$NAME
 # Load the VERBOSE setting and other rcS variables
 . /lib/init/vars.sh
 
-VERBOSE=1
-
 # Define LSB log_* functions.
 # Depend on lsb-base (>= 3.2-14) to ensure that this file is present
 # and status_of_proc is working.
@@ -48,9 +46,9 @@ do_start()
 	#   0 if daemon has been started
 	#   1 if daemon was already running
 	#   2 if daemon could not be started
-	start-stop-daemon --start --quiet --pidfile $PIDFILE --startas $DAEMON --test > /dev/null \
+	start-stop-daemon --start --quiet --pidfile $PIDFILE --startas $DAEMON --chuid $RUNASUSER --test > /dev/null \
 		|| return 1
-	start-stop-daemon --start --quiet --pidfile $PIDFILE --make-pidfile --background --startas $DAEMON -- \
+	start-stop-daemon --start --quiet --pidfile $PIDFILE --make-pidfile --chuid $RUNASUSER --background --startas $DAEMON -- \
 		$DAEMON_ARGS \
 		|| return 2
 	# Add code here, if necessary, that waits for the process to be ready
@@ -95,9 +93,18 @@ do_reload() {
 	# restarting (for example, when it is sent a SIGHUP),
 	# then implement that here.
 	#
-	start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAME
+	start-stop-daemon --stop --signal HUP --quiet --pidfile $PIDFILE --name $NAME
 	return 0
 }
+
+#
+# Function that sends a SIGUSR1 to reopen logfiles
+#
+do_reopenlogs() {
+	start-stop-daemon --stop --signal USR1 --quiet --pidfile $PIDFILE --name $NAME
+	return 0
+}
+
 
 case "$1" in
   start)
@@ -128,6 +135,11 @@ case "$1" in
 	do_reload
 	log_end_msg $?
 	;;
+  reopen-logs)
+  log_daemon_msg "Re-opening logs for $DESC" "$NAME"
+  do_reopenlogs
+  log_end_msg $?
+  ;;
   restart)
 	#
 	# If the "reload" option is implemented then remove the

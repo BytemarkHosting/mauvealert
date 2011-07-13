@@ -1,23 +1,70 @@
 #!/usr/bin/ruby1.8
+# NAME
+# 
+#  mauveconsole -- Ruby console to query the mauvealert server directly
+#
+# SYNOPSIS
+# 
+#  mauveconsole [-h | --help] [<configuration file>]
+# 
+# OPTIONS
+# 
+#  -h, --help            Show a help message
+#  <configuration file>  File to load the configuration from. If none is
+#                        specified, then mauvealert.conf in the current
+#                        directory is used, and failing that
+#                        /etc/mauvealert/mauvealert.conf is used.
+# 
+# SEE ALSO
+#
+#  irb(1), mauveserver(1), mauveclient(1)
+#
+# AUTHOR
+# 
+#  Patrick J Cherry <patrick@bytemark.co.uk>
+#
 
-require 'pp'
+def error(msg)
+  STDERR.print "*** Error: #{msg}\n"
+  STDERR.print "*** For help, type: #{$0} -h\n"
+  exit 1
+end
+
+# CAUTION! Kwality kode.
+#
+if ARGV.any?{|a| a =~ /--?h(elp)?/}
+  # Open the file, stripping the shebang line
+  lines = File.open(__FILE__){|fh| fh.readlines}[1..-1]
+
+  lines.each do |line|
+  line.chomp!
+    break if line.empty?
+    puts line[2..-1].to_s
+  end
+
+  exit 0
+end
+
+configuration_file = ARGV.shift
+configuration_file = [".", "/etc/mauvealert/"].collect{|x| File.join("mauveserver.conf") }.find{|d| File.file?(d)} if configuration_file.nil?
+configuration_file = File.expand_path(configuration_file)
+
+unless File.file?(configuration_file)
+  error "Configuration file #{configuration_file} not found\n"
+end
+
 require 'irb'
 require 'thread'
 require 'mauve/configuration'
 
 Thread.abort_on_exception = true
 
-configuration_file = ARGV.shift
-configuration_file = [".", "/etc/mauvealert/"].find{|d| File.file?(File.join(d,"mauveserver.conf")) } if configuration_file.nil?
-configuration_file = File.expand_path(configuration_file)
-
-unless File.file?(configuration_file)
-  STDERR.print "Configuration file #{configuration_file} not found"
-  Kernel.exit 1
-end
-
-Mauve::Configuration.current = Mauve::ConfigurationBuilder.load(configuration_file)
-
 include Mauve
+
+begin
+  Configuration.current = ConfigurationBuilder.load(configuration_file)
+rescue StandardError => ex
+  error ex.message
+end
 
 IRB.start

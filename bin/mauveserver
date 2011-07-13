@@ -1,46 +1,108 @@
 #! /usr/bin/ruby1.8
+# NAME
+# 
+#  mauveserver -- receive alerts from station(s) around the network
+#
+# SYNOPSIS
+#
+#  mauveserver [ -h | --help ] [<configuration file>]
+#
+# OPTIONS
+#
+#  -h, --help            Show a help message
+#
+#  <configuration file>  File to load the configuration from
+# 
+# SEE ALSO
+#
+#  mauveclient(1), mauveconsole(1)
+#
+# AUTHOR
+# 
+#  Patrick J Cherry <patrick@bytemark.co.uk>
+#
+
+def error(msg)
+  STDERR.print "*** Error: #{msg}\n"
+  STDERR.print "*** For help, type: #{$0} -h\n"
+  exit 1
+end
 
 begin
   eval "Proc.new { |a,&b| }"
 rescue SyntaxError => no_blocks_with_procs
-  STDERR.print "mauveserver must have Ruby 1.8.7 or later, sorry (if you "+
-    "try, you'll get a SyntaxError trying to load one of its libraries)\n"
-  exit 1
+  error "mauveserver must have Ruby 1.8.7 or later"
 end
-  
-require 'mauve/configuration'
+
+# CAUTION! Kwality kode.
+#
+if ARGV.any?{|a| a =~ /--?h(elp)?/}
+  # Open the file, stripping the shebang line
+  lines = File.open(__FILE__){|fh| fh.readlines}[1..-1]
+
+  lines.each do |line|
+  line.chomp!
+    break if line.empty?
+    puts line[2..-1].to_s
+  end
+
+  exit 0
+end
+
 
 configuration_file = ARGV.shift
-configuration_file = [".", "/etc/mauvealert/"].find{|d| File.file?(File.join(d,"mauveserver.conf")) } if configuration_file.nil?
+configuration_file = [".", "/etc/mauvealert/"].collect{|x| File.join("mauveserver.conf") }.find{|d| File.file?(d)} if configuration_file.nil?
 configuration_file = File.expand_path(configuration_file)
 
 unless File.file?(configuration_file)
-  STDERR.print "Configuration file #{configuration_file} not found\n"
-  Kernel.exit 1
+  error "Configuration file #{configuration_file} not found\n"
 end
 
-Mauve::Configuration.current = Mauve::ConfigurationBuilder.load(configuration_file)
+require 'mauve/configuration'
+
+begin
+  Mauve::Configuration.current = Mauve::ConfigurationBuilder.load(configuration_file)
+rescue StandardError => ex
+  error ex.message
+end
 
 %w(HUP).each do |sig|
-  trap("HUP") do
+  trap(sig) do
     # this blows up if you do it twice in quick succession, but don't really 
     # care about that case as it's only for log rotation.
-    Mauve::Server.instance.logger.warn "#{sig} signal received.  Stopping."
+    Mauve::Server.instance.logger.warn "#{sig} signal received.  Restarting."
     Mauve::Server.instance.stop
 
     #
     # Reload configuration
     #
-    Mauve::Server.instance.logger.warn "Restarting."
-
     begin
       new_config = Mauve::ConfigurationBuilder.load(configuration_file)
       Mauve::Configuration.current = new_config
     rescue BuildException => ex
-      Mauve::Server.instance.logger.warn "Reconfiguration failed: #{ex}.  Sticking with old one."
+      Mauve::Server.instance.logger.error "Reconfiguration failed: #{ex}.  Sticking with old one."
     end
     Mauve::Server.instance.logger.warn "Restarting."
     Mauve::Server.instance.start
+  end
+end
+
+%w(USR1).each do |sig|
+  trap(sig) do
+    Mauve::Server.instance.logger.warn "#{sig} signal received. Re-opening logs."
+    Log4r::Outputter.each_outputter do |old|
+      next unless old.is_a?(Log4r::FileOutputter)
+
+      new = Log4r::FileOutputter.new(old.name, {:filename => old.filename, :trunc => false})
+      new.formatter = old.formatter
+      new.level     = old.level
+
+      Mauve::Server.instance.logger.outputters << new
+      Mauve::Server.instance.logger.outputters.delete(old)
+      old.close
+
+      Mauve::Server.instance.logger.debug "Opened #{new.filename}."
+    end
   end
 end
 
@@ -52,5 +114,9 @@ end
   end
 end
 
-Mauve::Server.instance.run
+begin
+  Mauve::Server.instance.run
+rescue StandardError => ex
+  error ex.message
+end
 

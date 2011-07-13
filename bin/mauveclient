@@ -142,6 +142,10 @@
 #
 #   mauveclient -i heartbeat -d "No heartbeat received for 1.2.3.4. Could be down!" -s "heartbeat failed"  -c -r +10m
 #
+# SEE ALSO
+#
+#  mauveconsole(1), mauveserver(1)
+#
 # AUTHOR
 #
 # Patrick J Cherry <patrick@bytemark.co.uk>

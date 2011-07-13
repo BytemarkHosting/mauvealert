@@ -11,9 +11,7 @@ module Mauve
     attr_accessor :transmission_cache_expire_time, :sleep_interval
 
     def initialize
-      # Set the logger up
-      @logger = Log4r::Logger.new(self.class.to_s)
-
+      super
       #
       # Set up the transmission id cache
       #
@@ -22,10 +20,11 @@ module Mauve
       @transmission_cache_checked_at = Time.now
     end
 
+    def logger
+      @logger ||= Log4r::Logger.new(self.class.to_s)
+    end
+
     def main_loop
-
-      logger.info("Buffer has packets waiting...") if Server.packet_buffer_size > 0
-
       #
       # Only do the loop a maximum of 10 times every @sleep_interval seconds
       #
@@ -39,7 +38,9 @@ module Mauve
         
         Timer.instance.freeze unless Timer.instance.frozen?
 
-        @logger.debug("Got #{data.inspect} from #{client.inspect}")
+        raise ArgumentError, "arse"
+
+        logger.debug("Got #{data.inspect} from #{client.inspect}")
 
         ip_source = "#{client[3]}:#{client[1]}"
         update = Proto::AlertUpdate.new
@@ -48,14 +49,14 @@ module Mauve
           update.parse_from_string(data)
   
           if @transmission_id_cache[update.transmission_id.to_s]
-            @logger.debug("Ignoring duplicate transmission id #{update.transmission_id}")
+            logger.info("Ignoring duplicate transmission id #{update.transmission_id}")
             #
             # Continue with next packet.
             #
             next
           end
 
-          @logger.debug "Update #{update.transmission_id} sent at #{update.transmission_time} from "+
+          logger.info "Update #{update.transmission_id} sent at #{update.transmission_time} from "+
             "'#{update.source}'@#{ip_source} alerts #{update.alert.length}"
 
           Alert.receive_update(update, received_at)
@@ -64,10 +65,10 @@ module Mauve
                NotImplementedError, 
                DataObjects::IntegrityError => ex
 
-          @logger.error "#{ex} (#{ex.class}) while parsing #{data.length} bytes "+
+          logger.error "#{ex} (#{ex.class}) while parsing #{data.length} bytes "+
             "starting '#{data[0..15].inspect}' from #{ip_source}"
 
-          @logger.debug ex.backtrace.join("\n")
+          logger.debug ex.backtrace.join("\n")
 
         ensure
           @transmission_id_cache[update.transmission_id.to_s] = MauveTime.now

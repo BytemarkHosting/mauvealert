@@ -87,6 +87,7 @@ module Mauve
     attr_accessor :session_secret 
     
     def initialize
+      super
       @port = 1288
       @ip = "127.0.0.1"
       @document_root = "/usr/share/mauvealert"

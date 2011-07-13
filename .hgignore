@@ -6,3 +6,4 @@
 ^debian/mauvealert-.*\.debhelper(.log)?$
 ^debian/mauvealert-.*.substvars$
 ^debian/files
+^static/javascript/jquery$
