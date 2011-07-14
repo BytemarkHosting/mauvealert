@@ -35,7 +35,7 @@ module Mauve
 
         end
 
-        def send_alert(destination, alert, all_alerts, conditions = nil)
+        def send_alert(destination, alert, all_alerts, conditions = {})
           message = prepare_message(destination, alert, all_alerts, conditions)
           args  = [@server, @port]
           args += [@username, @password, @login_method.to_sym] if @login_method
@@ -54,10 +54,9 @@ module Mauve
         
         protected
         
-        def prepare_message(destination, alert, all_alerts, conditions = nil)
-          if conditions
-            @suppressed_changed = conditions[:suppressed_changed]
-          end
+        def prepare_message(destination, alert, all_alerts, conditions = {})
+          was_suppressed = conditions[:was_suppressed] || false
+          is_suppressed  = conditions[:is_suppressed]  || false
           
           m = RMail::Message.new
          

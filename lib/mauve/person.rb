@@ -7,8 +7,11 @@ module Mauve
   
     attr_reader :notification_thresholds
   
-    def initialize(*args) 
-      @notification_thresholds = { } # 60 => Array.new(10) }
+    def initialize(*args)
+      #
+      # By default send 10 thresholds in a minute maximum
+      #
+      @notification_thresholds = { 60 => Array.new(10) }
       @suppressed = false
       super(*args)
     end
@@ -51,6 +54,8 @@ module Mauve
 
         if args.first.is_a?(Array)
           conditions  = @base_conditions.merge(args[0])
+        else
+          conditions  = @base_conditions
         end
 
         notification_method = Configuration.current.notification_methods[name.to_s]
@@ -66,7 +71,7 @@ module Mauve
         #
         # Log the result
         note =  "#{@alert.update_type.capitalize} #{name} notification to #{@person.username} (#{destination}) " +  (res ? "succeeded" : "failed" )
-        logger.info note
+        logger.info note+" about #{@alert}."
         h = History.new(:alert_id => @alert.id, :type => "notification", :event => note)
         logger.error "Unable to save history due to #{h.errors.inspect}" if !h.save
 
@@ -145,10 +150,6 @@ module Mauve
 
         send_alert(level, alert) if is_relevant # last_change.was_relevant_when_raised? 
     end
-    
-    def remind(alert, level)
-      send_alert(level, alert)
-    end
    
     #
     # This just wraps send_alert by sending the job to a queue.
@@ -156,44 +157,50 @@ module Mauve
     def send_alert(level, alert)
       Server.notification_push([self, level, alert])
     end
-    
+   
     def do_send_alert(level, alert)
       now = MauveTime.now
 
-      threshold_breached = @notification_thresholds.any? do |period, previous_alert_times|
-          first = previous_alert_times.first
-          first.is_a?(MauveTime) and (now - first) < period
-        end
-
       was_suppressed = self.suppressed?
 
-      if Server.instance.started_at > alert.updated_at.to_time and (Server.instance.started_at + Server.instance.initial_sleep) > MauveTime.now
-        logger.info("Alert last updated in prior run of mauve -- ignoring for initial sleep period.")
-        return true
+      @suppressed = @notification_thresholds.any? do |period, previous_alert_times|
+          #
+          # Choose the second one as the first.
+          #
+          first = previous_alert_times[1]
+          first.is_a?(MauveTime) and (now - first) < period
       end
 
-      if threshold_breached
+      if self.suppressed?
         logger.info("Suspending further notifications to #{username} until further notice.") unless was_suppressed
-        @suppressed = true
         
       else
         logger.info "Starting to send notifications again for #{username}." if was_suppressed
-        @suppressed = false
 
+      end
+      
+      if Server.instance.started_at > alert.updated_at.to_time and (Server.instance.started_at + Server.instance.initial_sleep) > MauveTime.now
+        logger.info("Alert last updated in prior run of mauve -- ignoring for initial sleep period.")
+        return true
       end
       
       #
       # We only suppress notifications if we were suppressed before we started,
       # and are still suppressed.
       #
-      return true if was_suppressed and self.suppressed?
+      if was_suppressed and self.suppressed?
+        note =  "#{alert.update_type.capitalize} notification to #{self.username} suppressed"
+        logger.info note + " about #{alert}."
+        History.create(:alert_id => alert.id, :type => "notification", :event => note)
+        return true 
+      end
 
       result = NotificationCaller.new(
         self,
         alert,
         current_alerts,
-        {:is_suppressed => @suppressed,
-        :was_suppressed => was_suppressed, }
+        {:is_suppressed  => @suppressed,
+         :was_suppressed => was_suppressed, }
       ).instance_eval(&__send__(level))
 
       if result
@@ -225,18 +232,6 @@ module Mauve
     end
     
     protected
-    # Remembers that an alert has been sent so that we can later check whether
-    # too many alerts have been sent in a particular period.
-    #
-    def remember_alert(now=MauveTime.now)
-    end
-    
-    # Returns time period over which "too many" alerts have been sent, or nil
-    # if none.
-    #
-    def threshold_breached(now=MauveTime.now)
-    end
-
     # Whether the person is on holiday or not.
     #
     # @return [Boolean] True if person on holiday, false otherwise.

@@ -1,2 +1,3 @@
  * Javascript ack_time update if ajax synchronicity a bit shite
  * Template SMS bit better with the link URL to the actual alert.
+ * Add "too noisy" reminder to notifcations.

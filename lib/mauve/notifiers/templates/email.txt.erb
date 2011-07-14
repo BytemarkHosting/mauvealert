@@ -19,6 +19,11 @@ end
 
 -----------------------------------------------------------------------
 
+<% if was_supressed and not is_suppressed 
+%>Better now.  Your notifications have now restarted.<% 
+elsif is_supressed and not was_suppressed 
+%>Too noisy!  Your notifications have been suppressed.<% end %>
+
 --
 Love mauve.
 xx

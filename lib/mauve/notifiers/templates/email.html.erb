@@ -19,4 +19,9 @@ end
 <h2>Detail</h2>
 <div><%= RedCloth.new(alert.detail).to_html %></div>
 <hr />
-<address>--<br />Love mauve<br />xxx.</address></body></html>
+<% if was_supressed and not is_suppressed %>
+<p><strong>Better now.  Your notifications have now restarted.</strong></p>
+<% elsif is_supressed and not was_suppressed %>
+<p><strong>Too noisy!  Your notifications have been suppressed.</strong></p>
+<% end %>
+<address>-- <br />Love mauve<br />xxx.</address></body></html>

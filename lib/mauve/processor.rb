@@ -54,7 +54,7 @@ module Mauve
             next
           end
 
-          logger.info "Update #{update.transmission_id} sent at #{update.transmission_time} from "+
+          logger.debug "Update #{update.transmission_id} sent at #{update.transmission_time} from "+
             "'#{update.source}'@#{ip_source} alerts #{update.alert.length}"
 
           Alert.receive_update(update, received_at)

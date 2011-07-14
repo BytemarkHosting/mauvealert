@@ -182,12 +182,11 @@ module Mauve
         # which checks whether the jid in question has a presence matching one
         # or more of the choices - see +check_jid_has_presence+ for options.
 
-        def send_alert(destination, alert, all_alerts, conditions = nil)
+        def send_alert(destination, alert, all_alerts, conditions = {})
           destination_jid = JID.new(destination)         
  
-          if conditions
-            @suppressed_changed = conditions[:suppressed_changed]
-          end
+          was_suppressed = conditions[:was_suppressed] || false
+          is_suppressed  = conditions[:is_suppressed]  || false
           
           if conditions && !check_alert_conditions(destination_jid, conditions) 
             logger.info("Alert conditions not met, not sending XMPP alert to #{destination_jid}")

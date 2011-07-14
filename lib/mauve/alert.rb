@@ -85,9 +85,11 @@ module Mauve
 
     validates_with_method :check_dates
     
-    def to_s
-      "#<Alert:#{id} #{alert_id} from #{source} update_type #{update_type}>"
+    def inspect
+      "#<Alert #{id}, alert_id #{alert_id}, source #{source}>"
     end
+
+    alias to_s inspect
    
     def check_dates
       bad_dates = self.attributes.find_all do |key, value|
@@ -209,6 +211,8 @@ module Mauve
           logger.error "Unable to save history due to #{h.errors.inspect}"
         end
       end
+
+      logger.info "#{self.inspect} updated." unless @attributes_before_save.empty?
 
       true
     end

@@ -2,6 +2,7 @@
 
 PRE="ruby -I lib bin/mauveclient localhost"
 F=60
+S=10
 n=$*
 
 _host () { 
@@ -12,9 +13,9 @@ _host () {
 
       if [ "$down" == "n" ] ; then
         $PRE -o $hostname -i heartbeat -r +$F -c now -s "heartbeat failed" --detail="<p>The heartbeat wasn't sent for this host</p><p>This indicates that the host might be down</p>"
-        sleep $((F - $RANDOM*5/32768 - 5))
+        sleep $((F - $RANDOM*$S/32768 - $S))
       else
-        sleep $((RANDOM*5/32768 + $F + 5))
+        sleep $((RANDOM*$S/32768 + $F + $S))
       fi
 
       if [ $RANDOM -gt 30000 ] ; then
@@ -27,7 +28,7 @@ _host () {
   done
 }
 
-for i in `seq 1 500` ; do
+for i in `seq 1 100` ; do
   _host $i &
   sleep 0.2
 done

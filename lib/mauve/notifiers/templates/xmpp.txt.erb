@@ -11,4 +11,10 @@ end
 if alert.source != alert.subject 
 %> -- from <%= alert.source %><%
 end 
-%>.
+%>.<%
+if was_suppressed and not is_suppressed 
+%> Normal service has resumed.<%
+elsif is_suppressed and not was_suppressed
+%> Further alerts supressed until things calm down.<%
+end 
+%>

@@ -21,8 +21,9 @@ Description: Mauve network alert system -- client
 
 Package: mauvealert-server
 Architecture: all
+Pre-Depends: libjs-jquery
 Depends: mauvealert-common,
- libjs-jquery,
+ adduser,
  ruby1.8,
  libhaml-ruby1.8,
  liblog4r-ruby1.8,

@@ -19,9 +19,9 @@ module Mauve
           @name = name
         end
 
-        def send_alert(destination, alert, all_alerts, conditions = nil)
+        def send_alert(destination, alert, all_alerts, conditions = {})
           uri = URI.parse(GATEWAY)
-                  
+
           opts_string = {
             :username => @username,
             :password => @password,
@@ -52,17 +52,9 @@ module Mauve
         end
         
         protected
-        def prepare_message(destination, alert, all_alerts, conditions=nil)
-          if conditions
-            @suppressed_changed = conditions[:suppressed_changed]
-          end
-          
-          txt = case @suppressed_changed
-            when true then "TOO MUCH NOISE!  Last notification: "
-            when false then "BACK TO NORMAL: "
-            else 
-              ""
-          end
+        def prepare_message(destination, alert, all_alerts, conditions={})
+          was_suppressed = conditions[:was_suppressed] || false
+          is_suppressed  = conditions[:is_suppressed]  || false
           
           template_file = File.join(File.dirname(__FILE__),"templates","sms.txt.erb")
 

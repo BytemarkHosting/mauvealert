@@ -20,9 +20,11 @@ module Mauve
     property :updated_at, DateTime
 
     
-    def to_s
-      "#<AlertChanged:#{id} of #{alert_id} for #{person} update_type #{update_type}>"
+    def inspect
+      "#<AlertChanged #{id}: alert_id #{alert_id}, for #{person}, update_type #{update_type}>"
     end
+
+    alias to_s inspect
     
     belongs_to :alert
     
@@ -134,7 +136,7 @@ module Mauve
                 # Only remind if the time is right. 
                 #
                 if DuringRunner.new(Time.now, alert, &notification.during).now?
-                  Configuration.current.people[np].remind(alert, level)
+                  Configuration.current.people[np].send_alert(level, alert)
                 end
                 self.remind_at = notification.remind_at_next(alert)
                 save
