@@ -183,9 +183,9 @@ def parse_time_spec(spec = "now")
       end
 
       multiplier *= case $3
-        when ?m then 60
-        when ?h then 3600
-        when ?d then 86400
+        when "m" then 60
+        when "h" then 3600
+        when "d" then 86400
         else
           1
       end

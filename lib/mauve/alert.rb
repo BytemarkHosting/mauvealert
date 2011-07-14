@@ -162,9 +162,9 @@ module Mauve
     # This allows us to take a copy of the changes before we save.
     #
     def take_copy_of_changes
-      @changes_before_save = Hash.new
+      @attributes_before_save = Hash.new
       self.original_attributes.each do |k,v| 
-        @changes_before_save[k.name] = v
+        @attributes_before_save[k.name] = v
       end
     end
 
@@ -175,25 +175,30 @@ module Mauve
       #
       # Make sure we don't barf
       #
-      @changes_before_save ||= Hash.new
+      @attributes_before_save ||= Hash.new
 
-      is_a_change = [:subject, :summary].any?{|k| @changes_before_save.keys.include?(k)}
+      is_a_new_alert = @attributes_before_save.values.all?{|a| a.nil?}
+      #
+      # Do not alert about changes, for now.
+      #
+      is_a_change    = false # [:subject, :summary].any?{|k| @attributes_before_save.keys.include?(k)}
 
       #
-      # We notify if the update type has changed, or if the update type is
+      # We notify if the update type has changed (but not from nil), or if the update type is
       # "raised", and the above is_a_change condition is true
       #
-      if @changes_before_save.has_key?(:update_type) or (self.update_type == "raised" and is_a_change)
+      if (@attributes_before_save.has_key?(:update_type) and !is_a_new_alert) or
+         (self.update_type == "raised" and (is_a_new_alert or is_a_change))
         self.notify
 
         h = History.new(:alert_id => self.id, :type => "update")
 
         if self.update_type == "acknowledged"
-            h.event = "ACKNOWLEDGED by #{self.acknowledged_by} until #{self.will_unacknowledge_at}"
+          h.event = "ACKNOWLEDGED by #{self.acknowledged_by} until #{self.will_unacknowledge_at}"
 
         elsif is_a_change
           h.event = "CHANGED: "
-          h.event += @changes_before_save.keys.collect{|k| "#{k.to_s}: #{@changes_before_save[k]} -> #{self.__send__(k)}"}.join(", ") 
+          h.event += @attributes_before_save.keys.collect{|k| "#{k.to_s}: #{@attributes_before_save[k]} -> #{self.__send__(k)}"}.join(", ") 
 
         else
           h.event = self.update_type.upcase
@@ -472,11 +477,6 @@ module Mauve
           alert_db.detail = Alert.clean_html(alert.detail)    if alert.detail  && !alert.detail.empty?
 
           alert_db.importance = alert.importance if alert.importance != 0 
-
-          # 
-          # This will probably get overwritten below.
-          #
-          # alert_db.update_type = "changed" unless alert_db.update_type
 
           alert_db.updated_at = reception_time 
 

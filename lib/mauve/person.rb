@@ -24,11 +24,10 @@ module Mauve
     # 
     class NotificationCaller
 
-      def initialize(person, alert, other_alerts, notification_methods, base_conditions={})
+      def initialize(person, alert, other_alerts, base_conditions={})
         @person = person
         @alert = alert
         @other_alerts = other_alerts
-        @notification_methods = notification_methods
         @base_conditions = base_conditions
       end
       
@@ -66,7 +65,7 @@ module Mauve
 
         #
         # Log the result
-        note =  "#{@alert.update_type.upcase}: notification " +  (res ? "succeeded" : "failed" ) + " for #{@person.username} using notifier '#{name}' to '#{destination}'."
+        note =  "#{@alert.update_type.capitalize} #{name} notification to #{@person.username} (#{destination}) " +  (res ? "succeeded" : "failed" )
         logger.info note
         h = History.new(:alert_id => @alert.id, :type => "notification", :event => note)
         logger.error "Unable to save history due to #{h.errors.inspect}" if !h.save
@@ -155,6 +154,10 @@ module Mauve
     # This just wraps send_alert by sending the job to a queue.
     #
     def send_alert(level, alert)
+      Server.notification_push([self, level, alert])
+    end
+    
+    def do_send_alert(level, alert)
       now = MauveTime.now
 
       threshold_breached = @notification_thresholds.any? do |period, previous_alert_times|
@@ -162,15 +165,15 @@ module Mauve
           first.is_a?(MauveTime) and (now - first) < period
         end
 
-      was_suppressed        = self.suppressed?
+      was_suppressed = self.suppressed?
 
       if Server.instance.started_at > alert.updated_at.to_time and (Server.instance.started_at + Server.instance.initial_sleep) > MauveTime.now
         logger.info("Alert last updated in prior run of mauve -- ignoring for initial sleep period.")
-        return
+        return true
       end
 
       if threshold_breached
-        logger.info("Suspending notifications to #{username} until further notice.") unless was_suppressed
+        logger.info("Suspending further notifications to #{username} until further notice.") unless was_suppressed
         @suppressed = true
         
       else
@@ -183,18 +186,14 @@ module Mauve
       # We only suppress notifications if we were suppressed before we started,
       # and are still suppressed.
       #
-      return if was_suppressed and self.suppressed?
+      return true if was_suppressed and self.suppressed?
 
-      Server.notification_push([self, level, alert, was_suppressed])
-    end
-
-    def do_send_alert(level, alert, was_suppressed)
       result = NotificationCaller.new(
         self,
         alert,
         current_alerts,
-        Configuration.current.notification_methods,
-        :was_suppressed => was_suppressed
+        {:is_suppressed => @suppressed,
+        :was_suppressed => was_suppressed, }
       ).instance_eval(&__send__(level))
 
       if result
@@ -209,8 +208,10 @@ module Mauve
           @notification_thresholds[period].shift
         end
         true
+
       else
         false
+
       end
     end
     

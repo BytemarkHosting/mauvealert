@@ -50,7 +50,7 @@ module Mauve
 
       @socket.bind(@ip, @port)
 
-      logger.info("Successfully opened UDP socket on #{@ip}:#{@port}")
+      logger.info("Opened socket on #{@ip}:#{@port}")
     end
 
     def close_socket
@@ -64,7 +64,7 @@ module Mauve
         logger.debug ex.backtrace.join("\n")
       end
 
-      logger.info("Successfully closed UDP socket")
+      logger.info("Closed socket")
     end
 
     def main_loop
@@ -83,7 +83,6 @@ module Mauve
         packet      = @socket.recvfrom(65535)
         received_at = MauveTime.now
       rescue Errno::EAGAIN, Errno::EWOULDBLOCK => ex
-        puts "#{i += 1} + #{ex}"
         IO.select([@socket])
         retry unless self.should_stop?
       end

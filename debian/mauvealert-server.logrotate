@@ -1,4 +1,4 @@
-/var/log/mauvealert.log {
+/var/log/mauvealert/mauvealert.log {
    rotate 7
    daily
    compress

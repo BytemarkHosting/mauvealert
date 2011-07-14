@@ -25,10 +25,10 @@ module Mauve
     end
 
     def main_loop
-      #
-      # Only do the loop a maximum of 10 times every @sleep_interval seconds
-      #
-      10.times do
+      
+      sz = Server.packet_buffer_size
+
+      sz.times do
         data, client, received_at = Server.packet_pop
 
         #
@@ -47,7 +47,7 @@ module Mauve
           update.parse_from_string(data)
   
           if @transmission_id_cache[update.transmission_id.to_s]
-            logger.info("Ignoring duplicate transmission id #{update.transmission_id}")
+            logger.debug("Ignoring duplicate transmission id #{update.transmission_id}")
             #
             # Continue with next packet.
             #

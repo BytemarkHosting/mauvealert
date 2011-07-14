@@ -68,8 +68,6 @@ end
 
 %w(HUP).each do |sig|
   trap(sig) do
-    # this blows up if you do it twice in quick succession, but don't really 
-    # care about that case as it's only for log rotation.
     Mauve::Server.instance.logger.warn "#{sig} signal received.  Restarting."
     Mauve::Server.instance.stop
 
@@ -80,7 +78,7 @@ end
       new_config = Mauve::ConfigurationBuilder.load(configuration_file)
       Mauve::Configuration.current = new_config
     rescue BuildException => ex
-      Mauve::Server.instance.logger.error "Reconfiguration failed: #{ex}.  Sticking with old one."
+      Mauve::Server.instance.logger.error "Reconfiguration failed: #{ex.to_s}.  Sticking with old one."
     end
     Mauve::Server.instance.logger.warn "Restarting."
     Mauve::Server.instance.start
@@ -90,6 +88,7 @@ end
 %w(USR1).each do |sig|
   trap(sig) do
     Mauve::Server.instance.logger.warn "#{sig} signal received. Re-opening logs."
+
     Log4r::Outputter.each_outputter do |old|
       next unless old.is_a?(Log4r::FileOutputter)
 
@@ -101,7 +100,7 @@ end
       Mauve::Server.instance.logger.outputters.delete(old)
       old.close
 
-      Mauve::Server.instance.logger.debug "Opened #{new.filename}."
+      Mauve::Server.instance.logger.info "Opened #{new.filename}."
     end
   end
 end
