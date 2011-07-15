@@ -1,26 +1,26 @@
 #!/usr/bin/ruby1.8
 # NAME
-# 
 #  mauveconsole -- Ruby console to query the mauvealert server directly
 #
 # SYNOPSIS
-# 
-#  mauveconsole [-h | --help] [<configuration file>]
+#  mauveconsole [-h | --help] [-V | --version] [-m | --manual] [<configuration file>]
 # 
 # OPTIONS
-# 
-#  -h, --help            Show a help message
-#  <configuration file>  File to load the configuration from. If none is
+#  -h, --help            Show a help message, and exit
+#
+#  -m, --manual          Show this manual, and exit
+#
+#  -V, --version         Show the version number, and exit
+#
+#  <configuration file>  File from whence to load the configuration. If none is
 #                        specified, then mauvealert.conf in the current
 #                        directory is used, and failing that
 #                        /etc/mauvealert/mauvealert.conf is used.
 # 
 # SEE ALSO
-#
 #  irb(1), mauveserver(1), mauveclient(1)
 #
 # AUTHOR
-# 
 #  Patrick J Cherry <patrick@bytemark.co.uk>
 #
 
@@ -30,20 +30,38 @@ def error(msg)
   exit 1
 end
 
+help    = ARGV.any?{|a| a =~ /-(h|-help)/}
+version = ARGV.any?{|a| a =~ /-(V|-version)/}
+manual  = ARGV.any?{|a| a =~ /-(m|-manual)/}
+
 # CAUTION! Kwality kode.
 #
-if ARGV.any?{|a| a =~ /--?h(elp)?/}
+if manual or help
   # Open the file, stripping the shebang line
   lines = File.open(__FILE__){|fh| fh.readlines}[1..-1]
 
-  lines.each do |line|
-  line.chomp!
-    break if line.empty?
-    puts line[2..-1].to_s
-  end
+  found_synopsis = false
 
-  exit 0
+  lines.each do |line|
+    line.chomp!
+    break if line.empty?
+
+    if help and !found_synopsis
+      found_synopsis = (line =~ /^#\s+SYNOPSIS\s*$/) if !found_synopsis
+      next
+    end
+
+    puts line[2..-1].to_s
+
+    break if help and found_synopsis and line =~ /^#\s*$/
+  end
 end
+
+require 'mauve/version'
+
+puts "#{$0}: version "+Mauve::VERSION if version
+
+exit 0 if help or version or manual
 
 configuration_file = ARGV.shift
 configuration_file = [".", "/etc/mauvealert/"].collect{|x| File.join("mauveserver.conf") }.find{|d| File.file?(d)} if configuration_file.nil?

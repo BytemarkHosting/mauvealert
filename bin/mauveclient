@@ -4,6 +4,7 @@
 #
 # SYNOPSIS
 #   mauveclient [<destination>]
+#               [ --help | -h ] [ --manual | -m ] [ --version | -V ]
 #               [--source | -o <source>] [--replace | -p] [--verbose | -v]
 #               [--id <alertid> ... ]
 #
@@ -40,6 +41,12 @@
 #                        specify it twice, it will print the entire data
 #                        structure.
 #
+# --help, -h             Display a short help message, and exit.
+#
+# --manual, -m           Display this manual, and exit.
+#
+# --version, -V          Display the version number for Mauve and exit.
+#
 # You can specify any number of alerts in an update - every time you specify
 # --id starts a new alert.
 #
@@ -66,7 +73,6 @@
 # --clear, -c <time>       Mark the alert to be cleared at the given time. If
 #                          no time is specified, "now" is assumed. See
 #                          SPECIFYING TIMES below for the format of <time>.
-#
 #
 # SPECIFYING TIMES
 #
@@ -155,7 +161,7 @@ require 'getoptlong'
 require 'mauve/sender'
 require 'mauve/proto'
 require 'mauve/mauve_time'
-require 'pp'
+require 'mauve/version'
 
 NOW = Mauve::MauveTime.now
 
@@ -205,9 +211,13 @@ begin
   message = nil
   verbose = 0
   help    = false
+  manual  = false
+  version = false
 
   opts = GetoptLong.new(
     ['-h', '--help',    GetoptLong::NO_ARGUMENT], 
+    ['-m', '--manual', GetoptLong::NO_ARGUMENT],
+    ['-V', '--version', GetoptLong::NO_ARGUMENT],
     ['-o', '--source',  GetoptLong::OPTIONAL_ARGUMENT],
     ['-p', '--replace', GetoptLong::NO_ARGUMENT],
     ['-i', '--id',      GetoptLong::OPTIONAL_ARGUMENT],
@@ -222,11 +232,15 @@ begin
     #
     # Can catch empty arguments better if we set the GetoptLong things to
     # "optional" rather than "required" and catch the empty arg here.
-    error "#{opt} cannot be empty" if arg.empty? and not %w(-h -p -v -c -r).include?(opt)
+    error "#{opt} cannot be empty" if arg.empty? and not %w(-h -m -V -p -v -c -r).include?(opt)
 
     case opt
       when '-h'
         help = true
+      when '-m'
+        manual = true
+      when '-V'
+        version = true
       when '-p'
         update.replace = true
       when '-i'
@@ -255,18 +269,32 @@ begin
 
   # CAUTION! Kwality kode.
   #
-  if help
+  if manual or help
     # Open the file, stripping the shebang line
     lines = File.open(__FILE__){|fh| fh.readlines}[1..-1]
 
-    lines.each do |line|
-    line.chomp!
-      break if line.empty?
-      puts line[2..-1].to_s
-    end
+    found_synopsis = false
 
-    exit 0
+    lines.each do |line|
+
+      line.chomp!
+      break if line.empty?
+
+      if help and !found_synopsis
+        found_synopsis = (line =~ /^#\s+SYNOPSIS\s*$/) if !found_synopsis
+        next
+      end
+
+      puts line[2..-1].to_s
+
+      break if help and found_synopsis and line =~ /^#\s*$/
+
+    end
   end
+
+  puts "#{$0}: version "+Mauve::VERSION if version
+
+  exit 0 if help or version or manual
 
   error "No alerts specified" unless !update.alert.empty? || update.replace
 

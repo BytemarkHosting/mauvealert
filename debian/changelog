@@ -1,3 +1,9 @@
+mauvealert (3.1.0) stable; urgency=low
+
+  * New version. 
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 15 Jul 2011 14:03:15 +0100
+
 mauvealert (3.0.6) stable; urgency=low
 
   * Reminders to peple lists now work. 
