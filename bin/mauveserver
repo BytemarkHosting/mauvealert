@@ -117,8 +117,16 @@ end
       new.formatter = old.formatter
       new.level     = old.level
 
-      Mauve::Server.instance.logger.outputters << new
-      Mauve::Server.instance.logger.outputters.delete(old)
+      Mauve::Server.instance.logger.info "Closing #{old.filename}."
+
+      #
+      # Delete the outputter from each logger.
+      #
+      Log4r::Logger.each_logger do |l|
+        l.outputters << new
+        l.outputters.delete(old)
+      end
+
       old.close
 
       Mauve::Server.instance.logger.info "Opened #{new.filename}."

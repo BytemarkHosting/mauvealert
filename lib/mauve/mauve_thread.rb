@@ -7,6 +7,7 @@ module Mauve
 
     def initialize
       @thread = nil
+      @stop = true
     end
 
     def logger
@@ -59,7 +60,7 @@ module Mauve
     end
 
     def frozen?
-      defined? @frozen and @frozen and @thread.stop?
+      self.alive? and self.stop?
     end
 
     def thaw
@@ -88,7 +89,7 @@ module Mauve
     end
 
     def stop?
-      @thread.is_a?(Thread) and @thread.stop?
+      !@thread.is_a?(Thread) or @thread.stop?
     end
 
     def join(ok_exceptions=[])
@@ -125,7 +126,6 @@ module Mauve
 
       self.join 
     end
-
 
     alias exit stop
 

@@ -149,7 +149,6 @@ module Mauve
         thread_list.delete(Thread.current)
 
         THREAD_CLASSES.each do |klass|
-
           #
           # No need to double check ourselves.
           #
