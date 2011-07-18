@@ -158,10 +158,14 @@
 #
 
 require 'getoptlong'
-require 'mauve/sender'
-require 'mauve/proto'
-require 'mauve/mauve_time'
-require 'mauve/version'
+
+%w(sender mauve_time version proto).each do
+  begin
+    require "mauve/#{r}"
+  rescue LoadError => ex
+    puts ex.to_s
+  end
+end
 
 NOW = Mauve::MauveTime.now
 
@@ -205,9 +209,17 @@ def parse_time_spec(spec = "now")
 end
 
 begin
-  update = Mauve::Proto::AlertUpdate.new
-  update.replace = false
-  update.alert = []
+  begin
+    update = Mauve::Proto::AlertUpdate.new
+    update.replace = false
+    update.alert = []
+  rescue NameError
+    # 
+    # Do nothing .. When generating manpages in the build process we don't need
+    # to have Protobuf available.
+    #
+    update = nil
+  end
   message = nil
   verbose = 0
   help    = false
@@ -242,18 +254,22 @@ begin
       when '-V'
         version = true
       when '-p'
+        error "Cannot send update -- not all libraries are available" if update.nil?
         update.replace = true
       when '-i'
+        error "Cannot send update -- not all libraries are available" if update.nil?
         error "Cannot specify the same ID twice in one update -- ID #{arg}" if update.alert.any?{|a| a.id == arg}
         message = Mauve::Proto::Alert.new
         message.id = arg
         update.alert << message
       when '-o'
+        error "Cannot send update -- not all libraries are available" if update.nil?
         error "Can only specify one source" if update.source
         update.source = arg
       when '-v'
         verbose += 1
       else
+        error "Cannot send update -- not all libraries are available" if update.nil?
         error "Must specify --id before message" unless message
         case opt
           when '-s' then message.summary = arg
@@ -281,7 +297,7 @@ begin
       break if line.empty?
 
       if help and !found_synopsis
-        found_synopsis = (line =~ /^#\s+SYNOPSIS\s*$/) if !found_synopsis
+        found_synopsis = (line =~ /^#\s+SYNOPSIS\s*$/) 
         next
       end
 
@@ -296,6 +312,7 @@ begin
 
   exit 0 if help or version or manual
 
+  error "Cannot send update -- not all libraries are available" if update.nil?
   error "No alerts specified" unless !update.alert.empty? || update.replace
 
   update.transmission_id = rand(2**63)
