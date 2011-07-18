@@ -88,6 +88,8 @@ module Mauve
         require "log4r/outputter/#{@outputter.downcase}"
       end
 
+      @outputter_name = "Mauve-"+5.times.collect{rand(36).to_s(36)}.join
+
       @args = {}
     end
 

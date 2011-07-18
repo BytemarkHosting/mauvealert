@@ -53,13 +53,15 @@ module Mauve
 
       @frozen = true
 
-      20.times { Kernel.sleep 0.1 ; break if @thread.stop? }
+      if @thread.is_a?(Thread)
+        20.times { Kernel.sleep 0.1 ; break if @thread.stop? }
 
-      logger.debug("Thread has not frozen!") unless @thread.stop?
+        logger.debug("Thread has not frozen!") unless @thread.stop?
+      end
     end
 
     def frozen?
-      defined? @frozen and @frozen and @thread.stop?
+      defined? @frozen and @frozen and @thread.is_a?(Thread) and @thread.stop?
     end
 
     def thaw
