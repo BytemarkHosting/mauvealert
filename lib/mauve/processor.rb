@@ -36,7 +36,7 @@ module Mauve
         #
         break if data.nil?
         
-        Timer.instance.freeze unless Timer.instance.frozen?
+        Timer.instance.freeze if Timer.instance.alive? and !Timer.instance.frozen?
 
         logger.debug("Got #{data.inspect} from #{client.inspect}")
 
