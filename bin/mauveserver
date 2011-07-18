@@ -30,12 +30,6 @@ def error(msg)
   exit 1
 end
 
-begin
-  eval "Proc.new { |a,&b| }"
-rescue SyntaxError => no_blocks_with_procs
-  error "mauveserver must have Ruby 1.8.7 or later"
-end
-
 help    = ARGV.any?{|a| a =~ /-(h|-help)/}
 version = ARGV.any?{|a| a =~ /-(V|-version)/}
 manual  = ARGV.any?{|a| a =~ /-(m|-manual)/}
@@ -70,6 +64,12 @@ require 'mauve/version'
 puts "#{$0}: version "+Mauve::VERSION if version
 
 exit 0 if help or version or manual
+
+begin
+  eval "Proc.new { |a,&b| }"
+rescue SyntaxError => no_blocks_with_procs
+  error "mauveserver must have Ruby 1.8.7 or later."
+end
 
 configuration_file = ARGV.shift
 configuration_file = [".", "/etc/mauvealert/"].collect{|x| File.join("mauveserver.conf") }.find{|d| File.file?(d)} if configuration_file.nil?
