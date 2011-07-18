@@ -159,7 +159,7 @@
 
 require 'getoptlong'
 
-%w(sender mauve_time version proto).each do
+%w(sender mauve_time version proto).each do |r|
   begin
     require "mauve/#{r}"
   rescue LoadError => ex
