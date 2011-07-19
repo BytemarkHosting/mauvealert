@@ -50,8 +50,6 @@ module Mauve
     end
 
     def freeze
-      return if self.frozen?
-
       logger.debug("Freezing") 
 
       @frozen = true
@@ -66,8 +64,6 @@ module Mauve
     end
 
     def thaw
-      return unless self.frozen?
-
       logger.debug("Thawing")
       @frozen = false
       @thread.wakeup if @thread.stop?
