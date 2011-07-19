@@ -30,7 +30,7 @@ module Mauve
     #
     # This is the order in which the threads should be started.
     #
-    THREAD_CLASSES = [UDPServer, HTTPServer, Processor, Notifier, Timer]
+    THREAD_CLASSES = [UDPServer, HTTPServer, Processor, Timer, Notifier]
 
     attr_accessor :web_interface
     attr_reader   :stopped_at, :started_at, :initial_sleep, :packet_buffer, :notification_buffer

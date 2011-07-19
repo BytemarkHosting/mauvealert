@@ -50,8 +50,8 @@ module Mauve
     end
 
     def freeze
-      logger.debug("Freezing") 
-
+      logger.debug("Freezing") unless @frozen 
+      
       @frozen = true
 
       20.times { Kernel.sleep 0.1 ; break if @thread.stop? }
@@ -60,36 +60,33 @@ module Mauve
     end
 
     def frozen?
-      self.alive? and self.stop? and @frozen
+      self.stop?
     end
 
-    def thaw
-      logger.debug("Thawing")
-      @frozen = false
-      @thread.wakeup if @thread.stop?
-    end
-
-    def start
-      @logger = nil
-      logger.debug("Starting")
-      @stop   = false
-      @thread = Thread.new{ self.run_thread { self.main_loop } }
-    end
-    
     def run
-      if self.alive?
-        self.thaw
+      if self.alive? 
+        if self.stop? 
+          logger.debug("Thawing") if @frozen
+          @frozen = false
+          @thread.wakeup 
+        end
       else
-        self.start
+        @logger = nil
+        logger.debug("Starting") if @stop
+        @stop   = false
+        @thread = Thread.new{ self.run_thread { self.main_loop } }
       end
     end
+
+    alias start run
+    alias thaw  run
 
     def alive?
       @thread.is_a?(Thread) and @thread.alive?
     end
 
     def stop?
-      !@thread.is_a?(Thread) or @thread.stop?
+      self.alive? and @thread.stop?
     end
 
     def join(ok_exceptions=[])
@@ -110,7 +107,7 @@ module Mauve
     end
     
     def stop
-      logger.debug("Stopping")
+      logger.debug("Stopping") unless @stop
 
       @stop = true
 
@@ -131,7 +128,7 @@ module Mauve
 
     def kill
       logger.debug("Killing")
-      @frozen = true
+      @frozen = @stop = true
       @thread.kill
       logger.debug("Killed")
     end

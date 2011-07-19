@@ -48,7 +48,6 @@ module Mauve
     end
 
     def start
-      super
 
       if Configuration.current.notification_methods['xmpp']
         #
@@ -76,19 +75,15 @@ module Mauve
           Configuration.current.people[username].xmpp = jid unless jid.nil?
         end
       end
+      super
     end
 
     def stop
+      super
       if Configuration.current.notification_methods['xmpp']
         Configuration.current.notification_methods['xmpp'].close
       end
 
-      super
-
-      # 
-      # flush the queue
-      #
-      main_loop
     end
 
   end
