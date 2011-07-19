@@ -58,7 +58,7 @@ module Mauve
           
           template_file = File.join(File.dirname(__FILE__),"templates","sms.txt.erb")
 
-          txt += if File.exists?(template_file)
+          txt = if File.exists?(template_file)
             ERB.new(File.read(template_file)).result(binding).chomp
           else
             logger.error("Could not find sms.txt.erb template")
@@ -74,7 +74,8 @@ module Mauve
             #txt += others.map { |alert| alert.summary_one_line }.join(", ")
           end
 
-          txt += "link: https://alert.bytemark.co.uk/alerts"
+          # TODO: Fix link to be accurate.
+          # txt += "link: https://alert.bytemark.co.uk/alerts"
 
           ## @TODO:  Add a link to acknowledge the alert in the text?
           #txt += "Acknoweledge alert: "+

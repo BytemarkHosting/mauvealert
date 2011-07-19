@@ -8,6 +8,10 @@ require 'mauve/mauve_thread'
 require 'digest/sha1'
 require 'log4r'
 require 'thin'
+#
+# Needed for Lenny version of thin converted by apt-ruby, for some reason.
+#
+require 'thin_parser'
 require 'rack'
 require 'rack-flash'
 require 'rack/handler/webrick'
