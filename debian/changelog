@@ -1,3 +1,10 @@
+mauvealert (3.1.4) stable; urgency=low
+
+  * Fixed up recording of update_type for alerts
+  * Tidied up threading. 
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 19 Jul 2011 22:44:30 +0100
+
 mauvealert (3.1.3) stable; urgency=low
 
   * Tidied up initscript
