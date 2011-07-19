@@ -1,3 +1,10 @@
+mauvealert (3.1.1) stable; urgency=low
+
+  * Fixed mauveserver config file searching
+  * Updated dependencies for lenny (ugh)
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 19 Jul 2011 15:48:53 +0100
+
 mauvealert (3.1.0) stable; urgency=low
 
   * New version. 
