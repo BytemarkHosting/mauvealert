@@ -424,8 +424,7 @@ module Mauve
  
           alert_db = first(:alert_id => alert.id, :source => update.source) ||
             new(:alert_id => alert.id, :source => update.source)
-          alert_db.update_type = nil
-          
+
           ##
           #
           # Work out if we're raising now, or in the future.
