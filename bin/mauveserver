@@ -72,8 +72,12 @@ rescue SyntaxError => no_blocks_with_procs
 end
 
 configuration_file = ARGV.shift
-configuration_file = [".", "/etc/mauvealert/"].collect{|x| File.join("mauveserver.conf") }.find{|d| File.file?(d)} if configuration_file.nil?
-configuration_file = File.expand_path(configuration_file)
+configuration_file = [".", "/etc/mauvealert/"].collect{|x| File.join(x, "mauveserver.conf") }.find{|d| File.file?(d)} if configuration_file.nil?
+configuration_file = File.expand_path(configuration_file) unless configuration_file.nil?
+
+if configuration_file.nil?
+  error "No configuration file could be found\n"
+end
 
 unless File.file?(configuration_file)
   error "Configuration file #{configuration_file} not found\n"
