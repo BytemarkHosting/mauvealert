@@ -62,7 +62,7 @@ module Mauve
     end
 
     def frozen?
-      self.alive? and self.stop?
+      self.alive? and self.stop? and @frozen
     end
 
     def thaw
