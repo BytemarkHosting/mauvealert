@@ -1,9 +1,9 @@
 #! /usr/bin/ruby1.8
 # NAME
-#   mauveclient - send alert(s) to a given alert station
+#   mauvesend - send alert(s) to a given alert station
 #
 # SYNOPSIS
-#   mauveclient [<destination>]
+#   mauvesend [<destination>]
 #               [ --help | -h ] [ --manual | -m ] [ --version | -V ]
 #               [--source | -o <source>] [--replace | -p] [--verbose | -v]
 #               [--id <alertid> ... ]
@@ -14,14 +14,14 @@
 #                 The default port is 32741.
 #
 #                 If no destination is supplied, the value from the file
-#                 /etc/mauvealert/mauveclient.destination is used. If no
+#                 /etc/mauvealert/mauvesend.destination is used. If no
 #                 destination can be determined, an error is raised.
 #
 #                 If a hostname is given and no port is specified, SRV records
 #                 are used to determine where the alerts should go to. The SRV
 #                 prefix is _mauvealert._udp. If no SRV records are found, A
 #                 records are used instead.
-#                
+#
 #                 IPv6 addresses can be used, but must be enclosed in square
 #                 brackets, e.g. [2001:41c8::12].
 #
@@ -80,12 +80,12 @@
 # specified as any time in the past or future. The format is + or -, followed
 # by a number, followed by a letter determining the units, one of s, m, h, d,
 # representing seconds, minutes, hours, and days, respectively. If no units are
-# specified, seconds is assumed. If no sign is specified, "+" is assumed.
+# specified, seconds is assumed. If no sign or unit is specified, an absolute
+# number of seconds since midnight UTC, 1st Jan 1970 is expected.
 #
 # Some example times are:
 #
 # now   Immediately
-# 10    In 10 seconds time
 # +10m  In 10 minutes time
 # -10h  10 Hours ago
 #
@@ -102,7 +102,7 @@
 #    host is sending a clear every 120 seconds, the raise time should be
 #    greater than 240 seconds, preferably greater than 360 seconds to allow for
 #    packets going missing, reducing the likelihood of false alerts.
-# 
+#
 # Try to convey salient details about the alerts in the relevant fields. A
 # typical short alert from Mauve might read
 #
@@ -111,18 +111,18 @@
 # Make sure that the alert will be understood with just those three fields
 # displayed.
 #
-#  * Keep the summary brief and salient. 
-#  
+#  * Keep the summary brief and salient.
+#
 #  * Keep the summary constant, unless there has been a material change to the
 #    nature of the alert. Mauve may re-send any messages when the subject
 #    changes. If something is changing quickly, like load averages, best not
 #    to put them in the summary.
 #
 #  * Make sure that the subject is set correctly. Remember if no subject is
-#    set, then the source of the alert is used instead. 
+#    set, then the source of the alert is used instead.
 #
 #  * Make sure that the source is correct too -- nothing worse than an alert
-#    that comes in with an ambiguous origin. 
+#    that comes in with an ambiguous origin.
 #
 #  * The alert ID is used internally by Mauve to keep alerts consistent. This
 #    must be unique on a per-source basis. It is OK to have many alerts with the
@@ -136,17 +136,17 @@
 #
 # To raise an alert:
 #
-#   mauveclient -s smtp-out-1.example.com -i mailqueue \\ 
+#   mauvesend -s smtp-out-1.example.com -i mailqueue \\
 #     -d "Mail queue has <b>54232</b> messages in it. That's <em>LOADS</em>" \\
 #     -u "Mail queue too big on outgoing SMTP server" -r
-# 
+#
 # To clear an alert:
 #
-#   mauveclient -s smtp-out-1.example.com  -i mailqueue -c
+#   mauvesend -s smtp-out-1.example.com  -i mailqueue -c
 #
 # To create a "heartbeat" alert, i.e. one that says "Currently OK, but raise in the future if nothing more is heard":
 #
-#   mauveclient -i heartbeat -d "No heartbeat received for 1.2.3.4. Could be down!" -s "heartbeat failed"  -c -r +10m
+#   mauvesend -i heartbeat -d "No heartbeat received for 1.2.3.4. Could be down!" -s "heartbeat failed"  -c -r +10m
 #
 # SEE ALSO
 #
@@ -185,6 +185,9 @@ def parse_time_spec(spec = "now")
     when "now"
       NOW
 
+    when /^\d+$/
+      spec.to_i
+
     when /^(\+|-)?(\d+)([smhd])?$/
       if $1 == "-"
         multiplier = -1
@@ -214,7 +217,7 @@ begin
     update.replace = false
     update.alert = []
   rescue NameError
-    # 
+    #
     # Do nothing .. When generating manpages in the build process we don't need
     # to have Protobuf available.
     #
@@ -227,7 +230,7 @@ begin
   version = false
 
   opts = GetoptLong.new(
-    ['-h', '--help',    GetoptLong::NO_ARGUMENT], 
+    ['-h', '--help',    GetoptLong::NO_ARGUMENT],
     ['-m', '--manual', GetoptLong::NO_ARGUMENT],
     ['-V', '--version', GetoptLong::NO_ARGUMENT],
     ['-o', '--source',  GetoptLong::OPTIONAL_ARGUMENT],
@@ -297,7 +300,7 @@ begin
       break if line.empty?
 
       if help and !found_synopsis
-        found_synopsis = (line =~ /^#\s+SYNOPSIS\s*$/) 
+        found_synopsis = (line =~ /^#\s+SYNOPSIS\s*$/)
         next
       end
 

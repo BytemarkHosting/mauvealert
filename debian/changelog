@@ -1,3 +1,9 @@
+mauvealert (3.1.5) stable; urgency=low
+
+  * mauvesend can now specify an absolute time
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 20 Jul 2011 10:54:17 +0100
+
 mauvealert (3.1.4) stable; urgency=low
 
   * Fixed up recording of update_type for alerts

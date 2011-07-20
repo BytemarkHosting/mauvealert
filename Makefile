@@ -3,7 +3,7 @@
 #
 ##
 
-all: man man/mauveclient.1 man/mauveserver.1 man/mauveconsole.1
+all: man man/mauvesend.1 man/mauveserver.1 man/mauveconsole.1
 
 man:
 	mkdir -p man
