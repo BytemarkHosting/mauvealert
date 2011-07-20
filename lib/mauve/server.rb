@@ -11,29 +11,23 @@ require 'mauve/timer'
 require 'mauve/udp_server'
 require 'mauve/processor'
 require 'mauve/http_server'
+require 'mauve/heartbeat'
 require 'log4r'
 
 module Mauve
 
   class Server 
 
-    DEFAULT_CONFIGURATION = {
-      :ip => "127.0.0.1",
-      :port => 32741,
-      :database => "sqlite3:///./mauvealert.db",
-      :log_file => "stdout",
-      :log_level => 1,
-      :transmission_cache_expire_time => 600
-    }
+    DEFAULT_CONFIGURATION = { }
 
 
     #
     # This is the order in which the threads should be started.
     #
-    THREAD_CLASSES = [UDPServer, HTTPServer, Processor, Timer, Notifier]
+    THREAD_CLASSES = [UDPServer, HTTPServer, Processor, Timer, Notifier, Heartbeat]
 
-    attr_accessor :web_interface
-    attr_reader   :stopped_at, :started_at, :initial_sleep, :packet_buffer, :notification_buffer
+    attr_accessor :hostname, :database, :initial_sleep
+    attr_reader   :stopped_at, :started_at, :packet_buffer, :notification_buffer
 
     include Singleton
 
@@ -43,8 +37,11 @@ module Mauve
       # Sleep time between pooling the @buffer buffer.
       @sleep = 1
 
-      @frozen     = false
-      @stop       = false
+      @frozen      = false
+      @stop        = false
+      @hostname    = "localhost"
+      @database    = "sqlite3:///./mauvealert.db"
+      
 
       @stopped_at = MauveTime.now
       @started_at = MauveTime.now
@@ -79,7 +76,7 @@ module Mauve
       end
 
       #
-      DataMapper.setup(:default, @config[:database])
+      DataMapper.setup(:default, @database)
       # DataObjects::Sqlite3.logger = Log4r::Logger.new("Mauve::DataMapper") 
 
       #

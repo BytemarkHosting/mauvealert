@@ -163,7 +163,7 @@ require 'getoptlong'
   begin
     require "mauve/#{r}"
   rescue LoadError => ex
-    puts ex.to_s
+    STDERR.puts "*** "+ex.to_s
   end
 end
 

@@ -34,9 +34,11 @@ module Jabber
       # mean the other parts of the method fail to execute. 
       # That would be bad. So kill parser_thread last
       @tbcbmutex.synchronize { @processing = 0 }
-      @fd.close if @fd and !@fd.closed?
+      if @fd and !@fd.closed?
+        @fd.close 
+        stop 
+      end
       @status = DISCONNECTED
-      stop
     end
   end
 end
@@ -66,15 +68,15 @@ module Mauve
         include Jabber
 
         # Atrtribute.
-        attr_reader :name, :jid
+        attr_reader :name
 
         # Atrtribute.
         attr_accessor :password
 
         def initialize(name)
           Jabber::logger = self.logger       
-          #Jabber::debug = true
-          #Jabber::warnings = true
+#         Jabber::debug = true
+#          Jabber::warnings = true
 
           @name = name
           @mucs = {}
@@ -138,10 +140,11 @@ module Mauve
             #
             unless ex.nil? or @closing 
               logger.warn(["Caught",ex.class,ex.to_s,"during XMPP",where].join(" "))
+              @closing = true
               connect
               @mucs.each do |jid, muc|
                 @mucs.delete(jid)
-                join_muc(jid)
+                join_muc(muc[:jid], muc[:password])
               end
             end
           end
@@ -156,11 +159,13 @@ module Mauve
 
         def close
           @closing = true
-          if @client and @client.is_connected?
-            @mucs.each do |jid, muc|
-              muc.exit("Goodbye!") if muc.active?
-            end 
-            @client.send(Presence.new(nil, "Goodbye!").set_type(:unavailable))
+          if @client 
+            if  @client.is_connected?
+              @mucs.each do |jid, muc|
+                muc[:client].exit("Goodbye!") if muc[:client].active?
+              end 
+              @client.send(Presence.new(nil, "Goodbye!").set_type(:unavailable))
+            end
             @client.close!
           end
         end
@@ -202,7 +207,16 @@ module Mauve
             alert.to_s
           end
 
-          send_message(destination_jid, txt)
+          template_file = File.join(File.dirname(__FILE__),"templates","xmpp.html.erb")
+
+          xhtml = if File.exists?(template_file)
+            ERB.new(File.read(template_file)).result(binding).chomp
+          else
+            logger.error("Could not find xmpp.txt.erb template")
+            alert.to_s
+          end
+
+          send_message(destination_jid, txt, xhtml)
         end
 
         # Sends a message to the destionation.
@@ -210,20 +224,23 @@ module Mauve
         # @param [String] destination The (full) JID to send to.
         # @param [String] msg The (formatted) message to send.
         # @return [NIL] nada.
-        def send_message(jid, msg)
+        def send_message(jid, msg, html_msg=nil)
           jid = JID.new(jid) unless jid.is_a?(JID)
 
           message = Message.new(jid)
-
-          #if msg.is_a?(XHTML::HTML)
-          #  message.add_element(msg)
-          #else
           message.body = msg
-          #end
+          if html_msg 
+            begin
+              html_msg = REXML::Document.new(html_msg) unless html_msg.is_a?(REXML::Document)
+              message.add_element(html_msg) 
+            rescue REXML::ParseException
+              logger.error "Bad XHTML: #{html_msg.inspect}"
+            end
+          end
 
           if is_muc?(jid)
             jid = join_muc(jid.strip)
-            muc = @mucs[jid]
+            muc = @mucs[jid][:client]
 
             if muc
               message.to   = muc.jid
@@ -272,28 +289,28 @@ module Mauve
 
             logger.debug("Adding new MUC client for #{jid}")
             
-            @mucs[jid.strip] = Jabber::MUC::MUCClient.new(@client)
+            @mucs[jid.strip] = {:jid => jid, :password => password, :client => Jabber::MUC::MUCClient.new(@client)}
             
             # Add some callbacks
-            @mucs[jid.strip].add_message_callback do |m|
+            @mucs[jid.strip][:client].add_message_callback do |m|
               receive_message(m)
             end
 
-            @mucs[jid.strip].add_private_message_callback do |m|
+            @mucs[jid.strip][:client].add_private_message_callback do |m|
               receive_message(m)
             end
 
           end
 
-          if !@mucs[jid.strip].active?
+          if !@mucs[jid.strip][:client].active?
             #
             # Make sure we have a resource.
             #
-            @mucs[jid.strip].join(jid, password)
+            @mucs[jid.strip][:client].join(jid, password)
 
-            logger.info("Joined #{jid}")
+            logger.info("Joined #{jid.strip}")
           else
-            logger.debug("Already joined #{jid}.")
+            logger.debug("Already joined #{jid.strip}.")
           end
 
           #
@@ -410,10 +427,10 @@ module Mauve
           # that we've not sent ourselves, that are not historical, and that
           # match our resource or node in the body.
           #
-          if @mucs[msg.from.strip].is_a?(MUC::MUCClient) and
-                msg.from != @mucs[msg.from.strip].jid and
+          if @mucs[msg.from.strip][:client].is_a?(MUC::MUCClient) and
+                msg.from != @mucs[msg.from.strip][:client].jid and
                 msg.x("jabber:x:delay") == nil and 
-                (msg.body =~ /\b#{Regexp.escape(@mucs[msg.from.strip].jid.resource)}\b/i or
+                (msg.body =~ /\b#{Regexp.escape(@mucs[msg.from.strip][:client].jid.resource)}\b/i or
                 msg.body =~ /\b#{Regexp.escape(@client.jid.node)}\b/i)
             receive_normal_message(msg) 
           end

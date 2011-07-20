@@ -13,12 +13,6 @@ module Mauve
 
     attr_accessor :sleep_interval, :last_run_at
 
-    def initialize
-      super
-      @initial_sleep = 300
-      @initial_sleep_threshold = 300
-    end
-
     def main_loop
       #
       # Get the next alert.
@@ -51,22 +45,27 @@ module Mauve
         #
         # Sleep indefinitely
         #
-        logger.info("Nothing to notify about -- snoozing indefinitely.")
+        logger.info("Nothing to notify about -- snoozing for a while.")
+        sleep_loops = 600
       else
         #
         # La la la nothing to do.
         #
         logger.info("Next to notify: #{next_to_notify} -- snoozing until #{next_to_notify.due_at}")
+        sleep_loops = ((next_to_notify.due_at - MauveTime.now).to_f / 0.1).round.to_i
       end
+
+      sleep_loops = 1 if sleep_loops.nil? or sleep_loops < 1
 
       #
       # Ah-ha! Sleep with a break clause.
       #
-      while next_to_notify.nil? or MauveTime.now <= next_to_notify.due_at
+      sleep_loops.times do
         #
         # Start again if the situation has changed.
         #
         break if self.should_stop?
+
         #
         # This is a rate-limiting step for alerts.
         #

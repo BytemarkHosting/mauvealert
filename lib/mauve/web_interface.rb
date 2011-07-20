@@ -22,7 +22,14 @@ module Mauve
     def self._logger
       Log4r::Logger.new(self.to_s)
     end
-  
+    
+    #
+    # Generic URL for 
+    #
+    def self.url_for(obj)
+      [Mauve::HTTPServer.instance.base_url, obj.class.to_s.split("::").last.downcase, obj.id.to_s].join("/")
+    end
+    
     use Rack::CommonLogger
     use Rack::Chunked
     use Rack::ContentLength
@@ -519,7 +526,6 @@ EOF
       env['rack.errors'] = RackErrorsProxy.new(logger)
       super(env)
     end
-    
-  end
 
+  end
 end

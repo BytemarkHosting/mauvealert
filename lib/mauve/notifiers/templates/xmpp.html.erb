@@ -1,4 +1,5 @@
-<%= alert.update_type.upcase %>: <% 
+  <html xmlns="http://jabber.org/protocol/xhtml-im"><body xmlns="OAhttp://www.w3.org/1999/xhtml">
+<a href="<%=WebInterface.url_for(alert)%>"><%= alert.update_type.upcase %></a>: <% 
 case alert.update_type
 when "cleared"
 %><%= alert.cleared_at.to_s_relative %><% 
@@ -11,10 +12,10 @@ end
 if alert.source != alert.subject 
 %> -- from <%= alert.source %><%
 end 
-%>. <%=WebInterface.url_for(alert)%><%
+%>.<%
 if was_suppressed and not is_suppressed 
-%> (Normal service has resumed.)<%
+%><em> Normal service has resumed.</em><%
 elsif is_suppressed and not was_suppressed
-%> (Further alerts suppressed until things calm down.)<%
+%><em> Further alerts suppressed until things calm down.</em><%
 end 
-%>
+%></body></html>

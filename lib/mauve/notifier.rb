@@ -5,16 +5,10 @@ require 'mauve/notifiers/xmpp'
 module Mauve
 
   class Notifier < MauveThread
-
-    DEFAULT_XMPP_MESSAGE = "Mauve server started."
     
     include Singleton
 
     attr_accessor :sleep_interval
-
-    def initialize
-      super
-    end
 
     def main_loop
       # 

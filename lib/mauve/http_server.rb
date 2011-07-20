@@ -87,7 +87,7 @@ module Mauve
 
     include Singleton
 
-    attr_accessor :port, :ip, :document_root
+    attr_accessor :port, :ip, :document_root, :base_url
     attr_accessor :session_secret 
     
     def initialize
@@ -96,6 +96,7 @@ module Mauve
       @ip = "127.0.0.1"
       @document_root = "/usr/share/mauvealert"
       @session_secret = "%x" % rand(2**100)
+      @server_name = nil
     end
    
     def main_loop
@@ -104,6 +105,10 @@ module Mauve
       #
       @server = ::Thin::Server.new(@ip, @port, Rack::Session::Cookie.new(WebInterface.new, {:key => "mauvealert", :secret => @session_secret, :expire_after => 691200}), :signals => false)
       @server.start
+    end
+
+    def base_url
+      @base_url ||= "http://"+Server.instance.hostname
     end
     
     def stop
