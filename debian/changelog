@@ -1,3 +1,10 @@
+mauvealert (3.1.6) stable; urgency=low
+
+  * Added new heartbeat to remote mauve
+  * Added alert URL to messages.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 20 Jul 2011 16:15:07 +0100
+
 mauvealert (3.1.5) stable; urgency=low
 
   * mauvesend can now specify an absolute time

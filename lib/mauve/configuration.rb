@@ -7,6 +7,7 @@ require 'mauve/notification'
 require 'mauve/alert_group'
 require 'mauve/people_list'
 require 'mauve/source_list'
+require 'mauve/heartbeat'
 
 # Seconds, minutes, hours, days, and weeks... More than that, we 
 # really should not need it.
@@ -64,8 +65,8 @@ module Mauve
     attr_reader :alert_groups
     attr_reader :people_lists
     attr_reader :source_lists
-    attr_reader :logger
-    
+    attr_reader :logger   
+ 
     def initialize
       @notification_methods = {}
       @people = {}
@@ -114,6 +115,7 @@ module Mauve
   class LoggerBuilder < ObjectBuilder
 
     is_builder "outputter", LoggerOutputterBuilder
+
 
     def builder_setup
       logger = Log4r::Logger.new("Mauve")
@@ -166,13 +168,10 @@ module Mauve
 
   class ProcessorBuilder < ObjectBuilder
     is_attribute "sleep_interval"
+    is_attribute "transmission_cache_expire_time"
 
     def builder_setup
       @result = Processor.instance
-    end
-
-    def method_missing(name, value)
-      @args[name] = value
     end
   end
 
@@ -184,10 +183,6 @@ module Mauve
     def builder_setup
       @result = UDPServer.instance
     end
-
-    def method_missing(name, value)
-      @args[name] = value
-    end
   end
 
   class TimerBuilder < ObjectBuilder
@@ -196,12 +191,15 @@ module Mauve
     def builder_setup
       @result = Timer.instance
     end
+  end
 
-    def method_missing(name, value)
-      @args[name] = value
+  class HeartbeatBuilder < ObjectBuilder
+    is_attribute "destination"
+    is_attribute "interval"
+    
+    def builder_setup
+      @result = Heartbeat.instance
     end
-
-
   end
 
   class HTTPServerBuilder < ObjectBuilder
@@ -210,15 +208,11 @@ module Mauve
     is_attribute "ip"
     is_attribute "document_root"
     is_attribute "session_secret"
+    is_attribute "base_url"
     
     def builder_setup
       @result = HTTPServer.instance
     end
-
-    def method_missing(name, value)
-      @args[name] = value
-    end
-
   end
   
   class NotifierBuilder < ObjectBuilder
@@ -227,11 +221,6 @@ module Mauve
     def builder_setup
       @result = Notifier.instance
     end
-
-    def method_missing(name, value)
-      @args[name] = value
-    end
-
   end
 
   class ServerBuilder < ObjectBuilder
@@ -241,20 +230,20 @@ module Mauve
     is_builder "processor",     ProcessorBuilder
     is_builder "timer",         TimerBuilder
     is_builder "notifier",      NotifierBuilder
-    
+    is_builder "heartbeat",     HeartbeatBuilder
+
+    is_attribute "hostname"
+    is_attribute "database"
+    is_attribute "initial_sleep"
+ 
     def builder_setup
+      @result = Mauve::Server.instance
       @args = {}
     end
     
     def result
-      @result = Mauve::Server.instance
       @result.configure(@args)
-      @result.web_interface = @web_interface
       @result
-    end
-    
-    def method_missing(name, value)
-      @args[name] = value
     end
     
     def created_web_interface(web_interface)
@@ -272,6 +261,10 @@ module Mauve
     def created_notifier(notifier)
       @notifier = notifier
     end
+  
+    def created_heartbeat(heartbeat)
+      @heartbeat = heartbeat
+    end
   end
 
   class NotificationMethodBuilder < ObjectBuilder
@@ -281,7 +274,6 @@ module Mauve
       @name = name
       provider("Default")
     end
-
 
     def provider(name)
       notifiers_base = Mauve::Notifiers

@@ -16,6 +16,12 @@
 #                        specified, then mauvealert.conf in the current
 #                        directory is used, and failing that
 #                        /etc/mauvealert/mauvealert.conf is used.
+#
+# CONFIGURATION FILE
+#
+# The configuration file consists of various stanzas, and sub-stanzas which
+# give give options for each part of the server.  The example configuration
+# file gives a definitive explanation of all the options.
 # 
 # SEE ALSO
 #  mauveclient(1), mauveconsole(1)
@@ -88,6 +94,7 @@ require 'mauve/configuration'
 begin
   Mauve::Configuration.current = Mauve::ConfigurationBuilder.load(configuration_file)
 rescue StandardError => ex
+  STDERR.puts ex.backtrace.join("\n")
   error ex.message
 end
 
