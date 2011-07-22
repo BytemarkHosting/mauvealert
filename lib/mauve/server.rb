@@ -16,34 +16,23 @@ require 'log4r'
 
 module Mauve
 
-  class Server 
-
-    DEFAULT_CONFIGURATION = { }
-
+  class Server < MauveThread
 
     #
     # This is the order in which the threads should be started.
     #
     THREAD_CLASSES = [UDPServer, HTTPServer, Processor, Timer, Notifier, Heartbeat]
 
-    attr_accessor :hostname, :database, :initial_sleep
-    attr_reader   :stopped_at, :started_at, :packet_buffer, :notification_buffer
+    attr_reader :hostname, :database, :initial_sleep
+    attr_reader   :packet_buffer, :notification_buffer, :started_at
 
     include Singleton
 
     def initialize
-      # Set the logger up
-
-      # Sleep time between pooling the @buffer buffer.
-      @sleep = 1
-
-      @frozen      = false
-      @stop        = false
+      super
       @hostname    = "localhost"
       @database    = "sqlite3:///./mauvealert.db"
       
-
-      @stopped_at = MauveTime.now
       @started_at = MauveTime.now
       @initial_sleep = 300
 
@@ -53,29 +42,28 @@ module Mauve
       #
       @packet_buffer       = []
       @notification_buffer = []
+    end
 
-      @config = DEFAULT_CONFIGURATION
+    def hostname=(h)
+      raise ArgumentError, "hostname must be a string" unless h.is_a?(String)
+      @hostname = h
+    end
+
+    def database=(d)
+      raise ArgumentError, "database must be a string" unless d.is_a?(String)
+      @database = d
+    end
+
+    def initial_sleep=(s)
+      raise ArgumentError, "initial_sleep must be numeric" unless s.is_a?(Numeric)
+      @initial_sleep = s
     end
 
     def logger
       @logger ||= Log4r::Logger.new(self.class.to_s)
     end
 
-    def configure(config_spec = nil)
-      #
-      # Update the configuration
-      #
-      if config_spec.nil?
-        # Do nothing
-      elsif config_spec.kind_of?(String) and File.exists?(config_spec)
-        @config.update(YAML.load_file(config_spec))
-      elsif config_spec.kind_of?(Hash)
-        @config.update(config_spec)
-      else
-        raise ArgumentError.new("Unknown configuration spec "+config_spec.inspect)
-      end
-
-      #
+    def setup
       DataMapper.setup(:default, @database)
       # DataObjects::Sqlite3.logger = Log4r::Logger.new("Mauve::DataMapper") 
 
@@ -86,119 +74,93 @@ module Mauve
       AlertChanged.auto_upgrade!
       History.auto_upgrade!
       Mauve::AlertEarliestDate.create_view!
-
-      #
-      # Work out when the server was last stopped
-      #
-      # topped_at = self.last_heartbeat 
-    end
-   
-    def last_heartbeat
-      #
-      # Work out when the last update was
-      #
-      [ Alert.last(:order => :updated_at.asc), 
-        AlertChanged.last(:order => :updated_at.asc) ].
-        reject{|a| a.nil? or a.updated_at.nil? }.
-        collect{|a| a.updated_at.to_time}.
-        sort.
-        last
     end
 
-    def freeze
-      @frozen = true
+    def start
+      self.state = :starting
+
+      self.setup
+      
+      self.run_thread { self.main_loop }
     end
 
-    def thaw
-      @thaw = true
-    end
+    alias run start 
 
-    def stop
-      if @stop
-        logger.debug("Stop already called!")
-        return
-      end
-
-      @stop = true
-
+    def main_loop
       thread_list = Thread.list 
 
       thread_list.delete(Thread.current)
 
       THREAD_CLASSES.each do |klass|
-        thread_list.delete(klass.instance)
+        #
+        # No need to double check ourselves.
+        #
+        thread_list.delete(klass.instance.thread)
+
+        # 
+        # Do nothing if we're frozen or supposed to be stopping or still alive!
+        #
+        next if self.should_stop? or klass.instance.alive?
+
+        # 
+        # ugh something is beginnging to smell.
+        #
+        begin
+          klass.instance.join
+        rescue StandardError => ex
+          logger.error "Caught #{ex.to_s} whilst checking #{klass} thread"
+          logger.debug ex.backtrace.join("\n")
+        end
+
+        #
+        # (re-)start the klass.
+        #
+        klass.instance.start unless self.should_stop?
+      end
+
+      #
+      # Now do the same with other threads.  However if these ones crash, the
+      # server has to stop, as there is no method to restart them.
+      #
+      thread_list.each do |t|
+
+        next if self.should_stop? or t.alive?
+
+        begin
+          t.join
+        rescue StandardError => ex
+          logger.fatal "Caught #{ex.to_s} whilst checking threads"
+          logger.debug ex.backtrace.join("\n")
+          self.stop
+          break
+        end
+
+      end
+    end
+    
+    def stop
+      if self.state == :stopping
+        # uh-oh already told to stop.
+        logger.error "Stop already called.  Killing self!"
+        Kernel.exit 1 
+      end
+
+      self.state = :stopping
+
+      THREAD_CLASSES.each do |klass|
         klass.instance.stop unless klass.instance.nil?
       end
+      
+      thread_list = Thread.list 
+      thread_list.delete(Thread.current)
 
       thread_list.each do |t|
         t.exit
       end      
 
-      logger.info("All threads stopped")
+      self.state = :stopped
     end
 
-    def run
-      @stop = false
-
-      loop do
-        thread_list = Thread.list 
-
-        thread_list.delete(Thread.current)
-
-        THREAD_CLASSES.each do |klass|
-          #
-          # No need to double check ourselves.
-          #
-          thread_list.delete(klass.instance.thread)
-
-          # 
-          # Do nothing if we're frozen or supposed to be stopping or still alive!
-          #
-          next if @frozen or @stop or klass.instance.alive?
-
-          # 
-          # ugh something is beginnging to smell.
-          #
-          begin
-            klass.instance.join
-          rescue StandardError => ex
-            logger.error "Caught #{ex.to_s} whilst checking #{klass} thread"
-            logger.debug ex.backtrace.join("\n")
-          end
-
-          #
-          # (re-)start the klass.
-          #
-          klass.instance.start unless @stop
-        end
-
-        #
-        # Now do the same with other threads.  However if these ones crash, the
-        # server has to stop, as there is no method to restart them.
-        #
-        thread_list.each do |t|
-
-          next if t.alive?
-
-          begin
-            t.join
-          rescue StandardError => ex
-            logger.fatal "Caught #{ex.to_s} whilst checking threads"
-            logger.debug ex.backtrace.join("\n")
-            self.stop
-            break
-          end
-
-        end
-
-        break if @stop
-
-        sleep 1
-      end
-      logger.debug("Thread stopped")
-    end
-
-    alias start run
 
     class << self
 

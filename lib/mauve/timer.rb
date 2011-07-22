@@ -11,8 +11,6 @@ module Mauve
 
     include Singleton
 
-    attr_accessor :sleep_interval, :last_run_at
-
     def main_loop
       #
       # Get the next alert.

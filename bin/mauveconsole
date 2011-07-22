@@ -77,6 +77,8 @@ end
 
 require 'irb'
 require 'thread'
+require 'mauve/configuration_builder'
+require 'mauve/configuration_builders'
 require 'mauve/configuration'
 
 Thread.abort_on_exception = true
@@ -85,6 +87,7 @@ include Mauve
 
 begin
   Configuration.current = ConfigurationBuilder.load(configuration_file)
+  Server.instance.setup
 rescue StandardError => ex
   error ex.message
 end

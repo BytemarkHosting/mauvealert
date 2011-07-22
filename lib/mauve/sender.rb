@@ -1,7 +1,7 @@
 # encoding: UTF-8
 require 'ipaddr'
-require 'resolv'
 require 'socket'
+require 'mauve/mauve_resolv'
 require 'mauve/mauve_time'
 
 module Mauve 
@@ -56,6 +56,7 @@ module Mauve
               use_srv = false
             end
 
+            list = []
             Resolv::DNS.open do |dns|
               if use_srv
                 #
@@ -64,37 +65,29 @@ module Mauve
                 #
                 srv_domain = (domain[0] == ?_ ? domain : "_mauvealert._udp.#{domain}")
   
-                list = dns.getresources(srv_domain, SRV).map do |srv|
+                list += dns.getresources(srv_domain, SRV).map do |srv|
                   [srv.target.to_s, srv.port]
                 end
               end
+            end
+            #
+            # If nothing found, just use the domain and port
+            #
+            list = [[domain, port]] if list.empty?
 
+            list.each do |d,p|
+              r = []
               #
-              # If nothing found, just use the domain and port
+              # This gets both AAAA and A records
               #
-              list = [[domain, port]] if list.empty?
-
-              list.each do |d,p|
-                r = []
-                #
-                # Try IPv6 first.
-                #  
-                dns.getresources(d, AAAA).map do |a|
-                   r << [a.address.to_s, p]
-                end 
-
-                #
-                # Try IPv4 too.
-                #
-                dns.getresources(d, A).each do |a|
-                  r << [a.address.to_s, p]
-                end
-
-                results += r unless r.empty?
+              Mauve::MauveResolv.get_ips_for(d).each do |a|
+                 r << [a, p]
               end
-           end
-        end
-      end
+
+              results += r unless r.empty?
+            end
+        end ## case
+      end ## each
 
       #
       # Validate results.

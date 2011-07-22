@@ -1,6 +1,9 @@
 # encoding: UTF-8
 require 'log4r'
-require 'resolv-replace'
+require 'ipaddr'
+require 'uri'
+require 'mauve/mauve_time'
+require 'mauve/mauve_resolv'
 
 module Mauve
 
@@ -20,86 +23,130 @@ module Mauve
   # will occure.  
   #
   # @author Yann Golanski
-  class SourceList
+  class SourceList 
 
-    # Accessor, read only.  Use create_new_list() to create lists.
-    attr_reader :hash
+    attr_reader :label, :list
 
     ## Default contructor.
-    def initialize ()
-      @logger = Log4r::Logger.new "Mauve::SourceList"
-      @hash = Hash.new
-      @http_head = Regexp.compile(/^http[s]?:\/\//)
-      @http_tail = Regexp.compile(/\/.*$/)
+    def initialize (label)
+      @label            = label
+      @last_resolved_at = nil
+      @list = []
+      @resolved_list = []
     end
 
-    ## Return whether or not a list contains a source.
-    #
-    # @param [String] lst The list name.
-    # @param [String] src The hostname or IP of the source.
-    # @return [Boolean] true if there is such a source, false otherwise.
-    def does_list_contain_source?(lst, src)
-      raise ArgumentError.new("List name must be a String, not a #{lst.class}") if String != lst.class
-      raise ArgumentError.new("Source name must be a String, not a #{src.class}") if String != src.class
-      raise ArgumentError.new("List #{lst} does not exist.") if false == @hash.has_key?(lst)
-      if src.match(@http_head)
-        src = src.gsub(@http_head, '').gsub(@http_tail, '')
-      end
-      begin
-        Resolv.getaddresses(src).each do |ip|
-          return true if @hash[lst].include?(ip)
+    alias username label
+
+    def +(l)
+      arr = [l].flatten.collect do |h|
+        # "*"              means [^\.]+
+        # "(\d+)\.\.(\d+)" is expanded to every integer between $1 and $2
+        #                  joined by a pipe, e.g. 1..5 means 1|2|3|4|5
+        #  "."              is literal, not a single-character match
+        if h.is_a?(String) and (h =~ /[\[\]\*]/ or h =~ /(\d+)\.\.(\d+)/)
+          Regexp.new(
+              h.
+              gsub(/(\d+)\.\.(\d+)/) { |a,b|
+                ($1.to_i..$2.to_i).collect.join("|")
+              }.
+              gsub(/\./, "\\.").
+              gsub(/\*/, "[0-9a-z\\-]+") +
+              "\\.?$")
+        elsif h.is_a?(String) and h =~ /^[0-9a-f\.:\/]+$/i
+          IPAddr.new(h)
+        else
+          h
         end
-      rescue Resolv::ResolvError, Resolv::ResolvMauveTimeout => e
-        @logger.warn("#{lst} could not be resolved because #{e.message}.")
-        return false
-      rescue => e
-        @logger.error("Unknown exception raised: #{e.class} #{e.message}")
-        return false
-      end
-      return false
-    end
+      end.flatten
 
-    ## Create a list.
-    # 
-    # Note that is no elements give IP addresses, we have an empty list. 
-    # This gets logged but otherwise does not stop mauve from working.
-    #
-    # @param [String] name The name of the list.
-    # @param [Array] elem A list of source either hostname or IP.
-    def create_new_list(name, elem)
-      raise ArgumentError.new("Name of list is not a String but a #{name.class}") if String != name.class
-      raise ArgumentError.new("Element list is not an Array but a #{elem.class}") if Array != elem.class
-      raise ArgumentError.new("A list called #{name} already exists.") if @hash.has_key?(name)
-      arr = Array.new
-      elem.each do |host| 
-        begin
-          Resolv.getaddresses(host).each do |ip|
-            arr << ip
-          end
-        rescue Resolv::ResolvError, Resolv::ResolvMauveTimeout => e
-          @logger.warn("#{host} could not be resolved because #{e.message}.")
-        rescue => e 
-          @logger.error("Unknown exception raised: #{e.class} #{e.message}")
+      arr.each do |source|
+        ##
+        # I would use include? here, but IPAddr tries to convert "foreign"
+        # classes to intgers, and RegExp doesn't have a to_i method..
+        #
+        if @list.any?{|e| source.is_a?(e.class) and source == e}
+          logger.warn "#{source} is already on the #{self.label} list"
+        else
+          @list << source
         end
       end
-      @hash[name] = arr.flatten.uniq.compact
-      if true == @hash[name].empty?
-        @logger.error("List #{name} is empty! "+
-                      "Nothing from element list '#{elem}' "+
-                      "has resolved to anything useable.")
+
+      @resolved_list    = [] 
+      @last_resolved_at = nil
+
+      self
+    end
+
+    alias add_to_list +
+
+    def logger
+      @logger ||= Log4r::Logger.new self.class.to_s
+    end
+
+    ## 
+    # Return whether or not a list contains a source.
+    ##
+    def includes?(host)
+      #
+      # Redo resolution every thirty minutes
+      #
+      resolve if @resolved_list.empty? or @last_resolved_at.nil? or (MauveTime.now - 1800) > @last_resolved_at
+
+      #
+      # Pick out hostnames from URIs.
+      #
+      if host =~ /^[a-z][a-z0-9+-]+:\/\//
+        begin      
+          uri = URI.parse(host)
+          host = uri.host unless uri.host.nil?
+        rescue URI::InvalidURIError => ex
+          # ugh
+          logger.warn "Did not recognise URI #{host}"
+        end
       end
+
+      return true if @resolved_list.any? do |l|
+        case l
+          when String
+            host == l
+          when Regexp
+            host =~ l
+          when IPAddr 
+            begin
+              l.include?(IPAddr.new(host))
+            rescue ArgumentError
+              # rescue random IPAddr argument errors
+              false
+            end
+          else
+            false
+        end
+      end
+
+      return false unless @resolved_list.any?{|l| l.is_a?(IPAddr)}
+
+      ips = MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
+
+      return false if ips.empty?
+
+      return @resolved_list.select{|i| i.is_a?(IPAddr)}.any? do |list_ip| 
+        ips.any?{|ip| list_ip.include?(ip)}
+      end
+      
     end
 
-  end
+    def resolve
+      @last_resolved_at = MauveTime.now
 
-  ## temporary object to convert from configuration file to the SourceList class
-  class AddSoruceList < Struct.new(:label, :list)
-
-    # Default constructor.
-    def initialize (*args)
-      super(*args)
+      new_list = @list.collect do |host| 
+        if host.is_a?(String)
+          ips = [host] + MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
+        else
+          host
+        end
+      end
+      @resolved_list = new_list.flatten
     end
-
   end
 
 end

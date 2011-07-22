@@ -27,7 +27,6 @@ module Mauve
           @hostname = "localhost"
           @signature = "This is an automatic mailing, please do not reply."
           @subject_prefix = ""
-          @suppressed_changed = nil
         end
 
         def logger

@@ -9,7 +9,7 @@ Standards-Version: 3.9.1
 Package: mauvealert-client
 Architecture: all
 Depends: ruby1.8,
-  mauvealert-common (>= 3.1.0),
+  mauvealert-common (>= 3.2.0),
   ${misc:Depends}
 Description: Mauve network alert system -- client
  Mauve is a network alert system for system and network administrators.  You
@@ -22,7 +22,7 @@ Description: Mauve network alert system -- client
 Package: mauvealert-server
 Architecture: all
 Pre-Depends: libjs-jquery
-Depends: mauvealert-common (>= 3.1.0),
+Depends: mauvealert-common (>= 3.2.0),
  adduser,
  ruby1.8 (>= 1.8.7),
  libhaml-ruby1.8 | haml,

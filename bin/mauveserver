@@ -12,6 +12,10 @@
 #
 #  -m, --manual          Show this manual, and exit.
 #
+#  -v, --verbose         Show verbose errors
+#
+#  -t, --test            Test the configuration
+#
 #  <configuration file>  File from whence to load the configuration. If none is
 #                        specified, then mauvealert.conf in the current
 #                        directory is used, and failing that
@@ -33,12 +37,32 @@
 def error(msg)
   STDERR.print "*** Error: #{msg}\n"
   STDERR.print "*** For help, type: #{$0} -h\n"
+
+  if msg.respond_to?("backtrace")
+    STDERR.print "*** Backtrace:\n"
+    STDERR.print msg.backtrace.join("\n")+"\n" 
+  end
+
   exit 1
 end
 
-help    = ARGV.any?{|a| a =~ /-(h|-help)/}
-version = ARGV.any?{|a| a =~ /-(V|-version)/}
-manual  = ARGV.any?{|a| a =~ /-(m|-manual)/}
+help = manual = verbose = version = test = false
+while arg = ARGV.pop
+  case arg
+    when  /-(h|-help)/
+      help = true
+    when /-(V|-version)/
+      version = true
+    when /-(m|-manual)/
+      manual = true
+    when /(-(v|-verbose))/
+      verbose = true
+    when /(-(t|-test))/
+      test = true
+    else
+      configuration_file = arg
+  end
+end
 
 #
 # CAUTION! Kwality kode.
@@ -77,25 +101,30 @@ rescue SyntaxError => no_blocks_with_procs
   error "mauveserver must have Ruby 1.8.7 or later."
 end
 
-configuration_file = ARGV.shift
 configuration_file = [".", "/etc/mauvealert/"].collect{|x| File.join(x, "mauveserver.conf") }.find{|d| File.file?(d)} if configuration_file.nil?
 configuration_file = File.expand_path(configuration_file) unless configuration_file.nil?
 
 if configuration_file.nil?
-  error "No configuration file could be found\n"
+  error "No configuration file could be found"
 end
 
 unless File.file?(configuration_file)
-  error "Configuration file #{configuration_file} not found\n"
+  error "Configuration file #{configuration_file} not found"
 end
 
 require 'mauve/configuration'
+require 'mauve/configuration_builder'
+require 'mauve/configuration_builders'
 
 begin
   Mauve::Configuration.current = Mauve::ConfigurationBuilder.load(configuration_file)
 rescue StandardError => ex
-  STDERR.puts ex.backtrace.join("\n")
-  error ex.message
+  error (verbose ? ex : ex.to_s)
+end
+
+if test
+  puts "*** Configuration looks OK!"
+  exit 0 
 end
 
 %w(HUP).each do |sig|
@@ -154,8 +183,8 @@ end
 end
 
 begin
-  Mauve::Server.instance.run
+  Mauve::Server.instance.start
 rescue StandardError => ex
-  error ex.message
+  error (verbose ? ex : ex.to_s)
 end
 
