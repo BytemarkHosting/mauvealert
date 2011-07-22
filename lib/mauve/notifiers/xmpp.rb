@@ -169,6 +169,10 @@ module Mauve
             @client.close!
           end
         end
+
+        def ready?
+          @client.is_a?(Jabber::Client) and @client.is_connected?
+        end
         
         # 
         # Takes an alert and converts it into a message.

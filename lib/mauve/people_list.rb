@@ -7,22 +7,42 @@ module Mauve
   # Stores a list of name.
   #
   # @author Yann Golanski
-  class PeopleList < Struct.new(:label, :list)
+  class PeopleList 
+
+    attr_reader :label, :list
 
     # Default contrustor.
-    def initialize (*args)
-      super(*args)
-    end
-
-    def label
-      self[:label]
+    def initialize(label)
+      raise ArgumentError, "people_list label must be a string" unless label.is_a?(String)
+      @label = label
+      @list  = []
     end
 
     alias username label
 
-    def list
-      self[:list] || []
+    def +(arr)
+      case arr
+        when Array
+          arr = arr.flatten
+        when String
+          arr = [arr]
+        else
+          logger.warn "Not sure what to do with #{arr.inspect} -- converting to string, and continuing"
+          arr = [arr.to_s]
+      end
+
+      arr.each do |person|
+        if @list.include?(person)
+          logger.warn "#{person} is already on the #{self.label} list"
+        else
+          @list << person
+        end
+      end
+
+      self
     end
+
+    alias add_to_list +
 
     #
     # Set up the logger

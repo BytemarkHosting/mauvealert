@@ -5,7 +5,7 @@ module Mauve
 
   class MauveThread
 
-    attr_reader :state
+    attr_reader :state, :poll_every
 
     def initialize
       @thread = nil
@@ -16,15 +16,20 @@ module Mauve
       @logger ||= Log4r::Logger.new(self.class.to_s) 
     end
 
+    def poll_every=(i)
+      raise ArgumentError.new("poll_every must be numeric") unless i.is_a?(Numeric)
+      @poll_every = i
+    end
+
     def run_thread(interval = 0.1)
       #
       # Good to go.
       #
       self.state = :starting
 
-      @sleep_interval ||= interval
+      @poll_every ||= interval
 
-      sleep_loops = (@sleep_interval.to_f / 0.1).round.to_i
+      sleep_loops = (@poll_every.to_f / 0.1).round.to_i
       sleep_loops = 1 if sleep_loops.nil? or sleep_loops < 1
 
       while self.state != :stopping do
@@ -110,9 +115,9 @@ module Mauve
       @thread.join if @thread.is_a?(Thread)
     end
 
-    def raise(ex)
-      @thread.raise(ex)
-    end
+#    def raise(ex)
+#      @thread.raise(ex)
+#    end
 
     def backtrace
       @thread.backtrace if @thread.is_a?(Thread)

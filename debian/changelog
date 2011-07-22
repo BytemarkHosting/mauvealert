@@ -1,3 +1,16 @@
+mauvealert (3.2.1) stable; urgency=low
+
+  * Fixed up alert_group matching.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 22 Jul 2011 16:28:52 +0100
+
+mauvealert (3.2.0) stable; urgency=low
+
+  * Re-organisation of config
+  * Added lots of tests.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 22 Jul 2011 13:30:23 +0100
+
 mauvealert (3.1.6) stable; urgency=low
 
   * Added new heartbeat to remote mauve

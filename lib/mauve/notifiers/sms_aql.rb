@@ -6,13 +6,11 @@ module Mauve
     module Sms
       
       require 'net/https'
+
       class AQL
         GATEWAY = "https://gw1.aql.com/sms/sms_gw.php"
 
-        attr :username, true
-        attr :password, true
-        attr :from, true
-        attr :max_messages_per_alert, true
+        attr_writer :username, :password, :from
         attr_reader :name
 
         def initialize(name)
@@ -64,31 +62,11 @@ module Mauve
             logger.error("Could not find sms.txt.erb template")
             alert.to_s
           end
-
-          others = all_alerts-[alert]
-          if !others.empty?
-            txt += (1 == others.length)? 
-              "and a lone other." : 
-              "and #{others.length} others."
-            #txt += "and #{others.length} others: "
-            #txt += others.map { |alert| alert.summary_one_line }.join(", ")
-          end
-
-          # TODO: Fix link to be accurate.
-          # txt += "link: https://alert.bytemark.co.uk/alerts"
-
-          ## @TODO:  Add a link to acknowledge the alert in the text?
-          #txt += "Acknoweledge alert: "+
-          #       "https://alert.bytemark.co.uk/alert/acknowledge/"+
-          #       "#{alert.id}/#{alert.get_default_acknowledge_time}
-
-          txt
         end
         
         def normalize_number(n)
           n.split("").select { |s| (?0..?9).include?(s[0]) }.join.gsub(/^0/, "44")
         end
-        include Debug
       end
     end
   end

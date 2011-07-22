@@ -12,31 +12,30 @@ module Mauve
 
     include Singleton
 
-    attr_accessor :ip, :port, :sleep_interval
+    attr_reader   :ip, :port
 
     def initialize
       super
-      # 
-      # Set the logger up
-      #
-      @ip     = "127.0.0.1"
-      @port   = 32741
+      self.ip     = "127.0.0.1"
+      self.port   = 32741
       @socket = nil
-      @closing_now = false
-      @sleep_interval = 0
     end
-  
-    def open_socket
-      # 
-      # check the IP address
-      #
-      _ip = IPAddr.new(@ip)
+ 
+    def ip=(i)
+      raise ArgumentError, "ip must be a string" unless i.is_a?(String)
+      @ip = IPAddr.new(i)
+    end
+ 
+    def port=(pr)
+      raise ArgumentError, "port must be an integer between 0 and #{2**16-1}" unless pr.is_a?(Integer) and pr < 2**16 and pr > 0
+      @port = pr
+    end
 
+    def open_socket
       #
       # Specify the family when opening the socket.
       #
-      @socket = UDPSocket.new(_ip.family)
-      @closing_now = false
+      @socket = UDPSocket.new(@ip.family)
       
       logger.debug("Trying to increase Socket::SO_RCVBUF to 10M.")
       old = @socket.getsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF).unpack("i").first
@@ -48,9 +47,9 @@ module Mauve
 
       logger.debug("Successfully increased Socket::SO_RCVBUF from #{old} to #{new}.")
 
-      @socket.bind(@ip, @port)
+      @socket.bind(@ip.to_s, @port)
 
-      logger.info("Opened socket on #{@ip}:#{@port}")
+      logger.info("Opened socket on #{@ip.to_s}:#{@port}")
     end
 
     def close_socket

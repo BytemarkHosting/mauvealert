@@ -41,12 +41,14 @@
 # TODO: finish this convoluted example, if it kills me
 #
 class ObjectBuilder
-  class BuildException < Exception; end 
+  class BuildException < StandardError; end 
   
-  attr_reader :result
+  attr_reader   :result
+  attr_accessor :block_result
   
   def initialize(context, *args)
     @context = context
+    @result  = nil
     builder_setup(*args)
   end
   
@@ -93,11 +95,38 @@ class ObjectBuilder
     end
   
     def load(file)
+      parse(File.read(file), file)
+    end
+   
+    def parse(string, file="string")
       builder = self.new
-      builder.instance_eval(File.read(file), file)
+      begin
+        builder.instance_eval(string, file)
+      rescue NameError => ex
+        # 
+        # Ugh.  Catch NameError and re-raise as a BuildException
+        #
+        f,l = ex.backtrace.first.split(":").first(2)
+        if f == file
+          build_ex = BuildException.new "Unknown word `#{ex.name}' in #{file} at line #{l}"
+          build_ex.set_backtrace ex.backtrace
+          raise build_ex
+        else
+          raise ex
+        end
+      rescue SyntaxError, ArgumentError => ex
+        if ex.backtrace.find{|l| l =~ /^#{file}:(\d+):/}
+          build_ex = BuildException.new "#{ex.message} in #{file} at line #{$1}"
+          build_ex.set_backtrace ex.backtrace
+          raise build_ex
+        else
+          raise ex
+        end
+      end
+
       builder.result
     end
-    
+ 
     def inherited(*args)
       initialize_class
     end
@@ -106,7 +135,7 @@ class ObjectBuilder
       @words = {}
     end
   end
-  
+ 
   initialize_class
 end
 

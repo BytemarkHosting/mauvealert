@@ -8,8 +8,6 @@ module Mauve
     
     include Singleton
 
-    attr_accessor :sleep_interval
-
     def main_loop
       # 
       # Cycle through the buffer.
@@ -48,7 +46,7 @@ module Mauve
         # Connect to XMPP server
         #
         xmpp = Configuration.current.notification_methods['xmpp']
-        xmpp.connect 
+        xmpp.connect
 
         Configuration.current.people.each do |username, person|
           # 
@@ -74,6 +72,12 @@ module Mauve
 
     def stop
       super
+
+      #
+      # Flush the queue.
+      #
+      main_loop
+
       if Configuration.current.notification_methods['xmpp']
         Configuration.current.notification_methods['xmpp'].close
       end

@@ -8,6 +8,7 @@ require 'mauve/mauve_thread'
 require 'digest/sha1'
 require 'log4r'
 require 'thin'
+require 'ipaddr'
 #
 # Needed for Lenny version of thin converted by apt-ruby, for some reason.
 #
@@ -87,18 +88,53 @@ module Mauve
 
     include Singleton
 
-    attr_accessor :port, :ip, :document_root, :base_url
-    attr_accessor :session_secret 
+    attr_reader :port, :ip, :document_root, :base_url
+    attr_reader :session_secret 
     
     def initialize
       super
-      @port = 1288
-      @ip = "127.0.0.1"
-      @document_root = "/usr/share/mauvealert"
-      @session_secret = "%x" % rand(2**100)
-      @server_name = nil
+      self.port = 1288
+      self.ip = "127.0.0.1"
+      self.document_root = "./"
+      self.session_secret = "%x" % rand(2**100)
     end
    
+    def port=(pr)
+      raise ArgumentError, "port must be an integer between 0 and #{2**16-1}" unless pr.is_a?(Integer) and pr < 2**16 and pr > 0
+      @port = pr
+    end
+    
+    def ip=(i)
+      raise ArgumentError, "ip must be a string" unless i.is_a?(String)
+      #
+      # Use ipaddr to sanitize our IP.
+      #
+      IPAddr.new(i)
+      @ip = i
+    end
+
+    def document_root=(d)
+      raise ArgumentError, "document_root must be a string" unless d.is_a?(String)
+      raise Errno::ENOENT, d unless File.exists?(d)
+      raise Errno::ENOTDIR, d unless File.directory?(d)
+
+      @document_root = d
+    end
+
+    def base_url=(b)
+      raise ArgumentError, "base_url must be a string" unless b.is_a?(String)
+      raise ArgumentError, "base_url should start with http:// or https://" unless b =~ /^https?:\/\//
+      #
+      # Strip off any trailing slash
+      #
+      @base_url = b.chomp("/")
+    end
+
+    def session_secret=(s)
+      raise ArgumentError, "session_secret must be a string" unless s.is_a?(String)
+      @session_secret = s 
+    end
+
     def main_loop
       # 
       # Sessions are kept for 8 days.

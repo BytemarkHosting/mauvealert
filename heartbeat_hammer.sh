@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PRE="ruby -I lib bin/mauveclient localhost"
+PRE="ruby -I lib bin/mauvesend localhost"
 F=60
 S=10
 n=$*
@@ -27,6 +27,10 @@ _host () {
       fi
   done
 }
+
+echo -e "This command will go beserk.  To kill run\n  pkill -t `tty`\n\nGiving you 5 seconds to quit!"
+
+sleep 5
 
 for i in `seq 1 100` ; do
   _host $i &

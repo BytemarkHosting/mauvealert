@@ -7,7 +7,11 @@ lib/mauve/alert_group.rb             usr/lib/ruby/1.8/mauve/
 lib/mauve/auth_bytemark.rb           usr/lib/ruby/1.8/mauve/
 lib/mauve/calendar_interface.rb      usr/lib/ruby/1.8/mauve/
 lib/mauve/configuration.rb           usr/lib/ruby/1.8/mauve/
+lib/mauve/configuration_builder.rb   usr/lib/ruby/1.8/mauve/
+lib/mauve/configuration_builders.rb  usr/lib/ruby/1.8/mauve/
+lib/mauve/configuration_builders     usr/lib/ruby/1.8/mauve/
 lib/mauve/datamapper.rb              usr/lib/ruby/1.8/mauve/
+lib/mauve/heartbeat.rb               usr/lib/ruby/1.8/mauve/
 lib/mauve/history.rb                 usr/lib/ruby/1.8/mauve/
 lib/mauve/http_server.rb             usr/lib/ruby/1.8/mauve/
 lib/mauve/mauve_thread.rb            usr/lib/ruby/1.8/mauve/

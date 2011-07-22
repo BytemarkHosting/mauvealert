@@ -8,7 +8,7 @@ module Mauve
 
     include Singleton
 
-    attr_accessor :transmission_cache_expire_time, :sleep_interval
+    attr_reader :transmission_cache_expire_time
 
     def initialize
       super
@@ -22,6 +22,11 @@ module Mauve
 
     def logger
       @logger ||= Log4r::Logger.new(self.class.to_s)
+    end
+
+    def transmission_cache_expire_time=(i)
+      raise ArgumentError, "transmission_cache_expire_time must be an integer" unless i.is_a?(Integer)
+      @transmission_cache_expire_time = i
     end
 
     def main_loop

@@ -2,6 +2,7 @@ require 'mauve/proto'
 require 'mauve/alert_changed'
 require 'mauve/history'
 require 'mauve/datamapper'
+require 'mauve/source_list'
 require 'sanitize'
 
 module Mauve
@@ -126,6 +127,18 @@ module Mauve
     #
     def alert_group
       @alert_group ||= AlertGroup.matches(self).first
+    end
+
+    #
+    # Pick out the source lists that match this alert by subject.
+    #
+    def source_lists
+      Mauve::Configuration.current.source_lists.select{|label, list| list.includes?(self.subject)}.collect{|sl| sl.first}
+    end
+
+    def in_source_list?(g)
+      list = Mauve::Configuration.current.source_lists[g]
+      list.includes?(self.subject)
     end
 
     #

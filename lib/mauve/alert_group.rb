@@ -16,7 +16,7 @@ module Mauve
     class << self
 
       def matches(alert)
-        grps = all.select { |alert_group| alert_group.matches_alert?(alert) }
+        grps = all.select { |alert_group| alert_group.includes?(alert) }
 
         #
         # Make sure we always match the last (and therefore default) group.
@@ -90,7 +90,7 @@ module Mauve
     # The list of current raised alerts in this group.
     #
     def current_alerts
-      Alert.all(:cleared_at => nil, :raised_at.not => nil).select { |a| matches_alert?(a) }
+      Alert.all(:cleared_at => nil, :raised_at.not => nil).select { |a| includes?(a) }
     end
     
     # Decides whether a given alert belongs in this group according to its
@@ -98,7 +98,7 @@ module Mauve
     #
     # @param [Alert] alert An alert to test for belongness to group.
     # @return [Boolean] Success or failure.
-    def matches_alert?(alert)
+    def includes?(alert)
 
       unless alert.is_a?(Alert)
         logger.error "Got given a #{alert.class} instead of an Alert!"
@@ -106,13 +106,10 @@ module Mauve
         return false
       end
 
-      result = alert.instance_eval(&self.includes)
-      if true == result or
-         true == result.instance_of?(MatchData)
-        return true
-      end
-      return false
+      alert.instance_eval(&self.includes) ? true : false
     end
+
+    alias matches_alert? includes?
 
     def logger ; self.class.logger ; end
 
