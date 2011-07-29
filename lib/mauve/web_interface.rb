@@ -267,7 +267,6 @@ EOF
 
     get '/ajax/time_to_s_human/:seconds' do
       content_type :text
-
       secs = params[:seconds].to_i
       Time.at(secs).to_s_human
     end

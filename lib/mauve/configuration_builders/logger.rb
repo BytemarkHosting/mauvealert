@@ -48,7 +48,7 @@ module Mauve
       is_builder "outputter", LoggerOutputter
 
       def builder_setup
-        @result         = Log4r::Logger.new('Mauve')
+        @result         = Log4r::Logger['Mauve'] || Log4r::Logger.new('Mauve')
         @default_format = nil
         @default_level  = Log4r::RootLogger.instance.level
       end
@@ -92,6 +92,7 @@ module Mauve
         end
 
         result.outputters << outputter
+#        result.outputter.write("Created logger")
       end
     end
   end

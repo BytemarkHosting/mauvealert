@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PRE="ruby -I lib bin/mauvesend localhost"
+PRE="ruby -I lib bin/mauvesend [::1]"
 F=60
 S=10
 n=$*
