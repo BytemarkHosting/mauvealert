@@ -126,3 +126,111 @@ function doTimeTest( t, type ) {
   return r;
 }
 
+
+//
+// Updates the alerts table
+//
+function updateAlertsTable(alert_type, group_by) {
+
+  //
+  // Do nothing if there is a checked box.
+  //
+  if ( $('input.alert:checked').length ) {
+    return false;
+  }
+
+  $.ajax( {
+    url:     '/ajax/alerts_table/'+alert_type+'/'+group_by,
+    timeout: 5000,
+    success: function( data )  { 
+      if ( "" == data || null == data ) {
+        showError("No data returned by web server when updating alerts table.", "updateAlertsTable");
+      } else {
+        $('#alerts_table').replaceWith(data); 
+        clearError("updateAlertsTable");
+        updateAlertCounts();
+      }
+    },
+    error:   function( a,b,c ) { 
+      if ( "timeout" == b ) {
+        showError("Web server timed out when updating alerts table.", "updateAlertsTable"); 
+      } else {
+        showError("Got "+a.status+" "+a.statusText+" when updating alerts table.", "updateAlertsTable"); 
+      }
+    },
+  });
+
+  return false;
+}
+
+//
+// Updates the alerts title tag
+//
+function updateAlertCounts() {
+  $.ajax( {
+    url: '/ajax/alert_counts',
+    timeout: 5000,
+    success: function(counts) {
+      if ( "" == counts || null == counts) {
+        showError("No data returned by web server when updating alert counts.", "updateAlertCounts");
+      } else {
+        $('#count_raised').html(counts[0]+counts[1]+counts[2]+"");
+        $('#count_ackd').html(counts[3]+"");
+        $('#count_cleared').html(counts[4]+"");
+        $('title').html("Mauve: [ "+counts[0]+" / "+counts[1]+" / "+counts[2]+" ] Alerts");
+        clearError("updateAlertCounts");
+      }
+    },
+    error:   function( a,b,c ) { 
+      if ( "timeout" == b ) {
+        showError("Web server timed out when updating alert counts.", "updateAlertCounts"); 
+      } else {
+        showError("Got "+a.status+" "+a.statusText+" when updating alert counts.", "updateAlertCounts"); 
+      }
+    },
+  });
+
+  return false;
+}
+
+
+//
+// 
+//
+function showError(text, func) {
+
+  if ( null == text || "" == text ) return false;
+   
+
+  // We need to add the p element.
+  if ( 0 == $('div.flash.error p#'+func).length ) {
+    // ugh.. standard DOM stuff.
+    var p = document.createElement('p');
+    p.setAttribute("id",func);
+    $('div.flash.error').append(p);
+  }
+
+  $('p#'+func).html(text);
+  // Show the error box
+  $('div.flash.error').fadeIn(2000);
+
+  return false;
+}
+
+function clearError(func) {
+  //
+  // Remove the element if it exists.
+  //
+  if ( $('div.flash.error p#'+func).length ) {
+    $('div.flash.error p#'+func).remove();
+  }
+
+  if ( $('div.flash.error').contents().length == 0 ) {
+    $('div.flash.error').fadeOut(2000);
+  }
+
+  return false;
+}
+
+
+

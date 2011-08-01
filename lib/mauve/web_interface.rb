@@ -103,11 +103,12 @@ EOF
         # Uh-oh.. Intruder alert!
         #
         ok_urls = %w(/ /login /logout)
+        no_redirect_urls = %w(/ajax)
 
         unless ok_urls.include?(request.path_info) 
           flash['error'] = "You must be logged in to access that page."
           status 403
-          redirect "/login?next_page=#{request.path_info}"
+          redirect "/login?next_page=#{request.path_info}" unless no_redirect_urls.any?{|u| /^#{u}/ =~ request.path_info }
         end
       end      
     end
@@ -230,7 +231,7 @@ EOF
         end
       end
 
-      flash["errors"] = "Failed to acknowledge #{failed.length} alerts." if failed.length > 0
+      flash["error"] = "Failed to acknowledge #{failed.length} alerts." if failed.length > 0
       flash["notice"] = "Successfully acknowledged #{succeeded.length} alerts" if succeeded.length > 0
 
       redirect "/alerts/raised"
