@@ -21,7 +21,7 @@ class DateTime
   end
 
   def in_x_hours(*args)
-    self.to_s_human(*args)
+    self.to_time.in_x_hours(*args)
   end
 
 end

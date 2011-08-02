@@ -32,5 +32,5 @@ lib/rack-flash.rb                    usr/lib/ruby/1.8/
 lib/sinatra-partials.rb              usr/lib/ruby/1.8/
 static                               usr/share/mauvealert
 views                                usr/share/mauvealert
-mauveserver.conf                     etc/mauvealert/
+etc/mauveserver.conf                 etc/mauvealert/
 

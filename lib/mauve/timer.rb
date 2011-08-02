@@ -49,7 +49,7 @@ module Mauve
         #
         # La la la nothing to do.
         #
-        logger.info("Next to notify: #{next_to_notify} -- snoozing until #{next_to_notify.due_at}")
+        logger.info("Next to notify: #{next_to_notify} #{next_to_notify.is_a?(AlertChanged) ? "(reminder)" : "(heartbeat)"} -- snoozing until #{next_to_notify.due_at.iso8601}")
         sleep_loops = ((next_to_notify.due_at - MauveTime.now).to_f / 0.1).round.to_i
       end
 

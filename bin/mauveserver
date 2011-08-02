@@ -34,18 +34,6 @@
 #  Patrick J Cherry <patrick@bytemark.co.uk>
 #
 
-def error(msg)
-  STDERR.print "*** Error: #{msg}\n"
-  STDERR.print "*** For help, type: #{$0} -h\n"
-
-  if msg.respond_to?("backtrace")
-    STDERR.print "*** Backtrace:\n"
-    STDERR.print msg.backtrace.join("\n")+"\n" 
-  end
-
-  exit 1
-end
-
 help = manual = verbose = version = test = false
 while arg = ARGV.pop
   case arg
@@ -95,6 +83,32 @@ puts "#{$0}: version "+Mauve::VERSION if version
 
 exit 0 if help or version or manual
 
+require 'log4r'
+
+#
+# Initial logger -- gets detroyed later.
+#
+logger      = Log4r::Logger.new 'Mauve'
+outputter   = Log4r::StderrOutputter.new("initial")
+outputter.formatter = Log4r::PatternFormatter.new( :pattern => "%d [ %6.6l ] [ %12.12c ] %m" )
+outputter.level     = verbose ? Log4r::DEBUG : Log4r::INFO
+logger.outputters   << outputter
+
+def error(msg)
+  logger = Log4r::Logger.new 'Mauve'
+  logger.error
+  logger.error "*** Error: #{msg}\n"
+  logger.error "*** For help, type: #{$0} -h\n"
+
+  if msg.respond_to?("backtrace")
+    logger.debug "*** Backtrace:\n"
+    logger.debug msg.backtrace.join("\n")+"\n" 
+  end
+
+  exit 1
+end
+
+
 begin
   eval "Proc.new { |a,&b| }"
 rescue SyntaxError => no_blocks_with_procs
@@ -119,11 +133,11 @@ require 'mauve/configuration_builders'
 begin
   Mauve::Configuration.current = Mauve::ConfigurationBuilder.load(configuration_file)
 rescue StandardError => ex
-  error (verbose ? ex : ex.to_s)
+  error ex 
 end
 
 if test
-  puts "*** Configuration looks OK!"
+  logger.info "*** Configuration looks OK!"
   exit 0 
 end
 
@@ -132,7 +146,7 @@ end
     Mauve::Server.instance.logger.warn "#{sig} signal received.  Restarting."
     Mauve::Server.instance.stop
 
-    #
+    # 
     # Reload configuration
     #
     begin
@@ -167,6 +181,7 @@ end
         l.outputters.delete(old)
       end
 
+      old.flush
       old.close
 
       Mauve::Server.instance.logger.info "Opened #{new.filename}."
@@ -183,8 +198,16 @@ end
 end
 
 begin
+  if outputter and logger.outputters.include?(outputter)
+    logger.debug "Closing initial outputter"
+    logger.outputters.delete(outputter)
+    outputter.flush
+    outputter.close
+  end
+
+  logger.info "This is mauve #{Mauve::VERSION}"
   Mauve::Server.instance.start
 rescue StandardError => ex
-  error (verbose ? ex : ex.to_s)
+  error ex 
 end
 

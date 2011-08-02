@@ -91,7 +91,10 @@ module Mauve
     end
 
     alias to_s inspect
-   
+
+    #
+    # This is to stop datamapper inserting duff dates into the database.
+    #
     def check_dates
       bad_dates = self.attributes.find_all do |key, value|
         value.is_a?(DateTime) and not (DateTime.new(2000,1,1,0,0,0)..DateTime.new(2020,1,1,0,0,0)).include?(value)
@@ -225,8 +228,6 @@ module Mauve
         end
       end
 
-      logger.info "#{self.inspect} updated." unless @attributes_before_save.empty?
-
       true
     end
 
@@ -296,6 +297,7 @@ module Mauve
       raise! if (will_unacknowledge_at and will_unacknowledge_at.to_time <= MauveTime.now) or
         (will_raise_at and will_raise_at.to_time <= MauveTime.now)
       clear! if will_clear_at && will_clear_at.to_time <= MauveTime.now
+      logger.info("Polled #{self.inspect}")
     end
 
 
@@ -388,13 +390,13 @@ module Mauve
       #
       # Receive an AlertUpdate buffer from the wire.
       #
-      def receive_update(update, reception_time = MauveTime.now)
+      def receive_update(update, reception_time = MauveTime.now, ip_source="network")
 
         update = Proto::AlertUpdate.parse_from_string(update) unless update.kind_of?(Proto::AlertUpdate)
 
         alerts_updated = []
         
-        logger.debug("Alert update received from wire: #{update.inspect.split("\n").join(" ")}")
+        # logger.debug("Alert update received from wire: #{update.inspect.split("\n").join(" ")}")
         
         #
         # Transmission time helps us determine any time offset
@@ -508,6 +510,12 @@ module Mauve
           else
             alert_db.clear!
           end
+
+          #
+          # Record the fact we received an update.
+          #
+          logger.info("Received update from #{ip_source} for #{alert_db.inspect}")
+
         end
         
         # If this is a complete replacement update, find the other alerts

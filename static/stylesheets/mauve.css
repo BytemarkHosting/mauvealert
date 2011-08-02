@@ -46,20 +46,6 @@ tr.detail {
   border-top-width: thin;
 }
 
-div.error {
-  border: #c66dff medium solid;
-  background-color: #e0b0ff;
-}
-
-div.notice {
-  border: #c66dff medium solid;
-  background-color: #e0b0ff;
-}
-
-div.error p, div.notice p {
-  background-color: transparent;
-}
-
 .hidden {
   display: none;
 }
@@ -78,18 +64,18 @@ div.notice {
   background-image: url('/images/information.png');
 }
 
-div.notice, div.error {
+div.flash {
   margin: 5px 5px 0px;
   padding: 0px;
   padding-left: 20px;
   color: black;
-  font-size: 12px;
+  font-size: large;
   background-position: 5px;
   background-repeat: no-repeat;
   min-height: 20px;
 }
 
-div.error p, div.notice p {
+div.flash p {
   background-color: transparent;
 }
 

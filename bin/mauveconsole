@@ -1,4 +1,4 @@
-#!/usr/bin/ruby1.8
+#! /usr/bin/ruby1.8
 # NAME
 #  mauveconsole -- Ruby console to query the mauvealert server directly
 #

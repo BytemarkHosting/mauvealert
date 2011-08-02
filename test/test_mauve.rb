@@ -1,5 +1,8 @@
 
-$:.unshift "../lib"
+%w(. ..).each do |path|
+  libdir = File.join(path,"lib")
+  $:.unshift libdir if File.directory?(libdir)
+end
 
 require 'test/unit'
 

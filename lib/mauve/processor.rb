@@ -43,9 +43,9 @@ module Mauve
         
         Timer.instance.freeze if Timer.instance.alive? and !Timer.instance.frozen?
 
-        logger.debug("Got #{data.inspect} from #{client.inspect}")
+        # logger.debug("Got #{data.inspect} from #{client.inspect}")
 
-        ip_source = "#{client[3]}:#{client[1]}"
+        ip_source = "#{client[3]}"
         update = Proto::AlertUpdate.new
 
         begin
@@ -62,7 +62,7 @@ module Mauve
           logger.debug "Update #{update.transmission_id} sent at #{update.transmission_time} from "+
             "'#{update.source}'@#{ip_source} alerts #{update.alert.length}"
 
-          Alert.receive_update(update, received_at)
+          Alert.receive_update(update, received_at, ip_source)
 
         rescue Protobuf::InvalidWireType, 
                NotImplementedError, 
