@@ -3,7 +3,7 @@ Maintainer: Matthew Bloch <matthew@bytemark.co.uk>
 Uploaders: Patrick J Cherry <patrick@bytemark.co.uk>
 Section: ruby
 Priority: optional
-Build-Depends: ruby1.8, debhelper, cdbs, rdoc, txt2man, cdbs
+Build-Depends: ruby1.8, debhelper, cdbs, rdoc, txt2man, cdbs, libsetup-ruby1.8
 Standards-Version: 3.8.0
 
 Package: mauvealert-client

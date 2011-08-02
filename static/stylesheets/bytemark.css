@@ -64,10 +64,15 @@ h2 a {
 
 h3, th {
   font-weight: bold;
-  font-size: small;
+  font-size: normal;
   background-color: #E4E4E4;
   color: black;
 }
+
+th {
+  font-size: small;
+}
+
 h3 {
   padding: 3px 5px;
   margin: 5px 5px 0px 5px;
@@ -96,7 +101,7 @@ div#navbar {
   margin:  -5px -5px 5px -5px;
   padding-left: 15px;
   background-color: #666;
-  font-size: 14px;
+  font-size: small;
 }
 
 div#navbar ul {

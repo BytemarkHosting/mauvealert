@@ -26,7 +26,5 @@
     %div{:class => ["flash", klass]}
       :textile
         #{flash[klass]}
-    :javascript
-      $(document).ready(function () { $('div.flash').delay(1000).fadeOut(2000);});
   - else
     %div{:class => ["flash", klass], :style => "display: none"}

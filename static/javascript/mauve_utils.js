@@ -226,7 +226,7 @@ function clearError(func) {
   }
 
   if ( $('div.flash.error').contents().length == 0 ) {
-    $('div.flash.error').fadeOut(2000);
+    $('div.flash.error').hide();
   }
 
   return false;

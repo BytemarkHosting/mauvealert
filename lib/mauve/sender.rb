@@ -108,7 +108,7 @@ module Mauve
 
       #
       # Must have a source, so default to hostname if user doesn't care 
-      update.source ||= `hostname -f`.chomp
+      update.source ||= Socket.gethostname
       
       #
       # Make sure all alerts default to "-r now"
