@@ -3,6 +3,8 @@
 #
 ##
 
+OPENBSD_SETUP_FLAGS = --prefix=/usr/local --installdirs=site --ruby-path=/usr/local/bin/ruby18 --mandir=\$$prefix/man/man1 --siteruby=\$$libdir/ruby/site_ruby --siterubyver=\$$siteruby/1.8
+
 all: man man/mauvesend.1 man/mauveserver.1 man/mauveconsole.1
 
 man:
@@ -23,9 +25,9 @@ clean:
 	$(RM) -r tmp
 
 distclean: clean
-	[ -e ./setup.rb ] && ruby ./setup.rb distclean
+	if [ -e ./setup.rb ] ; then ruby ./setup.rb distclean ; fi
 	$(RM) setup.rb
-	$(RM) ruby-mauvealert.tar.gz
+	$(RM) -r OpenBSD
 
 test: setup.rb
 	ruby ./setup.rb test
@@ -33,14 +35,33 @@ test: setup.rb
 setup.rb: /usr/lib/ruby/1.8/setup.rb
 	ln -sf /usr/lib/ruby/1.8/setup.rb .
 
-openbsd_tarball: ruby-mauvealert.tar.gz
+OpenBSD: OpenBSD/sha256sums
 
-ruby-mauvealert.tar.gz: all setup.rb
-	mkdir -p tmp
-	ruby ./setup.rb config --prefix=/usr/local --installdirs=site --ruby-path=/usr/local/bin/ruby18 --mandir=\$$prefix/man/man1 --siteruby=\$$libdir/ruby/site_ruby --siterubyver=\$$siteruby/1.8
+OpenBSD/sha256sums: OpenBSD/ruby-mauvealert.tar.gz OpenBSD/ruby-protobuf.tar.gz
+	#
+	# rejig sha256sum to openbsd sha256
+	# 
+	cd OpenBSD && sha256sum * | sed -e 's/\([^ ]\+\)  \(.*\)$$/SHA256 (\2) = \1/' > sha256
+	gpg --clearsign OpenBSD/sha256sum
+
+OpenBSD/ruby-mauvealert.tar.gz: all setup.rb
+	mkdir -p tmp/ruby-mauvealert
+	ruby ./setup.rb config ${OPENBSD_SETUP_FLAGS}
 	ruby ./setup.rb setup
-	ruby ./setup.rb install --prefix=tmp/
-	tar -C tmp -czvf $@ .
+	ruby ./setup.rb install --prefix=tmp/ruby-mauvealert
+	mkdir -p OpenBSD
+	tar -C tmp/ruby-mauvealert -czvf $@ .
+
+OpenBSD/ruby-protobuf.tar.gz:
+	mkdir -p tmp/ruby-protobuf-source
+	git clone https://github.com/macks/ruby-protobuf.git tmp/ruby-protobuf-source
+	cd tmp/ruby-protobuf-source && git checkout -b v0.4.5
+	ln -sf /usr/lib/ruby/1.8/setup.rb tmp/ruby-protobuf-source/
+	cd tmp/ruby-protobuf-source && ruby ./setup.rb config ${OPENBSD_SETUP_FLAGS} 
+	cd tmp/ruby-protobuf-source && ruby ./setup.rb setup
+	cd tmp/ruby-protobuf-source && ruby ./setup.rb install --prefix=../ruby-protobuf
+	mkdir -p OpenBSD
+	tar -C tmp/ruby-protobuf -czvf $@ .
 
 .PHONY: all clean openbsd_tarball test distclean
 
