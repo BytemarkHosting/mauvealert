@@ -219,13 +219,13 @@ module Mauve
       if a =~ /\ALIST +(\d+)\b/
         ind = $1.to_i
         if ind > 0 and ind <= self.messages.length
-          d << "+OK #{ind} #{self.messages[ind-1].length}"
+          d << "+OK #{ind} #{self.messages[ind-1][1].length}"
         else
           d << "-ERR Unknown message."
         end
       else
         d << "+OK #{self.messages.length} messages (#{self.messages.inject(0){|s,m| s+= m[1].length}} octets)."
-        self.messages.each_with_index{|m,i| d << "#{i+1} #{m.length}"}
+        self.messages.each_with_index{|m,i| d << "#{i+1} #{m[1].length}"}
         d << "."
       end
 
@@ -314,7 +314,7 @@ module Mauve
 
           alerts_seen << [a.alert_id, a.update_type]
 
-          @messages << [a, email.prepare_message(self.user, a.alert, [])]
+          @messages << [a, email.prepare_message(self.user+"@"+Server.instance.hostname, a.alert, [])]
         end
       end
       

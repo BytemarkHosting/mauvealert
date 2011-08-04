@@ -72,14 +72,14 @@ module Mauve
 
           m.header.to = destination
           m.header.from = @from
-          m.header.date = case alert.update_type
+          m.header.date = ( case alert.update_type
             when "cleared" 
               alert.cleared_at
             when "acknowledged"
               alert.acknowledged_at
             else
               alert.raised_at
-            end 
+            end ).to_time
 
           m.header['Content-Type'] = "multipart/alternative"
 
