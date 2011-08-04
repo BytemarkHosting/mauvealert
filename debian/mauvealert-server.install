@@ -4,7 +4,7 @@ lib/dm-sqlite-adapter-with-mutex.rb  usr/lib/ruby/1.8/
 lib/mauve/alert.rb                   usr/lib/ruby/1.8/mauve/
 lib/mauve/alert_changed.rb           usr/lib/ruby/1.8/mauve/
 lib/mauve/alert_group.rb             usr/lib/ruby/1.8/mauve/
-lib/mauve/auth_bytemark.rb           usr/lib/ruby/1.8/mauve/
+lib/mauve/authentication.rb           usr/lib/ruby/1.8/mauve/
 lib/mauve/calendar_interface.rb      usr/lib/ruby/1.8/mauve/
 lib/mauve/configuration.rb           usr/lib/ruby/1.8/mauve/
 lib/mauve/configuration_builder.rb   usr/lib/ruby/1.8/mauve/
@@ -21,6 +21,7 @@ lib/mauve/notifiers                  usr/lib/ruby/1.8/mauve/
 lib/mauve/notifiers.rb               usr/lib/ruby/1.8/mauve/
 lib/mauve/people_list.rb             usr/lib/ruby/1.8/mauve/
 lib/mauve/person.rb                  usr/lib/ruby/1.8/mauve/
+lib/mauve/pop3_server.rb                  usr/lib/ruby/1.8/mauve/
 lib/mauve/processor.rb               usr/lib/ruby/1.8/mauve/
 lib/mauve/server.rb                  usr/lib/ruby/1.8/mauve/
 lib/mauve/source_list.rb             usr/lib/ruby/1.8/mauve/

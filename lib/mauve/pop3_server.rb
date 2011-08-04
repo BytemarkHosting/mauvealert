@@ -276,11 +276,19 @@ module Mauve
         smtp = Mauve::Notifiers::Email::Default.new("TODO: why do I need to put this argument here?")
         alerts_seen = []
 
-        AlertChanged.all(:person => self.user).each do |a|
+        #
+        # A maximum of the 100 most recent alerts.
+        #
+        AlertChanged.first(100, :person => self.user).each do |a|
           #
           # Not interested in alerts 
           #
           next unless @level.nil? or a.level.to_s == @level
+
+          #
+          # Only interested in alerts
+          #
+          next unless a.alert.is_a?(Mauve::Alert)
 
           #
           # Only one message per alert.
