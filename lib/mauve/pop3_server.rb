@@ -28,7 +28,9 @@ module Mauve
       #
       # Use ipaddr to sanitize our IP.
       #
-      @ip = IPAddr.new(i)
+      IPAddr.new(i)
+
+      @ip = i
     end
 
     def logger
@@ -273,7 +275,9 @@ module Mauve
     def messages
       if @messages.empty?
         @messages = []
-        smtp = Mauve::Notifiers::Email::Default.new("TODO: why do I need to put this argument here?")
+
+        email = Configuration.current.notification_methods['email']
+
         alerts_seen = []
 
         #
@@ -310,7 +314,7 @@ module Mauve
 
           alerts_seen << [a.alert_id, a.update_type]
 
-          @messages << [a, smtp.prepare_message(self.user, a.alert, [])]
+          @messages << [a, email.prepare_message(self.user, a.alert, [])]
         end
       end
       

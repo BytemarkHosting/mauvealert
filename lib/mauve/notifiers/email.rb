@@ -24,7 +24,6 @@ module Mauve
           @password = nil
           @login_method = nil
           @from = "mauve@localhost" 
-          @hostname = "localhost"
           @signature = "This is an automatic mailing, please do not reply."
           @subject_prefix = ""
         end
@@ -73,7 +72,15 @@ module Mauve
 
           m.header.to = destination
           m.header.from = @from
-          m.header.date = alert.updated_at.to_time || MauveTime.now
+          m.header.date = case alert.update_type
+            when "cleared" 
+              alert.cleared_at
+            when "acknowledged"
+              alert.acknowledged_at
+            else
+              alert.raised_at
+            end 
+
           m.header['Content-Type'] = "multipart/alternative"
 
           txt_template = File.join(File.dirname(__FILE__), "templates", "email.txt.erb")

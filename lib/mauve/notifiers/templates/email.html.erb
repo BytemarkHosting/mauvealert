@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"><head><title></title></head><body>
-<p><a href="<%= WebInterface.url_for(alert) %>"><%= alert.update_type.upcase %></a>:<% 
+<p><a href="<%= WebInterface.url_for(alert) %>"><%= alert.update_type.upcase %></a>: <% 
 case alert.update_type
 when "cleared" 
 %><%= alert.cleared_at.to_s_relative %><% 

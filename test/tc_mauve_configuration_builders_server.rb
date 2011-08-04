@@ -85,6 +85,25 @@ EOF
     assert_equal(session_secret, Mauve::HTTPServer.instance.session_secret)
   end
 
+  def test_pop3_server_params
+    ip = "::1"
+    port = 1101
+
+    config=<<EOF
+server {
+  pop3_server {
+    ip "#{ip}"
+    port #{port}
+  }
+}
+EOF
+    assert_nothing_raised { Mauve::ConfigurationBuilder.parse(config) }
+
+    assert_equal(ip, Mauve::Pop3Server.instance.ip)
+    assert_equal(port, Mauve::Pop3Server.instance.port)
+
+  end
+
   def test_listener_params
     ip = "::"
     port = 12341

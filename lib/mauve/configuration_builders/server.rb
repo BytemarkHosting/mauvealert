@@ -64,6 +64,15 @@ module Mauve
       end
     end
 
+    class Pop3Server < ObjectBuilder
+      is_attribute "ip"
+      is_attribute "port"
+
+      def builder_setup
+        @result = Mauve::Pop3Server.instance
+      end
+    end
+
     class Server < ObjectBuilder
       #
       # Set up second-level builders
@@ -74,6 +83,7 @@ module Mauve
       is_builder "timer",         Timer
       is_builder "notifier",      Notifier
       is_builder "heartbeat",     Heartbeat
+      is_builder "pop3_server",   Pop3Server
 
       is_attribute "hostname"
       is_attribute "database"
