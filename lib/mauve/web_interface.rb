@@ -3,6 +3,8 @@ require 'haml'
 require 'redcloth'
 require 'json'
 
+require 'mauve/authentication'
+
 require 'sinatra/tilt'
 require 'sinatra/base'
 require 'sinatra-partials'
@@ -148,7 +150,7 @@ EOF
       #
       next_page = '/' if next_page == '/logout'
 
-      if auth_helper(usr, pwd)
+      if Authentication.authenticate(usr, pwd)
         session['username'] = usr
         redirect next_page
       else
@@ -461,52 +463,6 @@ EOF
         @cycle ||= 0
         @cycle = (@cycle + 1) % list.length
         list[@cycle]
-      end
-
-      ## Test for authentication with SSO.
-      #
-      def auth_helper (usr, pwd)
-        # First try Bytemark
-        #
-        auth = AuthBytemark.new()
-        result = begin
-          auth.authenticate(usr,pwd)
-        rescue Exception => ex
-          logger.error "Caught exception during Bytemark auth for #{usr} (#{ex.to_s})"
-          logger.debug ex.backtrace.join("\n")
-          false
-        end
-
-        if true == result
-          return true
-        else
-          logger.warn "Bytemark authentication failed for #{usr}"
-        end
-
-        # 
-        # OK now try local auth
-        #
-        result = begin
-          if Configuration.current.people.has_key?(usr)
-            Digest::SHA1.hexdigest(params['password']) == Configuration.current.people[usr].password
-          end
-        rescue Exception => ex
-          logger.error "Caught exception during local auth for #{usr} (#{ex.to_s})"
-          logger.debug ex.backtrace.join("\n")
-          false
-        end
-
-        if true == result
-          return true
-        else
-          logger.warn "Local authentication failed for #{usr}"
-        end
-
-        #
-        # Rate limit logins.
-        #
-        sleep 5
-        false
       end
 
     end

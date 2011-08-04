@@ -51,8 +51,6 @@ module Mauve
           end
         end
         
-        protected
-        
         def prepare_message(destination, alert, all_alerts, conditions = {})
           was_suppressed = conditions[:was_suppressed] || false
           is_suppressed  = conditions[:is_suppressed]  || false
@@ -75,7 +73,7 @@ module Mauve
 
           m.header.to = destination
           m.header.from = @from
-          m.header.date = MauveTime.now
+          m.header.date = alert.updated_at.to_time || MauveTime.now
           m.header['Content-Type'] = "multipart/alternative"
 
           txt_template = File.join(File.dirname(__FILE__), "templates", "email.txt.erb")
