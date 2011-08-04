@@ -9,6 +9,7 @@ require 'mauve/mauve_thread'
 require 'mauve/mauve_time'
 require 'mauve/timer'
 require 'mauve/udp_server'
+require 'mauve/pop3_server'
 require 'mauve/processor'
 require 'mauve/http_server'
 require 'mauve/heartbeat'
@@ -21,7 +22,7 @@ module Mauve
     #
     # This is the order in which the threads should be started.
     #
-    THREAD_CLASSES = [UDPServer, HTTPServer, Processor, Timer, Notifier, Heartbeat]
+    THREAD_CLASSES = [UDPServer, HTTPServer, Pop3Server, Processor, Timer, Notifier, Heartbeat]
 
     attr_reader :hostname, :database, :initial_sleep
     attr_reader   :packet_buffer, :notification_buffer, :started_at

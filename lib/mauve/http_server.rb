@@ -2,7 +2,6 @@
 #
 # Bleuurrgggggh!  Bleurrrrrgghh!
 #
-require 'mauve/auth_bytemark'
 require 'mauve/web_interface'
 require 'mauve/mauve_thread'
 require 'digest/sha1'
@@ -136,11 +135,13 @@ module Mauve
     end
 
     def main_loop
-      # 
-      # Sessions are kept for 8 days.
-      #
-      @server = ::Thin::Server.new(@ip, @port, Rack::Session::Cookie.new(WebInterface.new, {:key => "mauvealert", :secret => @session_secret, :expire_after => 691200}), :signals => false)
-      @server.start
+      unless @server and @server.running?
+        # 
+        # Sessions are kept for 8 days.
+        #
+        @server = ::Thin::Server.new(@ip, @port, Rack::Session::Cookie.new(WebInterface.new, {:key => "mauvealert", :secret => @session_secret, :expire_after => 691200}), :signals => false)
+        @server.start
+      end
     end
 
     def base_url
@@ -148,8 +149,14 @@ module Mauve
     end
     
     def stop
-      @server.stop if @server
+      @server.stop if @server and @server.running?
       super
     end
+
+    def join
+      @server.stop! if @server and @server.running?
+      super
+    end
+
   end    
 end

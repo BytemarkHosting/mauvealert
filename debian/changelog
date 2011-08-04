@@ -1,3 +1,11 @@
+mauvealert (3.3.0) stable; urgency=low
+
+  * Added pop3 server
+  * Rejigged authentication
+  * Web interface improvements 
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 04 Aug 2011 14:26:24 +0100
+
 mauvealert (3.2.1) stable; urgency=low
 
   * Fixed up alert_group matching.
