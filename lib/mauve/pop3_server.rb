@@ -113,38 +113,38 @@ module Mauve
     end
 
     def receive_data (data)
-      data.split(CRLF).each do |d|
+      data.split(CRLF).each do |cmd|
         break if error?
 
-        if d =~ Regexp.new('\A('+self.permitted_commands.join("|")+')\b')
+        if cmd =~ Regexp.new('\A('+self.permitted_commands.join("|")+')\b')
           case $1
             when "QUIT"
-              do_process_quit data
+              do_process_quit cmd
             when "USER"
-              do_process_user data
+              do_process_user cmd
             when "PASS"
-              do_process_pass data
+              do_process_pass cmd
             when "STAT"
-              do_process_stat data
+              do_process_stat cmd
             when "LIST"
-              do_process_list data
+              do_process_list cmd
             when "RETR"
-              do_process_retr data
+              do_process_retr cmd
             when "DELE"
-              do_process_dele data
+              do_process_dele cmd
             when "NOOP"
-              do_process_noop data
+              do_process_noop cmd
             when "RSET"
-              do_process_rset data
+              do_process_rset cmd
             when "CAPA"
-              do_process_capa data
+              do_process_capa cmd
             when "UIDL"
-              do_process_uidl data
+              do_process_uidl cmd
             else
-              do_process_error data
+              do_process_error cmd
           end
         else
-          do_process_error data
+          do_process_error cmd
         end
       end
     end
