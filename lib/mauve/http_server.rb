@@ -139,7 +139,7 @@ module Mauve
         # 
         # Sessions are kept for 8 days.
         #
-        @server = ::Thin::Server.new(@ip, @port, Rack::Session::Cookie.new(WebInterface.new, {:key => "mauvealert", :secret => @session_secret, :expire_after => 691200}), :signals => false)
+        @server = ::Thin::Server.new(@ip, @port, Rack::Session::Cookie.new(WebInterface.new, {:key => "mauvealert", :secret => @session_secret, :expire_after => 8.weeks}), :signals => false)
         @server.start
       end
     end
