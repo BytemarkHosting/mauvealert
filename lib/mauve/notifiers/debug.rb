@@ -47,7 +47,7 @@ module Mauve
           #FileUtils.touch(lock_file)
           File.open("#{deliver_to_file}", "a+") do |fh|
             fh.flock(File::LOCK_EX)
-            fh.print("#{MauveTime.now} from #{self.class}: " + message + "\n")
+            fh.print("#{Time.now} from #{self.class}: " + message + "\n")
             fh.flush()
           end
           #FileUtils.rm(lock_file)

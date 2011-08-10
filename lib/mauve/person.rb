@@ -72,10 +72,10 @@ module Mauve
         # Log the result
         note =  "#{@alert.update_type.capitalize} #{name} notification to #{@person.username} (#{destination}) " +  (res ? "succeeded" : "failed" )
         logger.info note+" about #{@alert}."
-        h = History.new(:alert_id => @alert.id, :type => "notification", :event => note)
+        h = History.new(:alerts => [@alert], :type => "notification", :event => note)
         logger.error "Unable to save history due to #{h.errors.inspect}" if !h.save
 
-        res
+        return res
       end
 
     end 
@@ -191,7 +191,7 @@ module Mauve
       if was_suppressed and self.suppressed?
         note =  "#{alert.update_type.capitalize} notification to #{self.username} suppressed"
         logger.info note + " about #{alert}."
-        History.create(:alert_id => alert.id, :type => "notification", :event => note)
+        History.create(:alerts => [alert], :type => "notification", :event => note)
         return true 
       end
 

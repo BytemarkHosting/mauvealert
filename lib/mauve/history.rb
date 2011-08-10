@@ -3,6 +3,16 @@ require 'mauve/datamapper'
 require 'log4r'
 
 module Mauve
+  class AlertHistory
+    include DataMapper::Resource
+
+    property :alert_id,   Integer, :key => true
+    property :history_id, Integer, :key => true
+
+    belongs_to :alert  
+    belongs_to :history 
+  end
+
   class History
     include DataMapper::Resource
     
@@ -10,12 +20,12 @@ module Mauve
     default_scope(:default).update(:order => [:created_at.desc, :id.desc])
     
     property :id, Serial
-    property :alert_id, Integer, :required  => true
+#    property :alert_id, String, :required  => true
     property :type,  String, :required => true, :default => "unknown"
     property :event, Text, :required => true, :default => "Nothing set"
     property :created_at, DateTime, :required => true
 
-    belongs_to :alert
+    has n, :alerts, :through => :alerthistory
 
     before :valid?, :set_created_at
 
@@ -29,4 +39,6 @@ module Mauve
 
   end
 
+
 end
+

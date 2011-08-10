@@ -78,7 +78,8 @@ module Mauve
     property :will_raise_at, DateTime
     property :will_unacknowledge_at, DateTime
     has n, :changes, :model => AlertChanged
-    has n, :histories, :model => Mauve::History
+    has n, :histories, :through => :alerthistory
+
     has 1, :alert_earliest_date
 
     before :save, :take_copy_of_changes
@@ -209,7 +210,7 @@ module Mauve
          (self.update_type == "raised" and (is_a_new_alert or is_a_change))
         self.notify
 
-        h = History.new(:alert_id => self.id, :type => "update")
+        h = History.new(:alerts => [self], :type => "update")
 
         if self.update_type == "acknowledged"
           h.event = "ACKNOWLEDGED by #{self.acknowledged_by} until #{self.will_unacknowledge_at}"
