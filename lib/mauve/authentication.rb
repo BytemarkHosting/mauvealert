@@ -77,12 +77,12 @@ module Mauve
     ## Not really needed.
     def ping ()
       begin
-        MauveTimeout.timeout(@timeout) do
+        Timeout.timeout(@timeout) do
           s = TCPSocket.open(@srv, @port)
           s.close()
           return true
         end
-      rescue MauveTimeout::Error => ex
+      rescue Timeout::Error => ex
         return false
       rescue => ex 
         return false

@@ -66,8 +66,8 @@ module Mauve
       message.id = "mauve-heartbeat"
       message.summary = self.summary
       message.detail = self.detail
-      message.raise_time = (MauveTime.now.to_f+self.raise_after).to_i
-      message.clear_time = MauveTime.now.to_i
+      message.raise_time = (Time.now.to_f+self.raise_after).to_i
+      message.clear_time = Time.now.to_i
 
       update.alert << message
 

@@ -115,13 +115,13 @@ module Mauve
       #
       update.alert.each do |alert|
         next if alert.raise_time || alert.clear_time
-        alert.raise_time = MauveTime.now.to_i
+        alert.raise_time = Time.now.to_i
       end
      
       #
       # Make sure we set the transmission time
       #
-      update.transmission_time = MauveTime.now.to_i 
+      update.transmission_time = Time.now.to_i 
 
       data = update.serialize_to_string
 

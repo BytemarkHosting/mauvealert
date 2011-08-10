@@ -222,7 +222,7 @@ EOF
           a.acknowledge!(@person, ack_until)
           logger.debug note
           unless note.to_s.empty?
-            h = History.new(:alert_id => a.id, :type => "note", :event => note.to_s)
+            h = History.new(:alerts => [a], :type => "note", :event => note.to_s)
             logger.debug h.errors unless h.save
           end
           succeeded << a
@@ -455,7 +455,7 @@ EOF
       end
 
       def find_recent_alerts
-        since = params['since'] ? MauveTime.parse(params['since']) : (MauveTime.now-86400)
+        since = params['since'] ? Time.parse(params['since']) : (Time.now-86400)
         @alerts = Alert.all(:updated_at.gt => since, :order => [:raised_at.desc, :cleared_at.desc, :acknowledged_at.desc, :updated_at.desc, ])
       end
       

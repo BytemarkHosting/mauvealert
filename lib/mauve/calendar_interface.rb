@@ -119,7 +119,7 @@ module Mauve
       rescue Errno::EHOSTUNREACH => ex
         logger.warn("no route to host.")
         return Array.new
-      rescue MauveTimeout::Error => ex
+      rescue Timeout::Error => ex
         logger.warn("time out reached.")
         return Array.new
       rescue ArgumentError => ex

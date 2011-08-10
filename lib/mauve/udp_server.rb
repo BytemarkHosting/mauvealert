@@ -80,7 +80,7 @@ module Mauve
       begin
 #        packet      = @socket.recvfrom_nonblock(65535)
         packet      = @socket.recvfrom(65535)
-        received_at = MauveTime.now
+        received_at = Time.now
       rescue Errno::EAGAIN, Errno::EWOULDBLOCK => ex
         IO.select([@socket])
         retry unless self.should_stop?

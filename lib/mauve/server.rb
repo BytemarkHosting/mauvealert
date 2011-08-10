@@ -34,7 +34,7 @@ module Mauve
       @hostname    = "localhost"
       @database    = "sqlite3:///./mauvealert.db"
       
-      @started_at = MauveTime.now
+      @started_at = Time.now
       @initial_sleep = 300
 
       #

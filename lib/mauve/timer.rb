@@ -21,7 +21,7 @@ module Mauve
       # If we didn't find an alert, or the alert we found is due in the future,
       # look for the next alert_changed object.
       #
-      if next_alert.nil? or next_alert.due_at > MauveTime.now
+      if next_alert.nil? or next_alert.due_at > Time.now
         next_alert_changed = AlertChanged.find_next_with_event
       end
 
@@ -50,7 +50,7 @@ module Mauve
         # La la la nothing to do.
         #
         logger.info("Next to notify: #{next_to_notify} #{next_to_notify.is_a?(AlertChanged) ? "(reminder)" : "(heartbeat)"} -- snoozing until #{next_to_notify.due_at.iso8601}")
-        sleep_loops = ((next_to_notify.due_at - MauveTime.now).to_f / 0.1).round.to_i
+        sleep_loops = ((next_to_notify.due_at - Time.now).to_f / 0.1).round.to_i
       end
 
       sleep_loops = 1 if sleep_loops.nil? or sleep_loops < 1

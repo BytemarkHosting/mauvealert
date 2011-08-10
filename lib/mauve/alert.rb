@@ -24,7 +24,7 @@ module Mauve
     # http://www.mail-archive.com/datamapper@googlegroups.com/msg02314.html
     #
     def self.create_view!
-      the_distant_future = MauveTime.now + 86400000 # it is the year 2000 - the humans are dead
+      the_distant_future = Time.now + 86400000 # it is the year 2000 - the humans are dead
       ["BEGIN TRANSACTION",
        "DROP VIEW IF EXISTS mauve_alert_earliest_dates",
        "CREATE VIEW 
@@ -244,7 +244,7 @@ module Mauve
       raise ArgumentError, "Cannot acknowledge a cleared alert" if self.cleared?
  
       self.acknowledged_by = person.username
-      self.acknowledged_at = MauveTime.now
+      self.acknowledged_at = Time.now
       self.will_unacknowledge_at = ack_until
       self.update_type = "acknowledged"
 
@@ -260,7 +260,7 @@ module Mauve
       logger.error("Couldn't save #{self}") unless save
     end
     
-    def raise!(at = MauveTime.now)
+    def raise!(at = Time.now)
       self.acknowledged_by = nil
       self.acknowledged_at = nil
       self.will_unacknowledge_at = nil
@@ -273,7 +273,7 @@ module Mauve
       logger.error("Couldn't save #{self}") unless save
     end
     
-    def clear!(at = MauveTime.now)
+    def clear!(at = Time.now)
       self.acknowledged_by = nil
       self.acknowledged_at = nil
       self.will_unacknowledge_at = nil
@@ -295,9 +295,9 @@ module Mauve
     end
     
     def poll
-      raise! if (will_unacknowledge_at and will_unacknowledge_at.to_time <= MauveTime.now) or
-        (will_raise_at and will_raise_at.to_time <= MauveTime.now)
-      clear! if will_clear_at && will_clear_at.to_time <= MauveTime.now
+      raise! if (will_unacknowledge_at and will_unacknowledge_at.to_time <= Time.now) or
+        (will_raise_at and will_raise_at.to_time <= Time.now)
+      clear! if will_clear_at && will_clear_at.to_time <= Time.now
       logger.info("Polled #{self.inspect}")
     end
 
@@ -382,7 +382,7 @@ module Mauve
         earliest_alert ? earliest_alert.alert : nil
       end
 
-      def all_overdue(at = MauveTime.now)
+      def all_overdue(at = Time.now)
         AlertEarliestDate.all(:earliest.lt => at, :order => [:earliest]).collect do |earliest_alert|
           earliest_alert ? earliest_alert.alert : nil
         end
@@ -391,7 +391,7 @@ module Mauve
       #
       # Receive an AlertUpdate buffer from the wire.
       #
-      def receive_update(update, reception_time = MauveTime.now, ip_source="network")
+      def receive_update(update, reception_time = Time.now, ip_source="network")
 
         update = Proto::AlertUpdate.parse_from_string(update) unless update.kind_of?(Proto::AlertUpdate)
 
@@ -403,7 +403,7 @@ module Mauve
         # Transmission time helps us determine any time offset
         #
         if update.transmission_time and update.transmission_time > 0
-          transmission_time = MauveTime.at(update.transmission_time) 
+          transmission_time = Time.at(update.transmission_time) 
         else
           transmission_time = reception_time
         end
@@ -422,8 +422,8 @@ module Mauve
           # Infer some actions from our pure data structure (hmm, wonder if
           # this belongs in our protobuf-derived class?
           #
-          clear_time = alert.clear_time == 0 ? nil : MauveTime.at(alert.clear_time + time_offset)
-          raise_time = alert.raise_time == 0 ? nil : MauveTime.at(alert.raise_time + time_offset)
+          clear_time = alert.clear_time == 0 ? nil : Time.at(alert.clear_time + time_offset)
+          raise_time = alert.raise_time == 0 ? nil : Time.at(alert.raise_time + time_offset)
 
           if raise_time.nil? && clear_time.nil?
             #

@@ -74,7 +74,7 @@ module Mauve
           logger.debug ex.backtrace.join("\n")
 
         ensure
-          @transmission_id_cache[update.transmission_id.to_s] = MauveTime.now
+          @transmission_id_cache[update.transmission_id.to_s] = Time.now
         end
 
       end
@@ -87,7 +87,7 @@ module Mauve
     end
 
     def expire_transmission_id_cache
-      now = MauveTime.now
+      now = Time.now
       #
       # Only check once every minute.
       #

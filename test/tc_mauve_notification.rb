@@ -5,8 +5,11 @@ require 'mauve/alert'
 require 'mauve/notification'
 require 'mauve/configuration'
 require 'mauve/configuration_builder'
+require 'mauve/configuration_builders'
 require 'mauve/mauve_time'
 require 'th_mauve_resolv'
+require 'th_mauve_time'
+require 'th_logger'
 require 'pp' 
 
 
@@ -53,7 +56,7 @@ class TcMauveDuringRunner < Test::Unit::TestCase
     #
     # This should give us midnight last sunday night.
     #
-    now = Mauve::MauveTime.now 
+    now = Time.now 
     midnight_sunday = now  - (now.hour.hours + now.min.minutes + now.sec.seconds + now.wday.days)
 
     #
@@ -101,11 +104,81 @@ end
 class TcMauveNotification < Test::Unit::TestCase 
 
   def test_notify
-  end
+    t = Time.now
 
-  def remind_at_next
+    config=<<EOF
+
+server {
+  database "sqlite::memory:"
+}
+
+person ("test1") {
+  all { true }
+}
+
+person ("test2") {
+  all { true }
+}
+
+person ("test3") {
+  all { true }
+}
+
+people_list "testers", %w(
+  test1
+  test2
+)
+
+alert_group("default") {
+  level URGENT 
+
+  notify("test1") {
+    every 10.minutes
+  }
+  
+  notify("test1") {
+    every 15.minutes
+  }
+
+  notify("test2") {
+    during { @test_time.to_i >= #{(t + 1.hour).to_i}   }
+    every 10.minutes
+  }
+  
+  notify("test3") {
+    during { unacknowledged( 2.hours ) }
+    every 10.minutes
+  }
+
+}
+EOF
+
+    
+    assert_nothing_raised { 
+      Mauve::Configuration.current = Mauve::ConfigurationBuilder.parse(config) 
+      Mauve::Server.instance.setup
+      alert = Mauve::Alert.new(
+        :alert_id  => "test", 
+        :source    => "test",
+        :subject   => "test"
+      )
+      alert.raise!
+    }
+
+    assert_equal(1, Mauve::Alert.count)
+
+    reminder_times = {
+      "test1" => t + 10.minutes,
+      "test2" => t + 1.hour,
+      "test3" => t + 2.hours
+    }
+
+    Mauve::AlertChanged.all.each do |a|
+      pp a
+      assert_equal("urgent", a.level, "Level is wrong")
+      assert_equal("raised", a.update_type, "Update type is wrong")
+      assert_in_delta(reminder_times[a.person].to_f, a.remind_at.to_time.to_f, 10.0, "reminder time is wrong for #{a.person}")
+    end
   end
 
 end
-
-

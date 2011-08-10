@@ -15,13 +15,13 @@ module Mauve
   #   
   # ... later on ...
   #   
-  #   DuringRunner.new(MauveTime.now, my_alert, &during).inside?
+  #   DuringRunner.new(Time.now, my_alert, &during).inside?
   #
   # ... or to ask when an alert will next be cued ...
   #
-  #   DuringRunner.new(MauveTime.now, my_alert, &during).find_next
+  #   DuringRunner.new(Time.now, my_alert, &during).find_next
   #
-  # which will return a MauveTime object, or nil if the time period will
+  # which will return a Time object, or nil if the time period will
   # not be valid again, at least not in the next week.
   #
   class DuringRunner
@@ -171,7 +171,7 @@ module Mauve
       end
 
       # Should we notify at all?
-      is_relevant = DuringRunner.new(MauveTime.now, alert, &during).now?
+      is_relevant = DuringRunner.new(Time.now, alert, &during).now?
 
       people.collect do |person|
         case person
@@ -191,8 +191,10 @@ module Mauve
     end
     
     def remind_at_next(alert)
-      return nil unless alert.raised?
-      DuringRunner.new(MauveTime.now, alert, &during).find_next(every)
+
+      return DuringRunner.new(Time.now, alert, &during).find_next(every) if alert.raised?
+
+      return nil
     end
 
   end

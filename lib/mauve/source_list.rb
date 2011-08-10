@@ -90,7 +90,7 @@ module Mauve
       #
       # Redo resolution every thirty minutes
       #
-      resolve if @resolved_list.empty? or @last_resolved_at.nil? or (MauveTime.now - 1800) > @last_resolved_at
+      resolve if @resolved_list.empty? or @last_resolved_at.nil? or (Time.now - 1800) > @last_resolved_at
 
       #
       # Pick out hostnames from URIs.
@@ -136,7 +136,7 @@ module Mauve
     end
 
     def resolve
-      @last_resolved_at = MauveTime.now
+      @last_resolved_at = Time.now
 
       new_list = @list.collect do |host| 
         if host.is_a?(String)

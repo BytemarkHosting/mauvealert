@@ -158,7 +158,7 @@ module Mauve
     end
     
     def poll # mimic interface from Alert
-      remind if remind_at.to_time <= MauveTime.now
+      remind if remind_at.to_time <= Time.now
     end
     
     class << self
@@ -170,7 +170,7 @@ module Mauve
         next_reminder
       end
 
-      def all_overdue(at = MauveTime.now)
+      def all_overdue(at = Time.now)
         all(:remind_at.not => nil, :remind_at.lt => at, :order => [:remind_at]).to_a
       end
     end

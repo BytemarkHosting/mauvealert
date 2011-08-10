@@ -17,14 +17,14 @@ class Integer
 end
 
 class Date
-  def to_mauvetime
-    Mauve::MauveTime.parse(self.to_s)
+  def to_time
+    Time.parse(self.to_s)
   end
 end
 
 class DateTime
-  def to_mauvetime
-    Mauve::MauveTime.parse(self.to_s)
+  def to_time
+    Time.parse(self.to_s)
   end
 
   def to_s_relative(*args)
@@ -42,10 +42,6 @@ class DateTime
 end
 
 class Time
-  def to_mauvetime
-    Mauve::MauveTime.at(self.to_i,self.usec)
-  end
-
   def in_x_hours(n, type="wallclock")
     t = self.dup
     #
@@ -204,16 +200,16 @@ class Time
 
 end
 
-module Mauve
-  class MauveTime < Time
-
-    def to_s
-      self.iso8601
-    end
-
-    def to_mauvetime
-      self
-    end
-    
-  end
-end
+#module Mauve
+#  class Time < Time
+#
+#    def to_s
+#      self.iso8601
+#    end
+#
+#    def to_mauvetime
+#      self
+#    end
+#    
+#  end
+#end

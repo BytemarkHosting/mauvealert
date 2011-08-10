@@ -159,7 +159,7 @@ module Mauve
     end
    
     def do_send_alert(level, alert)
-      now = MauveTime.now
+      now = Time.now
 
       was_suppressed = self.suppressed?
 
@@ -168,7 +168,7 @@ module Mauve
           # Choose the second one as the first.
           #
           first = previous_alert_times[1]
-          first.is_a?(MauveTime) and (now - first) < period
+          first.is_a?(Time) and (now - first) < period
       end
 
       if self.suppressed?
@@ -179,7 +179,7 @@ module Mauve
 
       end
       
-      if Server.instance.started_at > alert.updated_at.to_time and (Server.instance.started_at + Server.instance.initial_sleep) > MauveTime.now
+      if Server.instance.started_at > alert.updated_at.to_time and (Server.instance.started_at + Server.instance.initial_sleep) > Time.now
         logger.info("Alert last updated in prior run of mauve -- ignoring for initial sleep period.")
         return true
       end
@@ -211,7 +211,7 @@ module Mauve
           #
           # Hmm.. not sure how to make this thread-safe.
           #
-          @notification_thresholds[period].push MauveTime.now
+          @notification_thresholds[period].push Time.now
           @notification_thresholds[period].shift
         end
         true
