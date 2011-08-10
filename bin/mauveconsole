@@ -12,6 +12,8 @@
 #
 #  -V, --version         Show the version number, and exit
 #
+#  -v, --verbose         Show verbose errors
+#
 #  <configuration file>  File from whence to load the configuration. If none is
 #                        specified, then mauvealert.conf in the current
 #                        directory is used, and failing that
@@ -24,25 +26,34 @@
 #  Patrick J Cherry <patrick@bytemark.co.uk>
 #
 
-def error(msg)
-  STDERR.print "*** Error: #{msg}\n"
-  STDERR.print "*** For help, type: #{$0} -h\n"
-  exit 1
+help = manual = verbose = version = test = false
+while arg = ARGV.pop
+  case arg
+    when  /-(h|-help)/
+      help = true
+    when /-(V|-version)/
+      version = true
+    when /-(m|-manual)/
+      manual = true
+    when /(-(v|-verbose))/
+      verbose = true
+    when /(-(t|-test))/
+      test = true
+    else
+      configuration_file = arg
+  end
 end
 
-help    = ARGV.any?{|a| a =~ /-(h|-help)/}
-version = ARGV.any?{|a| a =~ /-(V|-version)/}
-manual  = ARGV.any?{|a| a =~ /-(m|-manual)/}
-
+#
 # CAUTION! Kwality kode.
 #
 if manual or help
   # Open the file, stripping the shebang line
   lines = File.open(__FILE__){|fh| fh.readlines}[1..-1]
-
   found_synopsis = false
 
   lines.each do |line|
+
     line.chomp!
     break if line.empty?
 
@@ -54,6 +65,7 @@ if manual or help
     puts line[2..-1].to_s
 
     break if help and found_synopsis and line =~ /^#\s*$/
+
   end
 end
 
@@ -63,33 +75,86 @@ puts "#{$0}: version "+Mauve::VERSION if version
 
 exit 0 if help or version or manual
 
-configuration_file = ARGV.shift
+require 'log4r'
+
+#
+# Initial logger -- gets detroyed later.
+#
+logger      = Log4r::Logger.new 'Mauve'
+outputter   = Log4r::StderrOutputter.new("initial")
+outputter.formatter = Log4r::PatternFormatter.new( :pattern => "%d [ %6.6l ] [ %12.12c ] %m" )
+outputter.level     = verbose ? Log4r::DEBUG : Log4r::INFO
+logger.outputters   << outputter
+require 'pp'
+
+def error(msg)
+  logger = Log4r::Logger['Mauve']
+  logger.error
+  logger.error "*** Error: #{msg}"
+  logger.error "*** For help, type: #{$0} -h"
+
+  if msg.respond_to?("backtrace")
+    logger.debug "*** Backtrace:"
+    logger.debug msg.backtrace.join("\n") 
+  end
+
+  exit 1
+end
+
+
+begin
+  eval "Proc.new { |a,&b| }"
+rescue SyntaxError => no_blocks_with_procs
+  error "mauveconsole must have Ruby 1.8.7 or later."
+end
+
 configuration_file = [".", "/etc/mauvealert/"].collect{|x| File.join(x, "mauveserver.conf") }.find{|d| File.file?(d)} if configuration_file.nil?
 configuration_file = File.expand_path(configuration_file) unless configuration_file.nil?
 
 if configuration_file.nil?
-  error "No configuration file could be found\n"
+  error "No configuration file could be found"
 end
 
 unless File.file?(configuration_file)
-  error "Configuration file #{configuration_file} not found\n"
+  error "Configuration file #{configuration_file} not found"
 end
 
-require 'irb'
-require 'thread'
+require 'mauve/configuration'
 require 'mauve/configuration_builder'
 require 'mauve/configuration_builders'
-require 'mauve/configuration'
+require 'irb'
 
-Thread.abort_on_exception = true
-
-include Mauve
-
-begin
-  Configuration.current = ConfigurationBuilder.load(configuration_file)
-  Server.instance.setup
-rescue StandardError => ex
-  error ex.message
+#
+# Don't truncate logfiles.
+#
+module Mauve
+  module ConfigurationBuilders
+    class LoggerOutputter < ObjectBuilder
+      def result
+        @args[:trunc] = false if @args and @args[:trunc] == true
+        @result ||= Log4r.const_get(@outputter).new("Mauve", @args)
+      end
+    end
+  end
 end
 
+begin
+  Mauve::Configuration.current = Mauve::ConfigurationBuilder.load(configuration_file)
+  Mauve::Server.instance.setup
+rescue StandardError => ex
+  error ex 
+end
+
+puts "This is mauve #{Mauve::VERSION}"
+
+if outputter and logger.outputters.include?(outputter)
+  logger.debug "Closing initial outputter"
+  logger.outputters.delete(outputter)
+  outputter.flush
+  outputter.close
+end
+
+puts "This is mauve #{Mauve::VERSION}"
+
+include Mauve
 IRB.start
