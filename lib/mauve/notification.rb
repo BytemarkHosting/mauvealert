@@ -26,6 +26,8 @@ module Mauve
   #
   class DuringRunner
 
+    attr_reader :time, :alert, :during
+
     def initialize(time, alert=nil, &during)
       raise ArgumentError.new("Must supply time (not #{time.inspect})") unless time.is_a?(Time)
       @time = time
@@ -34,30 +36,62 @@ module Mauve
       @logger = Log4r::Logger.new "Mauve::DuringRunner"
     end
     
-    def now?
-      instance_eval(&@during)
+    #
+    #
+    #
+    def now?(t=@time)
+      @test_time = t
+      res = instance_eval(&@during)
     end
 
-    def find_next(interval)
-      interval = 300 if true == interval.nil?
-      offset = (@time.nil?)? MauveTime.now : @time
-      plus_one_week = MauveTime.now + 604800 # ish
-      while offset < plus_one_week
-        offset += interval
-        return offset if DuringRunner.new(offset, @alert, &@during).now?
-      end
-      @logger.info("Could not find a reminder time less than a week "+
-                   "for #{@alert}.")
+    def find_next(after = 5.minutes)
+      t = @time+after
+      #
+      # If the condition is true after x seconds, return the time in x seconds.
+      #
+      return t if self.now?(t)
+
+      #
+      # Otherwise calculate when the condition is next true.
+      #
+      step = 3600
+      while t <= @time + 8.days
+        #
+        # If we're currently OK, and we won't be OK after the next step (or
+        # vice-versa) decrease step size, and try again
+        #
+        if false == self.now?(t) and true == self.now?(t+step)
+          #
+          # Unless we're on the smallest step, try a smaller one.
+          #
+          if step == 1
+            t += step
+            break 
+          end
+
+          step /= 60
+          next
+        end
+
+        #
+        # Decrease the time by the step size if we're currently OK.
+        #
+        t += step
+      end 
+      
+      return t if self.now?(t)
+      
       nil # never again
     end
     
     protected
+
     def hours_in_day(*hours)
-      x_in_list_of_y(@time.hour, hours.flatten)
+      x_in_list_of_y(@test_time.hour, hours.flatten)
     end
     
     def days_in_week(*days)
-      x_in_list_of_y(@time.wday, days.flatten)
+      x_in_list_of_y(@test_time.wday, days.flatten)
     end
     
     ## Return true if the alert has not been acknowledged within a certain time.
@@ -66,7 +100,7 @@ module Mauve
       @alert &&
         @alert.raised? &&
         !@alert.acknowledged? &&
-        (@time - @alert.raised_at.to_time) > seconds
+        (@test_time - @alert.raised_at.to_time) > seconds
     end
     
     def x_in_list_of_y(x,y)
@@ -80,7 +114,7 @@ module Mauve
     end
 
     def working_hours? 
-      @time.working_hours?
+      @test_time.working_hours?
     end
 
     # Return true in the dead zone between 3 and 7 in the morning.
@@ -89,7 +123,7 @@ module Mauve
     #
     # @return [Boolean] Whether now is a in the dead zone or not.
     def dead_zone?
-      @time.dead_zone?
+      @test_time.dead_zone?
     end
 
   end
@@ -129,7 +163,7 @@ module Mauve
     #       Not ideal.  A quick fix is to make sure that the clause in the 
     #       configuration has a fall back that will send an alert in all cases.
     #
-    def alert_changed(alert)
+    def notify(alert)
 
       if people.nil? or people.empty?
         logger.warn "No people found in for notification #{list}"
@@ -150,8 +184,10 @@ module Mauve
             []
         end
       end.flatten.uniq.each do |person|
-        person.alert_changed(level, alert, is_relevant, remind_at_next(alert))
+        person.send_alert(level, alert, is_relevant, remind_at_next(alert))
       end
+
+      return nil
     end
     
     def remind_at_next(alert)

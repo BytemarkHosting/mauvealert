@@ -17,6 +17,8 @@ tc_mauve_source_list.rb
 tc_mauve_people_list.rb
 tc_mauve_alert.rb
 tc_mauve_alert_group.rb
+tc_mauve_notification.rb
+tc_mauve_time.rb
 ).each do |s|
   require s
 end
