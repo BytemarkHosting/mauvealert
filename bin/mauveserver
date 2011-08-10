@@ -95,14 +95,13 @@ outputter.level     = verbose ? Log4r::DEBUG : Log4r::INFO
 logger.outputters   << outputter
 
 def error(msg)
-  logger = Log4r::Logger.new 'Mauve'
-  logger.error
-  logger.error "*** Error: #{msg}\n"
-  logger.error "*** For help, type: #{$0} -h\n"
+  logger = Log4r::Logger['Mauve']
+  logger.error "*** Error: #{msg}"
+  logger.error "*** For help, type: #{$0} -h"
 
   if msg.respond_to?("backtrace")
-    logger.debug "*** Backtrace:\n"
-    logger.debug msg.backtrace.join("\n")+"\n" 
+    logger.debug "*** Backtrace:"
+    logger.debug msg.backtrace.join("\n")
   end
 
   exit 1
