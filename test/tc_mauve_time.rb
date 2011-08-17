@@ -1,10 +1,10 @@
 $: << "../lib/"
 
-require 'test/unit'
+require 'th_mauve'
 require 'mauve/mauve_time'
 require 'pp'
 
-class TestMauveTime < Test::Unit::TestCase
+class TestMauveTime < Mauve::UnitTest
 
   def test_in_x_hours
 

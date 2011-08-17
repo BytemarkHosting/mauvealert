@@ -283,7 +283,7 @@ module Mauve
         #
         # A maximum of the 100 most recent alerts.
         #
-        AlertChanged.first(100, :person => self.user).each do |a|
+        AlertChanged.first(100, :person => self.user, :was_relevant => true).each do |a|
           #
           # Not interested in alerts 
           #

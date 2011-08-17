@@ -1,10 +1,12 @@
 $:.unshift "../lib/"
 
-require 'test/unit'
-require 'pp'
+require 'th_mauve'
 require 'mauve/configuration_builders/logger'
 
-class TcMauveConfigurationBuildersLogger < Test::Unit::TestCase
+class TcMauveConfigurationBuildersLogger < Mauve::UnitTest
+
+  def setup
+  end
 
   def test_load
 

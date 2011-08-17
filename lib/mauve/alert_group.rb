@@ -26,38 +26,13 @@ module Mauve
         grps
       end
 
-      # If there is any significant change to a set of alerts, the Alert
-      # class sends the list here so that appropriate action can be taken
-      # for each one.  We scan the list of alert groups to find out which
-      # alerts match which groups, then send a notification to each group
-      # object in turn.
-      #
-      def notify(alerts)
-        alerts.each do |alert|
-          groups = matches(alert)
-          
-          # 
-          # Make sure we've got a matching group
-          #
-          if groups.empty?
-            logger.warn "no groups found for #{alert}!" 
-            next
-          end
-
-          #
-          # Notify just the first group 
-          #
-          this_group = groups.first
-          logger.info("notifying group #{this_group} of #{alert}")
-          this_group.notify(alert)
-        end
-      end
- 
       def logger
         Log4r::Logger.new self.to_s
       end
 
       def all
+        return [] if Configuration.current.nil?
+
         Configuration.current.alert_groups
       end
       
@@ -83,7 +58,7 @@ module Mauve
       self.includes = Proc.new { true }
     end
     
-    def to_s
+    def inspect
       "#<AlertGroup:#{name} (level #{level})>"
     end
   
@@ -129,7 +104,7 @@ module Mauve
       # The notifications are specified in the config file.
       #
       notifications.each do |notification|
-        notification.alert_changed(alert)
+        notification.notify(alert)
       end
     end
 

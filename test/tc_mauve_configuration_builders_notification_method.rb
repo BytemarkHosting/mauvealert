@@ -1,10 +1,10 @@
 $:.unshift "../lib/"
 
-require 'test/unit'
+require 'th_mauve'
 require 'pp'
 require 'mauve/configuration_builders/notification_method'
 
-class TcMauveConfigurationBuildersNotificationMethod < Test::Unit::TestCase
+class TcMauveConfigurationBuildersNotificationMethod < Mauve::UnitTest
 
   def test_load
 

@@ -1,9 +1,9 @@
 $:.unshift "../lib/"
 
-require 'test/unit'
+require 'th_mauve'
 require 'mauve/configuration_builders/server'
 
-class TcMauveConfigurationBuildersServer < Test::Unit::TestCase
+class TcMauveConfigurationBuildersServer < Mauve::UnitTest
 
   def test_server_params
     hostname = "test.example.com"

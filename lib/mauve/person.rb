@@ -5,7 +5,7 @@ require 'log4r'
 module Mauve
   class Person < Struct.new(:username, :password, :holiday_url, :urgent, :normal, :low, :email, :xmpp, :sms)
   
-    attr_reader :notification_thresholds
+    attr_reader :notification_thresholds, :last_pop3_login
   
     def initialize(*args)
       #
@@ -13,6 +13,10 @@ module Mauve
       #
       @notification_thresholds = { 60 => Array.new(10) }
       @suppressed = false
+      #
+      # TODO fix up web login so pop3 can be used as a proxy.
+      #
+      @last_pop3_login = {:from => nil, :at => nil}
       super(*args)
     end
    
@@ -37,10 +41,11 @@ module Mauve
       def logger ; @logger ||= Log4r::Logger.new self.class.to_s ; end
 
       #
-      # This method makes sure things liek
+      # This method makes sure things like
       #
-      #   xmpp 
-      #   works
+      #   xmpp
+      #
+      #  works
       #
       def method_missing(name, *args)
         #
@@ -79,83 +84,65 @@ module Mauve
       end
 
     end 
-    
-    ## Deals with changes in an alert.
-    # 
-    # == Old comments by Matthew.
-    #
-    # An AlertGroup tells a Person that an alert has changed.  Within
-    # this alert group, the alert may or may not be "relevant" to this
-    # person, but it is ultimately up to the Person to decide whether to
-    # send a notification.  (i.e. notification of acks/clears should
-    # always go out to a Person who was notified of the original alert,
-    # even if the alert is no longer relevant to them).
-    # 
-    # == New comment
-    #
-    # The old code works like this:  An alert arrives, with a relevance.  An
-    # AlertChanged is created and the alert may or may not be send.  The 
-    # problem is that alerts can be relevant AFTER the initial raise and this
-    # code (due to AlertChange.was_relevant_when_raised?()) will ignore it.
-    # This is wrong.
-    # 
-    #
-    # The Thread.exclusive wrapper around the AlertChanged creation makes 
-    # sure that two AlertChanged are not created at the same time.  This 
-    # caused both instances to set the remind_at time of the other to nil. 
-    # Thus reminders were never seen which is clearly wrong.  This bug was
-    # only showing on jruby due to green threads in MRI. 
-    #
-    # 
-    # @author Matthew Bloch, Yann Golanski
-    # @param [symb] level Level of the alert.
-    # @param [Alert] alert An alert object.
-    # @param [Boolean] Whether the alert is relevant as defined by notification
-    #                  class.
-    # @param [MauveTime] When to send remind.
-    # @return [NULL] nada
-    def alert_changed(level, alert, is_relevant=true, remind_at=nil)
-        # User should get notified but will not since on holiday.
-        str = String.new
-#        if is_on_holiday?
-#          is_relevant = false
-#          str = ' (user on holiday)'
-#        end
 
-        # Deals with AlertChange database entry.
-        last_change = AlertChanged.first(:alert_id => alert.id, :person => username)
+    #
+    # Sends the alert, and updates when the AlertChanged database to set the next reminder.
+    #
+    def send_alert(level, alert, is_relevant=true, remind_at=nil)
+      #
+      # First check that we've not just sent an notification to this person for
+      # this alert
+      #
+      last_reminder = AlertChanged.first(:alert => alert, :person => username, :update_type => alert.update_type, :at.gte => (Time.now - 1.minute) )
 
-        if not last_change.nil?
-          if not last_change.remind_at.nil? and not remind_at.nil?
-            if last_change.remind_at.to_time < remind_at
-              remind_at = last_change.remind_at.to_time
-            end
+      if last_reminder and last_reminder.at >= (Time.now - 1.minute)
+        #
+        #
+        logger.info("Not sending notification to #{username} for #{alert} because one has just been sent.")
+        return false
+      end
+
+
+      this_reminder = AlertChanged.new(
+        :level => level.to_s,
+        :alert_id => alert.id, 
+        :person => username, 
+        :at => Time.now,
+        :update_type => alert.update_type,
+        :remind_at => remind_at,
+        :was_relevant => is_relevant)
+
+      #
+      # Check to make sure that we've not got a sooner reminder set.
+      #
+      unless remind_at.nil?
+        next_reminder = AlertChanged.first(:alert => alert, :remind_at.gt => Time.now, :person => username, :update_type => alert.update_type)
+
+        if next_reminder
+          #
+          # If the reminder is further in the future than the one we're about
+          # to put on, then just update it.
+          #
+          # Otherwise if it is sooner, we don't need to create a new one.
+          #
+          if next_reminder.remind_at > remind_at
+            next_reminder.remind_at = remind_at
+            logger.info("Not inserting a new reminder, as there is already one in place sooner")
+            this_reminder = next_reminder
+          else
+            this_reminder = nil
           end
         end
+      end
 
-        new_change = AlertChanged.create(
-            :level => level.to_s,
-            :alert_id => alert.id, 
-            :at => MauveTime.now, 
-            :person => username, 
-            :update_type => alert.update_type,
-            :remind_at => remind_at,
-            :was_relevant => is_relevant)
+      this_reminder.save unless this_reminder.nil?
 
-        # We need to look at the AlertChanged objects to reset them to
-        # the right value.  What is the right value?   Well...
-        if true == is_relevant
-          last_change.was_relevant = true if false == last_change.nil?
-        end
+      if is_relevant
+        Server.notification_push([self, level, alert])
+        return true
+      end
 
-        send_alert(level, alert) if is_relevant # last_change.was_relevant_when_raised? 
-    end
-   
-    #
-    # This just wraps send_alert by sending the job to a queue.
-    #
-    def send_alert(level, alert)
-      Server.notification_push([self, level, alert])
+      return false
     end
    
     def do_send_alert(level, alert)
@@ -214,12 +201,11 @@ module Mauve
           @notification_thresholds[period].push Time.now
           @notification_thresholds[period].shift
         end
-        true
 
-      else
-        false
-
+        return true
       end
+
+      return false
     end
     
     # Returns the subset of current alerts that are relevant to this Person.

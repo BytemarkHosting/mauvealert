@@ -14,9 +14,8 @@ module Mauve
       #
       sz = Server.notification_buffer_size
 
-      return if sz == 0
- 
       my_threads = []
+
       sz.times do
         person, *args = Server.notification_pop
         

@@ -18,10 +18,18 @@ module Mauve
 
     def poll_every=(i)
       raise ArgumentError.new("poll_every must be numeric") unless i.is_a?(Numeric)
+      # 
+      # Set the minimum poll frequency.
+      #
+      if i.to_f < 0.2
+        logger.debug "Increasing thread polling interval to 0.2s from #{i}"
+        i = 0.2 
+      end
+
       @poll_every = i
     end
 
-    def run_thread(interval = 0.1)
+    def run_thread(interval = 1.0)
       #
       # Good to go.
       #
@@ -70,18 +78,21 @@ module Mauve
 
     def state=(s)
       raise "Bad state for mauve_thread #{s.inspect}" unless [:stopped, :starting, :started, :freezing, :frozen, :stopping, :killing, :killed].include?(s)
+
       unless @state == s
         @state = s
         logger.debug(s.to_s.capitalize) 
       end
+
+      @state
     end
 
     def freeze
       self.state = :freezing
       
-      20.times { Kernel.sleep 0.1 ; break if @thread.stop? }
+      20.times { Kernel.sleep 0.2 ; break if @thread.stop? }
 
-      logger.debug("Thread has not frozen!") unless @thread.stop?
+      logger.warn("Thread has not frozen!") unless @thread.stop?
     end
 
     def frozen?

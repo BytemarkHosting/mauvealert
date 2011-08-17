@@ -1,28 +1,34 @@
 $:.unshift "../lib"
 
-require 'test/unit'
+require 'th_mauve'
 require 'mauve/alert'
 require 'mauve/notification'
 require 'mauve/configuration'
 require 'mauve/configuration_builder'
 require 'mauve/configuration_builders'
 require 'mauve/mauve_time'
-require 'th_mauve_resolv'
-require 'th_mauve_time'
-require 'th_logger'
-require 'pp' 
 
+class TcMauveDuringRunner < Mauve::UnitTest 
 
+  include Mauve
 
-class TcMauveDuringRunner < Test::Unit::TestCase 
+  def setup
+    super
+    setup_database
+  end
+
+  def teardown
+    teardown_database
+    super
+  end
 
   def test_initialize
 
-    alert = Mauve::Alert.new
+    alert = Alert.new
     time = Time.now
     during = Proc.new { false }
 
-    dr = Mauve::DuringRunner.new(time, alert, &during)
+    dr = DuringRunner.new(time, alert, &during)
 
     assert_equal(dr.alert, alert)
     assert_equal(dr.time, time)
@@ -31,11 +37,12 @@ class TcMauveDuringRunner < Test::Unit::TestCase
   end
 
   def test_now?
-    alert = Mauve::Alert.new
+    alert = Alert.new
     time = Time.now
     during = Proc.new { @test_time }
 
-    dr = Mauve::DuringRunner.new(time, alert, &during)
+    dr = DuringRunner.new(time, alert, &during)
+    
     assert_equal(time, dr.now?)
     assert_equal(time+3600, dr.now?(time+3600))
     assert_equal(time, dr.time)
@@ -57,36 +64,37 @@ class TcMauveDuringRunner < Test::Unit::TestCase
     # This should give us midnight last sunday night.
     #
     now = Time.now 
-    midnight_sunday = now  - (now.hour.hours + now.min.minutes + now.sec.seconds + now.wday.days)
 
     #
     # first working hour on Monday
-    monday_morning   = midnight_sunday.in_x_hours(0,"working")
+    workday_morning   = now.in_x_hours(0,"working")
+
+    assert(workday_morning != now, "booo")
 
     #
     # This should alert at exactly first thing on Monday morning.
     #
-    dr = Mauve::DuringRunner.new(midnight_sunday, nil){ working_hours? }
-    assert_equal(dr.find_next(6.hours), monday_morning)
+    dr = DuringRunner.new(now, nil){ working_hours? }
+    assert_equal(dr.find_next(6.hours), workday_morning)
     
     #
     # This should alert six hours later than the last one.
     #
-    dr = Mauve::DuringRunner.new(monday_morning, nil){ working_hours? }
-    assert_equal(dr.find_next(6.hours), monday_morning + 6.hours)
+    dr = DuringRunner.new(workday_morning, nil){ working_hours? }
+    assert_equal(dr.find_next(6.hours), workday_morning + 6.hours)
 
     #
     # Now assuming the working day is not 12 hours long, if we progress to 6
     # hours in the future then the next alert should be first thing on Tuesday.
     #
-    dr = Mauve::DuringRunner.new(monday_morning + 6.hours, nil){ working_hours? }
-    tuesday_morning = monday_morning+24.hours
+    dr = DuringRunner.new(workday_morning + 6.hours, nil){ working_hours? }
+    tuesday_morning = workday_morning+24.hours
     assert_equal(dr.find_next(6.hours), tuesday_morning)
 
     #
     # If an alert is too far in the future (a week) return nil.
     #
-    dr = Mauve::DuringRunner.new(monday_morning, nil){ @test_time > (@time + 12.days) }
+    dr = DuringRunner.new(workday_morning, nil){ @test_time > (@time + 12.days) }
     assert_nil(dr.find_next)
   end
 
@@ -101,7 +109,20 @@ class TcMauveDuringRunner < Test::Unit::TestCase
 
 end
 
-class TcMauveNotification < Test::Unit::TestCase 
+class TcMauveNotification < Mauve::UnitTest 
+
+  include Mauve
+  
+  def setup
+    @logger = setup_logger
+    Timecop.freeze(Time.local(2011,8,1,0,0,0,0))
+  end
+
+  def teardown
+    teardown_logger
+    Timecop.return
+    DataObjects::Pooling.pools.each{|pool| pool.dispose}
+  end
 
   def test_notify
     t = Time.now
@@ -141,7 +162,7 @@ alert_group("default") {
   }
 
   notify("test2") {
-    during { @test_time.to_i >= #{(t + 1.hour).to_i}   }
+    during { hours_in_day 1..23   }
     every 10.minutes
   }
   
@@ -153,19 +174,28 @@ alert_group("default") {
 }
 EOF
 
-    
-    assert_nothing_raised { 
-      Mauve::Configuration.current = Mauve::ConfigurationBuilder.parse(config) 
-      Mauve::Server.instance.setup
-      alert = Mauve::Alert.new(
-        :alert_id  => "test", 
-        :source    => "test",
-        :subject   => "test"
-      )
-      alert.raise!
-    }
+    Configuration.current = ConfigurationBuilder.parse(config) 
+    Server.instance.setup
+    alert = Alert.new(
+      :alert_id  => "test", 
+      :source    => "test",
+      :subject   => "test"
+    )
+    alert.raise!
 
-    assert_equal(1, Mauve::Alert.count)
+    assert_equal(1, Alert.count, "Wrong number of alerts saved")
+
+    #
+    # Although there are four clauses above for notifications, test1 should be
+    # alerted in 10 minutes time, and the 15 minutes clause is ignored, since
+    # 10 minutes is sooner.
+    #
+    assert_equal(3, AlertChanged.count, "Wrong number of reminders inserted")
+
+    #
+    # Also make sure that only 1 notification has been sent..
+    #
+    assert_equal(1, Server.instance.notification_buffer.size, "Wrong number of notifications sent")
 
     reminder_times = {
       "test1" => t + 10.minutes,
@@ -173,12 +203,12 @@ EOF
       "test3" => t + 2.hours
     }
 
-    Mauve::AlertChanged.all.each do |a|
-      pp a
-      assert_equal("urgent", a.level, "Level is wrong")
-      assert_equal("raised", a.update_type, "Update type is wrong")
-      assert_in_delta(reminder_times[a.person].to_f, a.remind_at.to_time.to_f, 10.0, "reminder time is wrong for #{a.person}")
+    AlertChanged.all.each do |a|
+      assert_equal("urgent", a.level, "Level is wrong for #{a.person}")
+      assert_equal("raised", a.update_type, "Update type is wrong for #{a.person}")
+      assert_equal(reminder_times[a.person], a.remind_at,"reminder time is wrong for #{a.person}")
     end
+
   end
 
 end

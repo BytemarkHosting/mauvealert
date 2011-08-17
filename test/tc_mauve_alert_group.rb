@@ -1,11 +1,11 @@
 $:.unshift "../lib"
 
-require 'test/unit'
+require 'th_mauve'
 require 'mauve/alert_group'
 require 'th_mauve_resolv'
 require 'pp' 
 
-class TcMauveAlert < Test::Unit::TestCase 
+class TcMauveAlert < Mauve::UnitTest 
 
   def test_matches_alert
 

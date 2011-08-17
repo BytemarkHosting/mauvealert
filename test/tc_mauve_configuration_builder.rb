@@ -1,13 +1,16 @@
 $:.unshift "../lib/"
 
-require 'test/unit'
-require 'pp'
+require 'th_mauve'
 require 'mauve/configuration_builder'
 
-class TcMauveConfigurationBuildersPeopleAndSourceLists < Test::Unit::TestCase
+class TcMauveConfigurationBuildersPeopleAndSourceLists < Mauve::UnitTest
 
   def setup
-    Log4r::Logger.new("Mauve").outputters = Log4r::Outputter.stdout
+    setup_logger
+  end
+
+  def teardown
+    teardown_logger
   end
 
   def test_people_list
@@ -48,7 +51,16 @@ people_list "htc-highroad",
 
 EOF
     x = nil
+    #
+    # This should generate two warnings:
+    #   * duplicate list
+    #   * Lars already being on a list
+    #
     assert_nothing_raised { x = Mauve::ConfigurationBuilder.parse(config) }
+
+    assert_match(/Lars/,      logger_pop())
+    assert_match(/Duplicate/, logger_pop())
+
     assert_equal(1, x.people_lists.keys.length)
     assert_equal(["mark c","mark r","Lars","Bernie","Danny"].sort, x.people_lists["htc-highroad"].list.sort)
   end

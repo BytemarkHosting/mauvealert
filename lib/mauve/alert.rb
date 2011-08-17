@@ -235,7 +235,11 @@ module Mauve
     public
     
     def notify
-      self.alert_group.notify(self)
+      if self.alert_group.nil?
+        logger.warn "Could not notify for #{self} since there are no matching alert groups"
+      else
+        self.alert_group.notify(self)
+      end
     end
 
     def acknowledge!(person, ack_until = Time.now+3600)
@@ -531,7 +535,8 @@ module Mauve
             alert_db.clear!
           end
         end
-       
+      
+        return nil 
       end
 
       def logger

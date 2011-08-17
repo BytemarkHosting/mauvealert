@@ -34,6 +34,13 @@ module Mauve
       sz = Server.packet_buffer_size
 
       sz.times do
+        Timer.instance.freeze if Timer.instance.alive? and !Timer.instance.frozen?
+
+        #
+        # Hmm.. timer not frozen.
+        #
+        break unless Timer.instance.frozen?
+
         data, client, received_at = Server.packet_pop
 
         #
@@ -41,7 +48,6 @@ module Mauve
         #
         break if data.nil?
         
-        Timer.instance.freeze if Timer.instance.alive? and !Timer.instance.frozen?
 
         # logger.debug("Got #{data.inspect} from #{client.inspect}")
 

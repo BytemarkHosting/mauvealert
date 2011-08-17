@@ -32,7 +32,7 @@ module Mauve
     def initialize
       super
       @hostname    = "localhost"
-      @database    = "sqlite3:///./mauvealert.db"
+      @database    = "sqlite3::memory:"
       
       @started_at = Time.now
       @initial_sleep = 300
@@ -65,6 +65,12 @@ module Mauve
     end
 
     def setup
+      #
+      #
+      #
+      @packet_buffer       = []
+      @notification_buffer = []
+
       DataMapper.setup(:default, @database)
       # DataObjects::Sqlite3.logger = Log4r::Logger.new("Mauve::DataMapper") 
 
@@ -75,6 +81,10 @@ module Mauve
       AlertChanged.auto_upgrade!
       History.auto_upgrade!
       Mauve::AlertEarliestDate.create_view!
+
+      Mauve::Configuration.current = Mauve::Configuration.new if Mauve::Configuration.current.nil?
+
+      return nil
     end
 
     def start

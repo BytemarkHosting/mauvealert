@@ -149,20 +149,6 @@ module Mauve
 
     def logger ;  Log4r::Logger.new self.class.to_s ; end
 
-    # Updated code, now takes account of lists of people.
-    #
-    # @TODO refactor so we can test this more easily.
-    #
-    # @TODO Make sure that if no notifications is send at all, we log this
-    #       as an error so that an email is send to the developers.  Hum, we
-    #       could have person.alert_changed return true if a notification was 
-    #       send (false otherwise) and add it to a queue.  Then, dequeue till 
-    #       we see a "true" and abort.  However, this needs a timeout loop 
-    #       around it and we will slow down the whole notificatin since it
-    #       will have to wait untill such a time as it gets a true or timeout.
-    #       Not ideal.  A quick fix is to make sure that the clause in the 
-    #       configuration has a fall back that will send an alert in all cases.
-    #
     def notify(alert)
 
       if people.nil? or people.empty?
@@ -172,6 +158,8 @@ module Mauve
 
       # Should we notify at all?
       is_relevant = DuringRunner.new(Time.now, alert, &during).now?
+
+      n_sent = 0
 
       people.collect do |person|
         case person
@@ -184,14 +172,13 @@ module Mauve
             []
         end
       end.flatten.uniq.each do |person|
-        person.send_alert(level, alert, is_relevant, remind_at_next(alert))
+        n_sent += 1 if person.send_alert(self.level, alert, is_relevant, remind_at_next(alert))
       end
 
-      return nil
+      return n_sent
     end
     
     def remind_at_next(alert)
-
       return DuringRunner.new(Time.now, alert, &during).find_next(every) if alert.raised?
 
       return nil

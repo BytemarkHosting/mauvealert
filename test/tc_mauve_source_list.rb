@@ -1,11 +1,11 @@
 $:.unshift "../lib/"
 
-require 'test/unit'
+require 'th_mauve'
 require 'mauve/source_list'
 require 'th_mauve_resolv'
 require 'pp'
 
-class TcMauveSourceList < Test::Unit::TestCase
+class TcMauveSourceList < Mauve::UnitTest
 
   def test_hostname_match
     sl = Mauve::SourceList.new("test")
