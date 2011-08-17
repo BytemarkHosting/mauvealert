@@ -12,12 +12,12 @@ module Mauve
     property :id, Serial
     property :alert_id, Integer, :required  => true
     property :person, String, :required  => true
-    property :at, DateTime, :required  => true
+    property :at, Time, :required => true
     property :was_relevant, Boolean, :required => true, :default => true
     property :level, String, :required  => true
     property :update_type, String, :required  => true
-    property :remind_at, DateTime
-    property :updated_at, DateTime
+    property :remind_at, Time
+    # property :updated_at, Time, :required => true
 
     
     def inspect
@@ -28,26 +28,16 @@ module Mauve
     
     belongs_to :alert
     
-    # There is a bug there.  You could have two reminders for the same 
-    # person if that person has two different notify clauses.  
-    #
-    # See the test cases test_Bug_reminders_get_trashed() in ./test/
-    after :create do
-      old_changed = AlertChanged.first(
-        :alert_id => alert_id,
-        :person => person,
-        :id.not => id,
-        :remind_at.not => nil
-      )
-      if old_changed
-        if !old_changed.update(:remind_at => nil)
-          logger.info "Couldn't save #{old_changed}, will get duplicate reminders"
-        end
-      end
-    end
-    
     def was_relevant=(value)
       attribute_set(:was_relevant, value)
+    end
+
+    def updated_at
+      self.at
+    end
+    
+    def updated_at=(t)
+      self.at = t
     end
 
     def logger
@@ -158,7 +148,11 @@ module Mauve
     end
     
     def poll # mimic interface from Alert
-      remind if remind_at.to_time <= Time.now
+      remind if remind_at.is_a?(Time) and remind_at <= Time.now
+    end
+
+    def alert_group
+      alert.alert_group
     end
     
     class << self

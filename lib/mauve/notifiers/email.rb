@@ -79,7 +79,7 @@ module Mauve
               alert.acknowledged_at
             else
               alert.raised_at
-            end ).to_time
+            end )
 
           m.header['Content-Type'] = "multipart/alternative"
 

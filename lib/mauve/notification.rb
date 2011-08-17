@@ -100,7 +100,7 @@ module Mauve
       @alert &&
         @alert.raised? &&
         !@alert.acknowledged? &&
-        (@test_time - @alert.raised_at.to_time) > seconds
+        (@test_time - @alert.raised_at) >= seconds
     end
     
     def x_in_list_of_y(x,y)

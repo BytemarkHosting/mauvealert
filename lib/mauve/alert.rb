@@ -12,7 +12,7 @@ module Mauve
     
     property :id, Serial
     property :alert_id, Integer
-    property :earliest, DateTime
+    property :earliest, Time
     belongs_to :alert, :model => "Alert"
     
     # 1) Shame we can't get this called automatically from DataMapper.auto_upgrade!
@@ -24,7 +24,7 @@ module Mauve
     # http://www.mail-archive.com/datamapper@googlegroups.com/msg02314.html
     #
     def self.create_view!
-      the_distant_future = Time.now + 86400000 # it is the year 2000 - the humans are dead
+      the_distant_future = Time.now + 10000.days # it is the year 2000 - the humans are dead
       ["BEGIN TRANSACTION",
        "DROP VIEW IF EXISTS mauve_alert_earliest_dates",
        "CREATE VIEW 
@@ -67,16 +67,16 @@ module Mauve
     property :detail, Text, :length=>65535
     property :importance, Integer, :default => 50
 
-    property :raised_at, DateTime
-    property :cleared_at, DateTime
-    property :updated_at, DateTime
-    property :acknowledged_at, DateTime
+    property :raised_at, Time
+    property :cleared_at, Time
+    property :updated_at, Time
+    property :acknowledged_at, Time
     property :acknowledged_by, String
     property :update_type, String
     
-    property :will_clear_at, DateTime
-    property :will_raise_at, DateTime
-    property :will_unacknowledge_at, DateTime
+    property :will_clear_at, Time
+    property :will_raise_at, Time
+    property :will_unacknowledge_at, Time
     has n, :changes, :model => AlertChanged
     has n, :histories, :through => :alerthistory
 
@@ -98,7 +98,7 @@ module Mauve
     #
     def check_dates
       bad_dates = self.attributes.find_all do |key, value|
-        value.is_a?(DateTime) and not (DateTime.new(2000,1,1,0,0,0)..DateTime.new(2020,1,1,0,0,0)).include?(value)
+        value.is_a?(Time) and (value < (Time.now - 3650.days) or value > (Time.now + 3650.days))
       end
 
       if bad_dates.empty?
@@ -153,7 +153,7 @@ module Mauve
     end
   
     def sort_tuple
-      [AlertGroup::LEVELS.index(self.level), (self.raised_at || self.cleared_at || Time.now).to_time]
+      [AlertGroup::LEVELS.index(self.level), (self.raised_at || self.cleared_at || Time.now)]
     end
 
     def <=>(other)
@@ -290,14 +290,13 @@ module Mauve
     # raise, clear or unacknowldge this event.
     # 
     def due_at
-      o = [will_clear_at, will_raise_at, will_unacknowledge_at].compact.sort[0]
-      o ? o.to_time : nil
+      [will_clear_at, will_raise_at, will_unacknowledge_at].compact.sort.first
     end
     
     def poll
-      raise! if (will_unacknowledge_at and will_unacknowledge_at.to_time <= Time.now) or
-        (will_raise_at and will_raise_at.to_time <= Time.now)
-      clear! if will_clear_at && will_clear_at.to_time <= Time.now
+      raise! if (will_unacknowledge_at and will_unacknowledge_at <= Time.now) or
+        (will_raise_at and will_raise_at <= Time.now)
+      clear! if will_clear_at && will_clear_at <= Time.now
       logger.info("Polled #{self.inspect}")
     end
 

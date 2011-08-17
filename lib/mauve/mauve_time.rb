@@ -28,15 +28,15 @@ class DateTime
   end
 
   def to_s_relative(*args)
-    self.to_time.to_s_relative(*args)
+    self.to_s_relative(*args)
   end
 
   def to_s_human
-    self.to_time.to_s_human
+    self.to_s_human
   end
 
   def in_x_hours(*args)
-    self.to_time.in_x_hours(*args)
+    self.in_x_hours(*args)
   end
 
 end
@@ -135,7 +135,7 @@ class Time
     #
     # Make sure now is the correct class
     #
-    now = now.to_time if now.is_a?(DateTime)
+    now = now if now.is_a?(DateTime)
 
     raise ArgumentError, "now must be a Time" unless now.is_a?(Time)
 

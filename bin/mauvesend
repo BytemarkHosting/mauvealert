@@ -167,7 +167,7 @@ require 'getoptlong'
   end
 end
 
-NOW = Mauve::MauveTime.now
+NOW = Time.now
 
 def error(msg)
   STDERR.print "*** Error: #{msg}\n"

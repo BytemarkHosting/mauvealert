@@ -23,7 +23,7 @@ module Mauve
 #    property :alert_id, String, :required  => true
     property :type,  String, :required => true, :default => "unknown"
     property :event, Text, :required => true, :default => "Nothing set"
-    property :created_at, DateTime, :required => true
+    property :created_at, Time, :required => true
 
     has n, :alerts, :through => :alerthistory
 
