@@ -41,17 +41,26 @@ module Mauve
       unless @server and @server.running?
         @server = Mauve::Pop3Backend.new(@ip.to_s, @port)
         logger.info "Listening on #{@server.to_s}"
+        #
+        # The next statment doesn't return.
+        #
         @server.start
       end
     end
 
     def stop
-      @server.stop if @server and @server.running?
+      if @server.running?
+        @server.stop
+      else
+        @server.stop!
+      end
+
       super
     end
 
     def join
-      @server.stop! if @server and @server.running?
+      @server.stop! if @server
+
       super
     end
 
@@ -68,6 +77,14 @@ module Mauve
       @signature = EventMachine.start_server(@host, @port, Pop3Connection)
     end
         
+    def disconnect
+      #
+      # Only do this if EventMachine is still going.. The http_server may have
+      # stopped it already.
+      #
+      EventMachine.stop_server(@signature) if EventMachine.reactor_running?
+    end
+
   end
 
 
