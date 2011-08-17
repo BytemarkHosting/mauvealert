@@ -43,6 +43,11 @@ module Mauve
       #
       @packet_buffer       = []
       @notification_buffer = []
+
+      #
+      # Set up a blank config.
+      #
+      Configuration.current = Configuration.new if Mauve::Configuration.current.nil?
     end
 
     def hostname=(h)
@@ -72,17 +77,22 @@ module Mauve
       @notification_buffer = []
 
       DataMapper.setup(:default, @database)
-      # DataObjects::Sqlite3.logger = Log4r::Logger.new("Mauve::DataMapper") 
+      # DataMapper.logger = Log4r::Logger.new("Mauve::DataMapper") 
 
       #
       # Update any tables.
       #
-      Alert.auto_upgrade!
-      AlertChanged.auto_upgrade!
-      History.auto_upgrade!
-      Mauve::AlertEarliestDate.create_view!
+      Mauve.constants.each do |c| 
+        next if %w(AlertEarliestDate).include?(c)
+        m = Mauve.const_get(c)
+        m.auto_upgrade! if m.respond_to?("auto_upgrade!")
+        # 
+        # Don't want to use automigrate, since this trashes the tables.
+        #
+        # m.auto_migrate! if m.respond_to?("auto_migrate!")
+      end
 
-      Mauve::Configuration.current = Mauve::Configuration.new if Mauve::Configuration.current.nil?
+      Mauve::AlertEarliestDate.create_view!
 
       return nil
     end
