@@ -3,6 +3,27 @@ require 'mauve/datamapper'
 require 'timecop'
 require 'log4r'
 require 'pp'
+require 'singleton'
+
+# Taken from
+# 
+# http://blog.ardes.com/2006/12/11/testing-singletons-with-ruby
+#
+class <<Singleton
+
+  def included_with_reset(klass)
+    included_without_reset(klass)
+    class <<klass
+      def reset_instance
+        Singleton.send :__init__, self
+        self
+      end
+    end
+  end
+
+  alias_method :included_without_reset, :included
+  alias_method :included, :included_with_reset
+end
 
 module Mauve
   class TestOutputter < Log4r::Outputter
@@ -33,6 +54,7 @@ module Mauve
   class UnitTest < Test::Unit::TestCase
 
     def setup
+      reset_all_singletons
       setup_logger
       setup_time
     end
@@ -40,6 +62,7 @@ module Mauve
     def teardown
       teardown_logger
       teardown_time
+      reset_all_singletons
     end
 
     def setup_logger
@@ -79,6 +102,13 @@ module Mauve
 
     def teardown_time
       Timecop.return
+    end
+
+    def reset_all_singletons
+      Mauve.constants.collect{|const| Mauve.const_get(const)}.each do |klass|
+        next unless klass.respond_to?(:instance)
+        klass.reset_instance
+      end
     end
 
     def default_test

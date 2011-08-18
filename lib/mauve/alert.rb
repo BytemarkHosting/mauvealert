@@ -87,11 +87,9 @@ module Mauve
 
     validates_with_method :check_dates
     
-    def inspect
+    def to_s 
       "#<Alert #{id}, alert_id #{alert_id}, source #{source}>"
     end
-
-    alias to_s inspect
 
     #
     # This is to stop datamapper inserting duff dates into the database.
@@ -163,19 +161,7 @@ module Mauve
     def subject; attribute_get(:subject) || attribute_get(:source) || "not set" ; end
     def detail;  attribute_get(:detail)  || "_No detail set._" ; end
  
-    # def subject=(subject); set_changed_if_different( :subject, subject ); end
-    # def summary=(summary); set_changed_if_different( :summary, summary ); end
-
-    # def source=(source);   attribute_set( :source, source ); end 
-    # def detail=(detail);   attribute_set( :detail, detail ); end
-    
     protected
-
-    #def set_changed_if_different(attribute, value)
-    #  return if self.__send__(attribute) == value
-    #  self.update_type ||= "changed"
-    #  attribute_set(attribute.to_sym, value)
-    #end
 
     #
     # This allows us to take a copy of the changes before we save.
@@ -208,6 +194,7 @@ module Mauve
       #
       if (@attributes_before_save.has_key?(:update_type) and !is_a_new_alert) or
          (self.update_type == "raised" and (is_a_new_alert or is_a_change))
+
         self.notify
 
         h = History.new(:alerts => [self], :type => "update")
@@ -265,27 +252,61 @@ module Mauve
     end
     
     def raise!(at = Time.now)
-      self.acknowledged_by = nil
-      self.acknowledged_at = nil
-      self.will_unacknowledge_at = nil
-      self.raised_at = at if self.raised_at.nil?
-      self.will_raise_at = nil
-      self.cleared_at = nil
-      # Don't clear will_clear_at
-      self.update_type = "raised" if self.update_type.nil? or self.update_type != "changed" or self.original_attributes[Alert.properties[:update_type]] == "cleared"
+      #
+      # OK if this is an alert updated in the last run, do not raise, just postpone.
+      #
+      if (self.will_raise_at or self.will_unacknowledge_at) and
+          Server.instance.in_initial_sleep? and 
+          self.updated_at and
+          self.updated_at < Server.instance.started_at
+
+        postpone_until = Server.instance.started_at + Server.instance.initial_sleep
+
+        if self.will_raise_at and self.will_raise_at <= Time.now
+          self.will_raise_at = postpone_until
+        end
+
+        if self.will_unacknowledge_at and self.will_unacknowledge_at <= Time.now
+          self.will_unacknowledge_at = postpone_until
+        end
+
+        logger.info("Postponing raise of #{self} until #{postpone_until} as it was last updated in a prior run of Mauve.")
+      else
+        self.acknowledged_by = nil
+        self.acknowledged_at = nil
+        self.will_unacknowledge_at = nil
+        self.raised_at = at if self.raised_at.nil?
+        self.will_raise_at = nil
+        self.cleared_at = nil
+        # Don't clear will_clear_at
+        self.update_type = "raised" if self.update_type.nil? or self.update_type != "changed" or self.original_attributes[Alert.properties[:update_type]] == "cleared"
+      end
       
       logger.error("Couldn't save #{self}") unless save
     end
     
     def clear!(at = Time.now)
-      self.acknowledged_by = nil
-      self.acknowledged_at = nil
-      self.will_unacknowledge_at = nil
-      self.raised_at = nil
-      # Don't clear will_raise_at
-      self.cleared_at = at if self.cleared_at.nil?
-      self.will_clear_at = nil
-      self.update_type = "cleared"
+      #
+      # Postpone clearance if we're in the sleep period.
+      #
+      if self.will_clear_at and
+          Server.instance.in_initial_sleep? and 
+          self.updated_at and
+          self.updated_at < Server.instance.started_at
+        
+        self.will_clear_at = Server.instance.started_at + Server.instance.initial_sleep
+
+        logger.info("Postponing clear of #{self} until #{self.will_clear_at} as it was last updated in a prior run of Mauve.")
+      else
+        self.acknowledged_by = nil
+        self.acknowledged_at = nil
+        self.will_unacknowledge_at = nil
+        self.raised_at = nil
+        # Don't clear will_raise_at
+        self.cleared_at = at if self.cleared_at.nil?
+        self.will_clear_at = nil
+        self.update_type = "cleared"
+      end
 
       logger.error("Couldn't save #{self}") unless save
     end
@@ -301,7 +322,7 @@ module Mauve
       raise! if (will_unacknowledge_at and will_unacknowledge_at <= Time.now) or
         (will_raise_at and will_raise_at <= Time.now)
       clear! if will_clear_at && will_clear_at <= Time.now
-      logger.info("Polled #{self.inspect}")
+      logger.info("Polled #{self.to_s}")
     end
 
 
@@ -518,7 +539,7 @@ module Mauve
           #
           # Record the fact we received an update.
           #
-          logger.info("Received update from #{ip_source} for #{alert_db.inspect}")
+          logger.info("Received update from #{ip_source} for #{alert_db}")
 
         end
         

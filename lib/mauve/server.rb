@@ -65,6 +65,10 @@ module Mauve
       @initial_sleep = s
     end
 
+    def in_initial_sleep?
+      Time.now < self.started_at + self.initial_sleep
+    end
+
     def logger
       @logger ||= Log4r::Logger.new(self.class.to_s)
     end
@@ -92,7 +96,8 @@ module Mauve
         # m.auto_migrate! if m.respond_to?("auto_migrate!")
       end
 
-      Mauve::AlertEarliestDate.create_view!
+      AlertHistory.migrate!
+      AlertEarliestDate.create_view!
 
       return nil
     end

@@ -163,12 +163,6 @@ module Mauve
         
       else
         logger.info "Starting to send notifications again for #{username}." if was_suppressed
-
-      end
-      
-      if Server.instance.started_at > alert.updated_at and (Server.instance.started_at + Server.instance.initial_sleep) > Time.now
-        logger.info("Alert last updated in prior run of mauve -- ignoring for initial sleep period.")
-        return true
       end
       
       #

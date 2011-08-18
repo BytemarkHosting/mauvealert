@@ -61,8 +61,19 @@ module Mauve
 
 
       if alert.acknowledged?
-        logger.info("Alert already acknowledged. Clearing reminder due for #{self.alert}.")
+        logger.info("Alert already acknowledged.  Clearing reminder due for #{self.alert}.")
         self.remind_at = nil
+        return save
+      end
+
+      #
+      # Postpone reminders from previous runs, if needed.
+      #
+      if Server.instance.in_initial_sleep? and
+          self.at < Server.instance.started_at
+
+        self.remind_at = Server.instance.started_at + Server.instance.initial_sleep
+        logger.info("Postponing reminder for #{self.alert} until #{self.remind_at} since this reminder was updated in a prior run of Mauve.")
         return save
       end
 

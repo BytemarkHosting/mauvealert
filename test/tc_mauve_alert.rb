@@ -17,6 +17,20 @@ class TcMauveAlert < Mauve::UnitTest
   def setup
     super
     setup_database
+    @test_config =<<EOF
+person ("test") {
+  all { true }
+}
+
+alert_group("default") {
+  level URGENT 
+
+  notify("test") {
+    every 10.minutes
+  }
+}
+EOF
+
   end
 
   def teardown
@@ -24,7 +38,14 @@ class TcMauveAlert < Mauve::UnitTest
     super
   end
 
-  def test_source_list
+  def test_alert_group
+
+  end
+
+  #
+  # This is also the test for in_source_list?
+  #
+  def test_source_lists
     config=<<EOF
 source_list "test", %w(test-1.example.com)
 
@@ -46,45 +67,93 @@ EOF
     assert_equal( %w(has_ipv6 has_ipv4).sort, a.source_lists.sort )
   end
 
+  def test_level
+
+  end
 
   def test_summary
-
     a = Alert.new
     a.summary = "Free swap memory (MB) (memory_swap) is too low"
 
     assert_match(/memory_swap/, a.summary)
-
   end
 
 
-  def test_raise
+  def test_raise!
+    Server.instance.setup
 
-  config=<<EOF
+    a = Alert.new(:source => "test-host", :alert_id => "test_raise!", :subject => "test")
 
-alert_group("test") {
+    a.raise!
 
-}
+    assert_equal(Time.now, a.raised_at)
 
-EOF
+    assert(a.raised?)
+    assert(!a.cleared?)
+    assert(!a.acknowledged?)
+  end
 
-    Configuration.current = ConfigurationBuilder.parse(config)
+  def test_acknowledge!
+    person = Mauve::Person.new
+    person.username = "test-user"
 
     Server.instance.setup
 
-    a= Alert.new(:source => "test-host",
-          :alert_id => "test" )    
+    Mauve::Configuration.current.people[person.username] = person
 
-    a.raise!
+    alert = Alert.new(
+      :alert_id  => "test_acknowledge!",
+      :source    => "test",
+      :subject   => "test"
+    )
+
+    alert.raise!
+    assert(alert.raised?)
+
+    #
+    # This acknowledges an alert for 3 mins.
+    #
+    alert.acknowledge!(person, Time.now + 3.minutes)
+    assert_equal(person.username, alert.acknowledged_by)
+    assert_equal(Time.now, alert.acknowledged_at)
+    assert_equal(Time.now + 3.minutes, alert.will_unacknowledge_at)
+    assert(alert.acknowledged?)
+
+
+    next_alert = Alert.find_next_with_event
+    assert_equal(next_alert.id, alert.id)
+    assert_equal(Time.now+3.minutes, next_alert.due_at)    
+
+    Timecop.freeze(Time.now + 3.minutes)
+
+
+    #
+    # The alert should unacknowledge itself.
+    #
+    alert.poll
+    assert(!alert.acknowledged?)
   end
 
-  def test_alert_reception
+  def test_unacknowledge!
+  end
+
+  def test_clear!
+  end
+
+  def test_due_at
+  end
+
+  def test_poll
+  end
+
+  def test_recieve_update
     Server.instance.setup
 
     update = Proto::AlertUpdate.new
     update.source = "test-host"
     message = Proto::Alert.new
     update.alert << message
-    message.id = "test1"
+    message.id = "test_recieve_update"
     message.summary = "test summary"
     message.detail  = "test detail"
     message.raise_time = Time.now.to_i
@@ -92,7 +161,7 @@ EOF
 
     Alert.receive_update(update, Time.now, "127.0.0.1")
 
-    a = Alert.first(:alert_id => 'test1')
+    a = Alert.first(:alert_id => 'test_recieve_update')
 
     assert(a.raised?)
     assert_equal("test-host",    a.subject)
@@ -102,40 +171,98 @@ EOF
     
   end
 
-  def test_alert_ackowledgement
-    person = Mauve::Person.new
-    person.username = "test-user"
-
+  def test_notify_if_needed
+    Configuration.current = ConfigurationBuilder.parse(@test_config)
     Server.instance.setup
-
-    Mauve::Configuration.current.people[person.username] = person
-
+    #
+    # Notifications should be sent if:
+    #
+    #  * the alert has changed state (update_type); or
+    #  * the alert new and "raised".
+    
     alert = Alert.new(
-      :alert_id  => "test-acknowledge",
+      :alert_id  => "test_notify_if_needed",
       :source    => "test",
       :subject   => "test"
     )
+
+    #
+    # Must not notify -- this is a new alert which is not raised.
+    #
+    alert.clear!
+    assert_equal(0, Server.instance.notification_buffer.size, "Notifications sent erroneously on clear.")
+
+    #
+    # Now raise.
+    #
     alert.raise!
-    assert(alert.raised?)
+    assert_equal(1, Server.instance.notification_buffer.size, "Wrong number of notifications sent out when new alert raised.")
 
-    alert.acknowledge!(person, Time.now + 3.minutes)
-    assert(alert.acknowledged?)
+    #
+    # Empty the buffer.
+    Server.instance.notification_buffer.pop
+    
+    Timecop.freeze(Time.now+5)
+    alert.raise!
+    #
+    # Should not re-raise.
+    #
+    assert_equal(0, Server.instance.notification_buffer.size, "Notification sent erroneously on second raise.")
+    
+    alert.acknowledge!(Mauve::Configuration.current.people["test"])
+    assert_equal(1, Server.instance.notification_buffer.size, "Wrong number of notifications sent erroneously on acknowledge.")
+    #
+    # Empty the buffer.
+    Server.instance.notification_buffer.pop
 
-    next_alert = Alert.find_next_with_event
-    assert_equal(next_alert.id, alert.id)
-    assert_equal(Time.now+3.minutes, next_alert.due_at)    
+    alert.subject = "changed subject"
+    assert(alert.save)
+    assert_equal(0, Server.instance.notification_buffer.size, "Notification sent erroneously on change of subject.")
 
-    Timecop.freeze(next_alert.due_at)
+    alert.clear!
+    assert_equal(1, Server.instance.notification_buffer.size, "Wrong number of notifications sent erroneously on clear.")
+  end
 
+
+  #
+  # These are more in-depth tests
+  #
+  def test_no_notification_for_old_alerts
+    Configuration.current = ConfigurationBuilder.parse(@test_config)
+    Server.instance.setup
+
+    assert_equal(Time.now, Server.instance.started_at)
+
+    Timecop.freeze(Time.now - 10.minutes)
+    alert = Alert.new(
+      :alert_id  => "test_no_notification_for_old_alerts",
+      :source    => "test",
+      :subject   => "test",
+      :will_raise_at => Time.now + 10.minutes
+    )
+    alert.clear!
+
+    Timecop.freeze(Time.now + 10.minutes)
+    assert_equal(Time.now - 10.minutes, alert.updated_at, "Alert should be last updated before the server instance thinks it started.")
+
+    5.times do 
+      assert(Server.instance.in_initial_sleep?,"Server not in initial sleep when it should be.")
+      alert.poll
+      assert_equal(Server.instance.started_at + Server.instance.initial_sleep, alert.will_raise_at) 
+      assert_equal(0, Server.instance.notification_buffer.size, "Notification sent for old alert")
+      Timecop.freeze(Time.now + 1.minute)
+    end
+    #
+    # No longer in sleep period.
+    #
+    assert(!Server.instance.in_initial_sleep?,"Server in initial sleep when it shouldn't be.")
     alert.poll
+    assert(alert.raised?)
+    assert_equal(1, Server.instance.notification_buffer.size, "Notification sent for old alert")
 
     #
-    # The alert should unacknowledge itself.
+    # TODO need to do for will_clear_at and will_unacknowledge_at
     #
-    assert(!alert.acknowledged?)
-
-
   end
 
 end
-

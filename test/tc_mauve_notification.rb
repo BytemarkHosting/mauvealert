@@ -114,25 +114,19 @@ class TcMauveNotification < Mauve::UnitTest
   include Mauve
   
   def setup
-    @logger = setup_logger
-    Timecop.freeze(Time.local(2011,8,1,0,0,0,0))
+    super
+    setup_database
   end
 
   def teardown
-    teardown_logger
-    Timecop.return
-    DataObjects::Pooling.pools.each{|pool| pool.dispose}
+    teardown_database
+    super
   end
 
   def test_notify
     t = Time.now
 
     config=<<EOF
-
-server {
-  database "sqlite::memory:"
-}
-
 person ("test1") {
   all { true }
 }
