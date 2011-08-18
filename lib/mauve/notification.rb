@@ -87,10 +87,12 @@ module Mauve
     protected
 
     def hours_in_day(*hours)
+      @test_time = @time if @test_time.nil?
       x_in_list_of_y(@test_time.hour, hours.flatten)
     end
     
     def days_in_week(*days)
+      @test_time = @time if @test_time.nil?
       x_in_list_of_y(@test_time.wday, days.flatten)
     end
     
@@ -114,6 +116,7 @@ module Mauve
     end
 
     def working_hours? 
+      @test_time = @time if @test_time.nil?
       @test_time.working_hours?
     end
 
@@ -123,6 +126,7 @@ module Mauve
     #
     # @return [Boolean] Whether now is a in the dead zone or not.
     def dead_zone?
+      @test_time = @time if @test_time.nil?
       @test_time.dead_zone?
     end
 
