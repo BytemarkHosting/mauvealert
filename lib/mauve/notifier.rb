@@ -14,32 +14,22 @@ module Mauve
       #
       sz = Server.notification_buffer_size
 
-      my_threads = []
-
+      # Thread.current[:notification_threads] ||= []
+      logger.info "Sending #{sz} alerts" if sz > 0
+  
       sz.times do
         person, *args = Server.notification_pop
         
         #
         # Nil person.. that's craaazy too!
         #
-        break if person.nil?
-        my_threads << Thread.new {
-          person.do_send_alert(*args) 
-        }
-      end
+        next if person.nil?
 
-      my_threads.each do |t|
-        begin
-          t.join
-        rescue StandardError => ex
-          logger.error ex.to_s
-          logger.debug ex.backtrace.join("\n")
-        end
+        person.do_send_alert(*args) 
       end
     end
 
     def start
-
       if Configuration.current.notification_methods['xmpp']
         #
         # Connect to XMPP server
@@ -66,6 +56,7 @@ module Mauve
           Configuration.current.people[username].xmpp = jid unless jid.nil?
         end
       end
+
       super
     end
 

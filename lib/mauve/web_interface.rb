@@ -220,17 +220,19 @@ EOF
 
         begin
           a.acknowledge!(@person, ack_until)
-          logger.debug note
-          unless note.to_s.empty?
-            h = History.new(:alerts => [a], :type => "note", :event => note.to_s)
-            logger.debug h.errors unless h.save
-          end
           succeeded << a
         rescue StandardError => ex
           logger.error "Caught #{ex.to_s} when trying to save #{a.inspect}"
           logger.debug ex.backtrace.join("\n")
           failed << ex
         end
+      end
+      #
+      # Add a note
+      #
+      unless note.to_s.empty?
+        h = History.new(:alerts => succeeded, :type => "note", :event => session['username']+" noted "+note.to_s)
+        logger.debug h.errors unless h.save
       end
 
       flash["error"] = "Failed to acknowledge #{failed.length} alerts." if failed.length > 0

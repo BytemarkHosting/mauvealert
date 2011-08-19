@@ -176,10 +176,14 @@ module Mauve
         return true 
       end
 
+    
+      # FIXME current_alerts is very slow.  So much so it slows everything
+      # down.  A lot.  
       result = NotificationCaller.new(
         self,
         alert,
-        current_alerts,
+        [],
+        # current_alerts,
         {:is_suppressed  => @suppressed,
          :was_suppressed => was_suppressed, }
       ).instance_eval(&__send__(level))
@@ -202,7 +206,11 @@ module Mauve
       return false
     end
     
+    # 
     # Returns the subset of current alerts that are relevant to this Person.
+    #
+    # This is currently very CPU intensive, and slows things down a lot.  So
+    # I've commented it out when sending notifications.
     #
     def current_alerts
       Alert.all_raised.select do |alert|

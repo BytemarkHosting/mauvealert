@@ -117,6 +117,18 @@ module Mauve
 
       thread_list.delete(Thread.current)
 
+      #
+      # Check buffer sizes
+      #
+      if self.class.notification_buffer_size > 10
+        logger.warn "Notification buffer has #{self.class.notification_buffer_size} messages in it"
+      end
+      
+      if self.class.packet_buffer_size > 10
+        logger.warn "Packet buffer has #{self.class.packet_buffer_size} updates in it"
+      end
+
+
       THREAD_CLASSES.each do |klass|
         #
         # No need to double check ourselves.
