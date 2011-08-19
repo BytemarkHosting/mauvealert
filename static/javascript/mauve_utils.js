@@ -149,6 +149,10 @@ function updateAlertsTable(alert_type, group_by) {
         $('#alerts_table').replaceWith(data); 
         clearError("updateAlertsTable");
         updateAlertCounts();
+        //
+        // Schedule next update.
+        //
+        setTimeout("updateAlertsTable('"+alert_type+"','"+group_by+"');", 30000);
       }
     },
     error:   function( a,b,c ) { 
@@ -157,8 +161,13 @@ function updateAlertsTable(alert_type, group_by) {
       } else {
         showError("Got "+a.status+" "+a.statusText+" when updating alerts table.", "updateAlertsTable"); 
       }
+      //
+      // Schedule next update.
+      //
+      setTimeout("updateAlertsTable('"+alert_type+"','"+group_by+"');", 30000);
     },
   });
+
 
   return false;
 }
