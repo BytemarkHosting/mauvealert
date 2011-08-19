@@ -59,9 +59,8 @@ module Mauve
         return save
       end
 
-
-      if alert.acknowledged?
-        logger.info("Alert already acknowledged.  Clearing reminder due for #{self.alert}.")
+      if alert.acknowledged? or alert.cleared?
+        logger.info("Alert already acknowledged/cleared.  Clearing reminder due for #{self.alert}.")
         self.remind_at = nil
         return save
       end

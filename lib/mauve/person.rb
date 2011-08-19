@@ -102,6 +102,12 @@ module Mauve
         return false
       end
 
+      #
+      # For the love of God, do not remind about ack'd or cleared alerts.
+      #
+      if alert.acknowledged? or alert.cleared?
+        remind_at = nil
+      end
 
       this_reminder = AlertChanged.new(
         :level => level.to_s,
