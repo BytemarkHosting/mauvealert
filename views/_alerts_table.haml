@@ -12,3 +12,8 @@
     %th#summary Summary
     %th#time    At
   = partial("alerts_table_group", :collection => @grouped_alerts)
+  %tr
+    %td{ :colspan => 3}
+      %address
+        Last updated at 
+        = Time.now
