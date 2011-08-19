@@ -141,7 +141,7 @@ function updateAlertsTable(alert_type, group_by) {
 
   $.ajax( {
     url:     '/ajax/alerts_table/'+alert_type+'/'+group_by,
-    timeout: 5000,
+    timeout: 30000,
     success: function( data )  { 
       if ( "" == data || null == data ) {
         showError("No data returned by web server when updating alerts table.", "updateAlertsTable");
@@ -169,7 +169,7 @@ function updateAlertsTable(alert_type, group_by) {
 function updateAlertCounts() {
   $.ajax( {
     url: '/ajax/alert_counts',
-    timeout: 5000,
+    timeout: 30000,
     success: function(counts) {
       if ( "" == counts || null == counts) {
         showError("No data returned by web server when updating alert counts.", "updateAlertCounts");
