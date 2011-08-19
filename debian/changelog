@@ -1,3 +1,9 @@
+mauvealert (3.4.2) stable; urgency=low
+
+  * Improved polling interval timing.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 19 Aug 2011 16:56:33 +0100
+
 mauvealert (3.4.1) stable; urgency=low
 
   * Fixed note in alert acknowledgement box
