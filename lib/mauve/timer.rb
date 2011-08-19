@@ -11,6 +11,11 @@ module Mauve
 
     include Singleton
 
+    def initialize
+      super
+      @poll_every = 0
+    end
+
     def main_loop
       #
       # Get the next alert.

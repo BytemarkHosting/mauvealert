@@ -319,10 +319,10 @@ module Mauve
     end
     
     def poll
+      logger.debug("Polling #{self.to_s}")
       raise! if (will_unacknowledge_at and will_unacknowledge_at <= Time.now) or
         (will_raise_at and will_raise_at <= Time.now)
       clear! if will_clear_at && will_clear_at <= Time.now
-      logger.info("Polled #{self.to_s}")
     end
 
 

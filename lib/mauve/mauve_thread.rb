@@ -5,11 +5,10 @@ module Mauve
 
   class MauveThread
 
-    attr_reader :state, :poll_every
+    attr_reader :poll_every
 
     def initialize
       @thread = nil
-      @state = :stopped
     end
 
     def logger
@@ -21,9 +20,9 @@ module Mauve
       # 
       # Set the minimum poll frequency.
       #
-      if i.to_f < 0.2
-        logger.debug "Increasing thread polling interval to 0.2s from #{i}"
-        i = 0.2 
+      if i.to_f < 0
+        logger.debug "Increasing thread polling interval to 0s from #{i}"
+        i = 0 
       end
 
       @poll_every = i
@@ -33,6 +32,7 @@ module Mauve
       #
       # Good to go.
       #
+      @thread = Thread.current
       self.state = :starting
 
       @poll_every ||= interval
@@ -76,15 +76,33 @@ module Mauve
       [:freezing, :stopping].include?(self.state)
     end
 
+    def state
+      if self.alive?
+        @thread.key?(:state) ?  @thread[:state] : :unknown
+      else
+        :stopped
+      end
+    end
+
     def state=(s)
       raise "Bad state for mauve_thread #{s.inspect}" unless [:stopped, :starting, :started, :freezing, :frozen, :stopping, :killing, :killed].include?(s)
+      raise "Thread not ready yet." unless @thread.is_a?(Thread)
 
-      unless @state == s
-        @state = s
+      unless @thread[:state] == s
+        @thread[:state] = s
+        @thread[:last_state_change] = Time.now
         logger.debug(s.to_s.capitalize) 
       end
 
-      @state
+      @thread[:state]
+    end
+
+    def last_state_change
+      if self.alive? and @thread.key?(:last_state_change)
+        return @thread[:last_state_change]
+      else
+        return nil
+      end
     end
 
     def freeze
@@ -101,13 +119,15 @@ module Mauve
 
     def run
       if self.alive? 
+        # Wake up if we're stopped.
         if self.stop?
           @thread.wakeup 
         end
       else
         @logger = nil
-        self.state = :starting
-        @thread = Thread.new{ self.run_thread { self.main_loop } }
+        Thread.new do
+          self.run_thread { self.main_loop } 
+        end
       end
     end
 

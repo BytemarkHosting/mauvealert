@@ -91,6 +91,7 @@ module Mauve
     end
     
     def poll # mimic interface from Alert
+      logger.debug("Polling #{self.to_s}")
       remind if remind_at.is_a?(Time) and remind_at <= Time.now
     end
 

@@ -103,7 +103,7 @@ module Mauve
     end
 
     def start
-      self.state = :starting
+#      self.state = :starting
 
       self.setup
       
@@ -122,6 +122,14 @@ module Mauve
         # No need to double check ourselves.
         #
         thread_list.delete(klass.instance.thread)
+
+        #
+        # Make sure that if the thread is frozen, that we've not been frozen for too long.
+        #
+        if klass.instance.state != :started and klass.instance.last_state_change.is_a?(Time) and klass.instance.last_state_change < (Time.now - 2.minutes)
+          logger.warn "#{klass} has been #{klass.instance.state} since #{klass.instance.last_state_change}. Killing and restarting."
+          klass.instance.stop
+        end
 
         # 
         # Do nothing if we're frozen or supposed to be stopping or still alive!
