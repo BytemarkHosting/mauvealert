@@ -36,9 +36,12 @@ module Mauve
       self.state = :starting
 
       @poll_every ||= interval
+      #
+      # Make sure we get a number.
+      #
+      @poll_every = 5 unless @poll_every.is_a?(Numeric)
 
-      sleep_loops = (@poll_every.to_f / 0.1).round.to_i
-      sleep_loops = 1 if sleep_loops.nil? or sleep_loops < 1
+      rate_limit = 0.1
 
       while self.state != :stopping do
 
@@ -53,19 +56,22 @@ module Mauve
           self.state = :started
         end
 
+        yield_start = Time.now.to_f
+
         yield
 
         #
-        # Ah-ha! Sleep with a break clause.
+        # Ah-ha! Sleep with a break clause.  Make sure we poll every @poll_every seconds.
         #
-        sleep_loops.times do
+        ((@poll_every.to_f - Time.now.to_f + yield_start.to_f)/rate_limit).
+          round.to_i.times do
 
           break if self.should_stop?
 
           #
           # This is a rate-limiting step
           #
-          Kernel.sleep 0.1
+          Kernel.sleep rate_limit
         end
       end
 
