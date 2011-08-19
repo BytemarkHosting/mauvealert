@@ -28,7 +28,7 @@ module Mauve
       @poll_every = i
     end
 
-    def run_thread(interval = 1.0)
+    def run_thread(interval = 5.0)
       #
       # Good to go.
       #

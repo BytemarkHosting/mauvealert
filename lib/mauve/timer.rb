@@ -12,8 +12,12 @@ module Mauve
     include Singleton
 
     def initialize
+      #
+      # Set the default polling interval to zero.. 
+      #
+      self.poll_every = 0
+
       super
-      @poll_every = 0
     end
 
     def main_loop

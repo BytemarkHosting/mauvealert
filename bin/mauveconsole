@@ -154,7 +154,5 @@ if outputter and logger.outputters.include?(outputter)
   outputter.close
 end
 
-puts "This is mauve #{Mauve::VERSION}"
-
 include Mauve
 IRB.start

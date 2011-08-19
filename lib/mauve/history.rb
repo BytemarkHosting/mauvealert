@@ -1,5 +1,6 @@
 # encoding: UTF-8
 require 'mauve/datamapper'
+require 'mauve/alert'
 require 'log4r'
 
 module Mauve
@@ -59,28 +60,42 @@ module Mauve
     has n, :alerts, :through => :alerthistory
 
     before :valid?, :set_created_at
+    before :save,  :do_sanitize_html
 
-    def self.migrate!
-      ##
-      #
-      # FIXME this is dire.
-      #
-      schema = repository(:default).adapter.execute(".schema mauve_histories")
+    protected
 
+    #
+    # This cleans the HTML before saving.
+    #
+    def do_sanitize_html  
+      html_permitted_in = [:event]
 
+      attributes.each do |key, val|
+        next if html_permitted_in.include?(key)
+        next unless val.is_a?(String)
 
+        attribute_set(key, Alert.remove_html(val))
+      end
+
+      html_permitted_in.each do |key|
+        val = attribute_get(key)
+        next unless val.is_a?(String)
+        attribute_set(key, Alert.clean_html(val))
+      end
     end
+
 
     def set_created_at(context = :default)
-      self.created_at = Time.now unless self.created_at.is_a?(Time) or self.created_at.is_a?(DateTime)
+      self.created_at = Time.now unless self.created_at.is_a?(Time) 
     end
     
+    public
+
     def logger
-     Log4r::Logger.new self.class.to_s
+      Log4r::Logger.new self.class.to_s
     end
 
   end
-
 
 end
 

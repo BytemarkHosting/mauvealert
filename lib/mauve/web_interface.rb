@@ -216,8 +216,6 @@ EOF
           next
         end
 
-        logger.debug "arse"
-
         begin
           a.acknowledge!(@person, ack_until)
           succeeded << a
@@ -228,9 +226,10 @@ EOF
         end
       end
       #
-      # Add a note
+      # Add the note
       #
       unless note.to_s.empty?
+        note = Alert.remove_html(note)
         h = History.new(:alerts => succeeded, :type => "note", :event => session['username']+" noted "+note.to_s)
         logger.debug h.errors unless h.save
       end
@@ -337,6 +336,7 @@ EOF
       ack_until  = params[:ack_until].to_i
       n_hours    = params[:n_hours].to_i
       type_hours = params[:type_hours].to_s
+      note       = params[:note]       || nil
       
       if ack_until == 0
         ack_until = Time.now.in_x_hours(n_hours, type_hours)
@@ -345,6 +345,14 @@ EOF
       end
 
       alert.acknowledge!(@person, ack_until)
+      
+      #
+      # Add the note
+      #
+      unless note.to_s.empty?
+        h = History.new(:alerts => [alert], :type => "note", :event => session['username']+" noted "+note.to_s)
+        logger.debug h.errors unless h.save
+      end
       
       flash['notice'] = "Successfully acknowledged alert <em>#{alert.alert_id}</em> from source #{alert.source}."
       redirect "/alert/#{alert.id}"

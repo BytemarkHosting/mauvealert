@@ -18,6 +18,7 @@ tc_mauve_source_list.rb
 tc_mauve_people_list.rb
 tc_mauve_person.rb
 tc_mauve_alert.rb
+tc_mauve_history.rb
 tc_mauve_alert_group.rb
 tc_mauve_alert_changed.rb
 tc_mauve_notification.rb

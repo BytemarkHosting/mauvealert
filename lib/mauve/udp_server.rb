@@ -15,10 +15,15 @@ module Mauve
     attr_reader   :ip, :port
 
     def initialize
-      super
+      #
+      # Set up some defaults.
+      #
       self.ip     = "127.0.0.1"
       self.port   = 32741
+      self.poll_every = 0
       @socket = nil
+
+      super
     end
  
     def ip=(i)

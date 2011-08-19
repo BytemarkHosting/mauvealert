@@ -13,6 +13,7 @@ require 'mauve/pop3_server'
 require 'mauve/processor'
 require 'mauve/http_server'
 require 'mauve/heartbeat'
+require 'mauve/configuration'
 require 'log4r'
 
 module Mauve
@@ -124,7 +125,7 @@ module Mauve
         logger.warn "Notification buffer has #{self.class.notification_buffer_size} messages in it"
       end
       
-      if self.class.packet_buffer_size > 10
+      if self.class.packet_buffer_size > 50
         logger.warn "Packet buffer has #{self.class.packet_buffer_size} updates in it"
       end
 

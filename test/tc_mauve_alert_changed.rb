@@ -67,6 +67,21 @@ EOF
       AlertChanged.all.each{|ac| ac.poll}
     end
 
+    # OK now clear the alert, send one notification and set an alert_changed.
+    alert.clear!
+    notifications += 1
+    reminders     += 1
+    assert_equal(notifications, Server.instance.notification_buffer.length)
+    assert_equal(reminders,     AlertChanged.count)
+
+    Timecop.freeze(Time.now + 10.minutes)
+    AlertChanged.all.each{|ac| ac.poll}
+    #
+    # Send NO MORE notifications.
+    #
+    assert_equal(notifications, Server.instance.notification_buffer.length)
+    assert_equal(reminders,   AlertChanged.count)
+
   end
 
 

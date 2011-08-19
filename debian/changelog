@@ -1,3 +1,13 @@
+mauvealert (3.4.1) stable; urgency=low
+
+  * Fixed note in alert acknowledgement box
+  * HTML now sanitized on save for Alert and History types
+  * Default thread interval now 0s for UDP server and Timer, 5s for everything
+    else
+  * Moar tests
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 19 Aug 2011 16:24:56 +0100
+
 mauvealert (3.4.0) stable; urgency=low
 
   * More thread monitoring

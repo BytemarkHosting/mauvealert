@@ -82,6 +82,7 @@ module Mauve
 
     has 1, :alert_earliest_date
 
+    before :save, :do_sanitize_html
     before :save, :take_copy_of_changes
     after  :save, :notify_if_needed
 
@@ -162,6 +163,26 @@ module Mauve
     def detail;  attribute_get(:detail)  || "_No detail set._" ; end
  
     protected
+
+    #
+    # This cleans the HTML before saving.
+    #
+    def do_sanitize_html
+      html_permitted_in = [:detail]
+
+      attributes.each do |key, val|
+        next if html_permitted_in.include?(key)
+        next unless val.is_a?(String)
+
+        attribute_set(key, Alert.remove_html(val))
+      end
+
+      html_permitted_in.each do |key|
+        val = attribute_get(key)
+        next unless val.is_a?(String)
+        attribute_set(key, Alert.clean_html(val))
+      end
+    end
 
     #
     # This allows us to take a copy of the changes before we save.
@@ -435,7 +456,8 @@ module Mauve
         time_offset = (reception_time - transmission_time).round
 
         #
-        # Make sure there is no HTML in the update source.
+        # Make sure there is no HTML in the update source.  Need to do this
+        # here because we use the html-free version in the database save hook. 
         #
         update.source = Alert.remove_html(update.source)
 
@@ -457,8 +479,9 @@ module Mauve
           end
 
           #
-          # Make sure there's no HTML in the ID... paranoia.  The rest of the
-          # HTML removal is done elsewhere.
+          # Make sure there's no HTML in the ID -- we need to do this here
+          # because of the database save hook will clear it out, causing this
+          # search to fail.
           #
           alert.id = Alert.remove_html(alert.id)
  
@@ -503,7 +526,7 @@ module Mauve
           # Set the subject
           #
           if alert.subject and !alert.subject.empty? 
-            alert_db.subject = Alert.remove_html(alert.subject)
+            alert_db.subject = alert.subject
 
           elsif alert_db.subject.nil? 
             #
@@ -512,12 +535,9 @@ module Mauve
             alert_db.subject = alert_db.source
           end
 
-          alert_db.summary = Alert.remove_html(alert.summary) if alert.summary && !alert.summary.empty?
+          alert_db.summary = alert.summary if alert.summary && !alert.summary.empty?
 
-          #
-          # The detail can be HTML -- scrub out unwanted parts.
-          #
-          alert_db.detail = Alert.clean_html(alert.detail)    if alert.detail  && !alert.detail.empty?
+          alert_db.detail = alert.detail   if alert.detail  && !alert.detail.empty?
 
           alert_db.importance = alert.importance if alert.importance != 0 
 
