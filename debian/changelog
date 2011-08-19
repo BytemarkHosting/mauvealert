@@ -1,3 +1,15 @@
+mauvealert (3.4.0) stable; urgency=low
+
+  * More thread monitoring
+  * Altered alert path for reminders
+  * Lengthened cookie lifetime
+  * Added an initial logger
+  * Can now have one history with multiple alerts
+  * Changed DateTime to Time everywhere
+  * Moar tests
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 17 Aug 2011 14:26:18 +0100
+
 mauvealert (3.3.2) stable; urgency=low
 
   * More pop3 tweaks
