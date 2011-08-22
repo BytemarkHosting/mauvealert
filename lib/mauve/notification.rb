@@ -44,7 +44,7 @@ module Mauve
       res = instance_eval(&@during)
     end
 
-    def find_next(after = 5.minutes)
+    def find_next(after = 0)
       t = @time+after
       #
       # If the condition is true after x seconds, return the time in x seconds.
@@ -193,7 +193,7 @@ module Mauve
       if DuringRunner.new(Time.now, alert, &during).now?
         return DuringRunner.new(Time.now, alert, &during).find_next(every)
       else
-        return DuringRunner.new(Time.now, alert, &during).find_next(0)
+        return DuringRunner.new(Time.now, alert, &during).find_next()
       end
 
     end
