@@ -145,7 +145,6 @@ module Mauve
     attr_reader :thread_list
 
     def initialize(people, level)
-
       self.level = level
       self.every = 300
       self.people = people
@@ -153,7 +152,7 @@ module Mauve
 
     def logger ;  Log4r::Logger.new self.class.to_s ; end
 
-    def notify(alert)
+    def notify(alert, already_sent_to = [])
 
       if people.nil? or people.empty?
         logger.warn "No people found in for notification #{list}"
@@ -161,9 +160,7 @@ module Mauve
       end
 
       # Should we notify at all?
-      is_relevant = DuringRunner.new(Time.now, alert, &during).now?
-
-      n_sent = 0
+      return already_sent_to unless DuringRunner.new(Time.now, alert, &during).now?
 
       people.collect do |person|
         case person
@@ -176,16 +173,29 @@ module Mauve
             []
         end
       end.flatten.uniq.each do |person|
-        n_sent += 1 if person.send_alert(self.level, alert, is_relevant, remind_at_next(alert))
+        #
+        # A bit of alert de-bouncing.
+        #
+        if already_sent_to.include?(person.username)
+          logger.info("Already sent notification of #{alert} to #{person.username}")
+        else
+          Server.notification_push([person, level, alert])
+          already_sent_to << person.username
+        end
       end
 
-      return n_sent
+      return already_sent_to
     end
     
     def remind_at_next(alert)
-      return DuringRunner.new(Time.now, alert, &during).find_next(every) if alert.raised?
+      return nil unless alert.raised?
 
-      return nil
+      if DuringRunner.new(Time.now, alert, &during).now?
+        return DuringRunner.new(Time.now, alert, &during).find_next(every)
+      else
+        return DuringRunner.new(Time.now, alert, &during).find_next(0)
+      end
+
     end
 
   end

@@ -86,72 +86,9 @@ module Mauve
     end 
 
     #
-    # Sends the alert, and updates when the AlertChanged database to set the next reminder.
+    # Sends the alert
     #
-    def send_alert(level, alert, is_relevant=true, remind_at=nil)
-      #
-      # First check that we've not just sent an notification to this person for
-      # this alert
-      #
-      last_reminder = AlertChanged.first(:alert => alert, :person => username, :update_type => alert.update_type, :at.gte => (Time.now - 1.minute) )
-
-      if last_reminder and last_reminder.at >= (Time.now - 1.minute)
-        #
-        #
-        logger.info("Not sending notification to #{username} for #{alert} because one has just been sent.")
-        return false
-      end
-
-      #
-      # For the love of God, do not remind about ack'd or cleared alerts.
-      #
-      if alert.acknowledged? or alert.cleared?
-        remind_at = nil
-      end
-
-      this_reminder = AlertChanged.new(
-        :level => level.to_s,
-        :alert_id => alert.id, 
-        :person => username, 
-        :at => Time.now,
-        :update_type => alert.update_type,
-        :remind_at => remind_at,
-        :was_relevant => is_relevant)
-
-      #
-      # Check to make sure that we've not got a sooner reminder set.
-      #
-      unless remind_at.nil?
-        next_reminder = AlertChanged.first(:alert => alert, :remind_at.gt => Time.now, :person => username, :update_type => alert.update_type)
-
-        if next_reminder
-          #
-          # If the reminder is further in the future than the one we're about
-          # to put on, then just update it.
-          #
-          # Otherwise if it is sooner, we don't need to create a new one.
-          #
-          if next_reminder.remind_at > remind_at
-            next_reminder.remind_at = remind_at
-            logger.info("Not inserting a new reminder, as there is already one in place sooner")
-            this_reminder = next_reminder
-          else
-            this_reminder = nil
-          end
-        end
-      end
-
-      this_reminder.save unless this_reminder.nil?
-
-      if is_relevant
-        Server.notification_push([self, level, alert])
-        return true
-      end
-
-      return false
-    end
-   
-    def do_send_alert(level, alert)
+    def send_alert(level, alert)
       now = Time.now
 
       was_suppressed = self.suppressed?

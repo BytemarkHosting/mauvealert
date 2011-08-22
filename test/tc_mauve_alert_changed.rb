@@ -7,7 +7,7 @@ require 'mauve/configuration_builder'
 require 'mauve/configuration_builders'
 require 'th_mauve'
 
-class TcMauveAlertChanged < Mauve::UnitTest 
+class TcMauveAlertChanged < Mauve::UnitTest
   include Mauve
 
   def setup
@@ -51,13 +51,13 @@ EOF
     notifications = 1
 
     mins = 0
-    121.times do
+    11.times do
       mins += 1
 
       assert_equal(notifications, Server.instance.notification_buffer.length)
       assert_equal(reminders, AlertChanged.count)
 
-      Timecop.freeze(Time.now+1.minutes)    
+      Timecop.freeze(Time.now+1.minute)
 
       if mins % 5 == 0
         notifications += 1
@@ -67,10 +67,10 @@ EOF
       AlertChanged.all.each{|ac| ac.poll}
     end
 
-    # OK now clear the alert, send one notification and set an alert_changed.
+    # OK now clear the alert, send one notification and but not an alert_changed.
     alert.clear!
     notifications += 1
-    reminders     += 1
+
     assert_equal(notifications, Server.instance.notification_buffer.length)
     assert_equal(reminders,     AlertChanged.count)
 

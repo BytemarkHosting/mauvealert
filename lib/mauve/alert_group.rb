@@ -95,16 +95,45 @@ module Mauve
       #
       # If there are no notifications defined. 
       #
-      if  notifications.nil?
+      if notifications.nil?
         logger.warn("No notifications found for #{self.inspect}")
         return
       end
 
       #
+      # This is where we set the reminder -- i.e. on a per-alert-group basis.
+      #
+      remind_at = notifications.inject(nil) do |reminder_time, notification|
+        this_time = notification.remind_at_next(alert)
+        if reminder_time.nil? or (!this_time.nil? and  reminder_time > this_time)
+          this_time
+        else
+          reminder_time 
+        end
+      end
+
+      #
+      # OK got the next reminder time.
+      #
+      unless remind_at.nil?
+        this_reminder = AlertChanged.new(
+          :level => level.to_s,
+          :alert_id => alert.id,
+          :person => self.name,
+          :at => Time.now,
+          :update_type => alert.update_type,
+          :remind_at => remind_at,
+          :was_relevant => true)
+
+        this_reminder.save
+      end
+
+      #
       # The notifications are specified in the config file.
       #
+      sent_to = []
       notifications.each do |notification|
-        notification.notify(alert)
+        sent_to = notification.notify(alert, sent_to)
       end
     end
 

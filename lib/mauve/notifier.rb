@@ -25,7 +25,7 @@ module Mauve
         #
         next if person.nil?
 
-        person.do_send_alert(*args) 
+        person.send_alert(*args) 
       end
     end
 

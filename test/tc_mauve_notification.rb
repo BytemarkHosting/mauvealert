@@ -195,7 +195,7 @@ alert_group("default") {
     every 10.minutes
   }
   
-  notify("test1") {
+  notify("testers") {
     every 15.minutes
   }
 
@@ -222,30 +222,81 @@ EOF
     alert.raise!
 
     assert_equal(1, Alert.count, "Wrong number of alerts saved")
+    
+    #
+    # Also make sure that only 2 notifications has been sent..
+    #
+    assert_equal(2, Server.instance.notification_buffer.size, "Wrong number of notifications sent")
 
     #
     # Although there are four clauses above for notifications, test1 should be
     # alerted in 10 minutes time, and the 15 minutes clause is ignored, since
     # 10 minutes is sooner.
     #
-    assert_equal(3, AlertChanged.count, "Wrong number of reminders inserted")
+    assert_equal(1, AlertChanged.count, "Wrong number of reminders inserted")
+
+    a = AlertChanged.first 
+    assert_equal("urgent", a.level, "Level is wrong for #{a.person}")
+    assert_equal("raised", a.update_type, "Update type is wrong for #{a.person}")
+    assert_equal(Time.now + 10.minutes, a.remind_at,"reminder time is wrong for #{a.person}")
 
     #
-    # Also make sure that only 1 notification has been sent..
+    # OK now roll the clock forward 10 minutes
+    # TODO
+
+  end
+
+
+  #
+  # Makes sure a reminder is set at the start of the notify clause.
+  #  
+  def test_reminder_is_set_at_start_of_during
+
+    config=<<EOF
+person ("test1") {
+  all { true }
+}
+
+person ("test2") {
+  all { true }
+}
+
+alert_group("default") {
+  level URGENT
+  notify("test1") {
+    every 10.minutes
+  } 
+
+  notify("test2") {
+    every 10.minutes
+    during { hours_in_day 8..10 }
+  }
+
+}
+EOF
+
     #
-    assert_equal(1, Server.instance.notification_buffer.size, "Wrong number of notifications sent")
+    # Wind forward until 7.55am
+    #
+    Timecop.freeze(Time.now + 7.hours + 55.minutes)
 
-    reminder_times = {
-      "test1" => t + 10.minutes,
-      "test2" => t + 1.hour,
-      "test3" => t + 2.hours
-    }
+    Configuration.current = ConfigurationBuilder.parse(config)
+    Server.instance.setup
+    alert = Alert.new(
+      :alert_id  => "test",
+      :source    => "test",
+      :subject   => "test"
+    )
+    alert.raise!
 
-    AlertChanged.all.each do |a|
-      assert_equal("urgent", a.level, "Level is wrong for #{a.person}")
-      assert_equal("raised", a.update_type, "Update type is wrong for #{a.person}")
-      assert_equal(reminder_times[a.person], a.remind_at,"reminder time is wrong for #{a.person}")
-    end
+    assert_equal(1, Alert.count, "Wrong number of alerts saved")
+
+    assert_equal(1, AlertChanged.count, "Wrong number of reminders inserted")
+
+    a = AlertChanged.first
+    assert_equal("urgent", a.level, "Level is wrong for #{a.person}")
+    assert_equal("raised", a.update_type, "Update type is wrong for #{a.person}")
+    assert_equal(Time.now + 5.minutes, a.remind_at,"reminder time is wrong for #{a.person}")
 
   end
 

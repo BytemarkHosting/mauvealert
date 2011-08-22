@@ -19,12 +19,10 @@ module Mauve
     property :remind_at, Time
     # property :updated_at, Time, :required => true
 
-    def inspect
+    def to_s
       "#<AlertChanged #{id}: alert_id #{alert_id}, for #{person}, update_type #{update_type}>"
     end
 
-    alias to_s inspect
-    
     belongs_to :alert
     
     def was_relevant=(value)
