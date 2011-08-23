@@ -18,6 +18,8 @@
           Cleared (
           %span#count_cleared><= @alerts_cleared.length
           )
+      %li{:class => [ request.path_info =~ /^\/events/ && "nav_selected"]}
+        %a{:href => '/events/calendar'} Events
       %li
         %a{:href => '/logout'} Log out
   %br

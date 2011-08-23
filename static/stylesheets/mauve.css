@@ -79,4 +79,22 @@ div.flash p {
   background-color: transparent;
 }
 
+table#events_table td {
+  width: 14%;
+  border-left: solid;
+}
+
+table#events_table td p.event_date {
+  font-weight: bold;
+  font-size: smaller;
+}
+
+p {
+  background-color: inherit;
+}
+
+.even {
+  background-color: #ddd;
+}
+
 

@@ -1,0 +1,11 @@
+%h2
+  Events Calendar
+
+%p
+  %a{:href => "/events/calendar/#{(@month-31.days).strftime("%Y-%m")}?"+request.query_string}
+    &larr; Previous Month
+  = @month.strftime("%b %Y")
+  %a{:href => "/events/calendar/#{(@month+31.days).strftime("%Y-%m")}?"+request.query_string}
+    Next month &rarr;
+= partial('events_form')
+= partial('events_calendar')

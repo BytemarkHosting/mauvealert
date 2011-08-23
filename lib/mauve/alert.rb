@@ -60,10 +60,10 @@ module Mauve
     include DataMapper::Resource
     
     property :id, Serial
-    property :alert_id, String, :required => true, :unique_index => :alert_index, :length=>256
-    property :source, String, :required => true, :unique_index => :alert_index, :length=>512
-    property :subject, String, :length=>512 
-    property :summary, String, :length=>1024
+    property :alert_id, String, :required => true, :unique_index => :alert_index, :length=>256, :lazy => false
+    property :source, String, :required => true, :unique_index => :alert_index, :length=>512, :lazy => false
+    property :subject, String, :length=>512, :lazy => false
+    property :summary, String, :length=>1024, :lazy => false
     property :detail, Text, :length=>65535
     property :importance, Integer, :default => 50
 
@@ -71,8 +71,8 @@ module Mauve
     property :cleared_at, Time
     property :updated_at, Time
     property :acknowledged_at, Time
-    property :acknowledged_by, String
-    property :update_type, String
+    property :acknowledged_by, String, :lazy => false
+    property :update_type, String, :lazy => false
     
     property :will_clear_at, Time
     property :will_raise_at, Time

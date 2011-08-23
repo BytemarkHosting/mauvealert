@@ -1,0 +1,11 @@
+%table#events_table
+  %tr
+    %th Monday
+    %th Tuesday
+    %th Wednesday
+    %th Thursday
+    %th Friday
+    %th Saturday
+    %th Sunday
+  = partial("events_calendar_week", :collection => @events_by_week )
+  

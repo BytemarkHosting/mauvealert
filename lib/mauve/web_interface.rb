@@ -394,13 +394,92 @@ EOF
     end
     
     ########################################################################
-    
-    get '/events' do
-      find_active_alerts
-      find_recent_alerts
-      haml :events
+   
+ 
+
+    get '/events/alert/:id' do
+
     end
-    
+
+    get '/events/calendar' do
+      redirect "/events/calendar/"+Time.now.strftime("%Y-%m")
+    end
+
+    get '/events/calendar/:start' do
+
+      #
+      # Sort out the parameters
+      #
+
+      #
+      # Start must be a Monday
+      #
+      if params[:start] =~ /\A(\d{4,4})-(\d{1,2})/
+        @month = Time.local($1.to_i,$2.to_i,1,0,0,0,0)
+      else
+        t = Time.now
+        @month = Time.local(t.year, t.month, 1, 0, 0, 0, 0)
+      end
+
+      start  = @month
+      finish = start + 31.days
+
+      start  -= (start.wday == 0 ? 6 : (start.wday - 1)).day
+      finish -= finish.day if finish.month == @month.month+1
+      finish += (finish.wday == 0 ? 0 : (7 - finish.wday)).days
+
+      weeks = ((finish - start)/1.week).ceil
+ 
+      query = {:history => {}}
+      query[:history][:created_at.gte] = start
+      query[:history][:created_at.lt] = finish
+
+      #
+      # Now sort events into a per-week per-weekday array.  Have to use the
+      # proc syntax here to prevent an array of pointers being created..?!
+      #
+      @events = find_events(query)
+      @events_by_week = Array.new(weeks){ Array.new(7) { Array.new } }
+
+      @events.each do |event|
+        event_week = ((event.created_at - start)/(7.days)).floor
+        event_day  = (event.created_at.wday == 0 ? 6 : (event.created_at.wday - 1))
+        @events_by_week[event_week] ||= Array.new(7) { Array.new }
+        @events_by_week[event_week][event_day] << event
+      end
+
+      #
+      # Make sure we have all our weeks filled out.
+      #
+      @events_by_week.each_with_index do |e, i|
+        @events_by_week[i] = Array.new(7) { Array.new } if e.nil?
+      end
+
+      @today = start
+      haml :events_calendar
+    end
+   
+    get '/events/list' do
+      redirect "/events/list/"+Time.now.strftime("%Y-%m-%d") 
+    end
+
+    get '/events/list/:start' do
+      if params[:start] =~ /\A(\d{4,4})-(\d{1,2})-(\d{1,2})\Z/
+        @start = Time.local($1.to_i,$2.to_i,$3.to_i,0,0,0,0)
+      else
+        t = Time.now
+        @start = Time.local(t.year, t.month, t.day, 0,0,0,0)
+      end
+      
+      query = {:history => {}}
+      query[:history][:created_at.gte] = @start
+      query[:history][:created_at.lt]  = @start + 1.day
+
+      @events = find_events(query)
+
+      haml :events_list
+    end
+ 
     ########################################################################
     
     helpers do
@@ -473,6 +552,63 @@ EOF
         @cycle ||= 0
         @cycle = (@cycle + 1) % list.length
         list[@cycle]
+      end
+
+      def find_events(query = Hash.new)
+
+        if params["history"]
+          query[:history] ||= Hash.new
+
+          if params["history"]["type"] and !params["history"]["type"].empty?
+            query[:history][:type] = params["history"]["type"]
+          end
+        end
+
+        if !query[:history] or !query[:history][:type]
+          query[:history] ||= Hash.new
+          query[:history][:type] = "update"
+
+          params["history"] ||= Hash.new
+          params["history"]["type"] = "update"
+        end
+
+        if params["alert"]
+          query[:alert] ||= Hash.new
+
+          if params["alert"]["subject"] and !params["alert"]["subject"].empty?
+            query[:alert][:subject.like] = params["alert"]["subject"]
+          end
+
+          if params["alert"]["source"] and !params["alert"]["source"].empty?
+            query[:alert][:source.like] = params["alert"]["source"]
+          end
+
+          if params["alert"]["id"] and !params["alert"]["id"].empty?
+            query[:alert][:id] = params["alert"]["id"]
+          end
+        end
+
+        #
+        #
+        # THIS IS NOT EAGER LOADING.  But I've no idea how the best way would be to do it.
+        #
+        alert_histories = AlertHistory.all(query)
+  
+        histories = alert_histories.history.to_a
+        alerts    = alert_histories.alert.to_a
+
+
+        alert_histories.each do |ah|
+          history = histories.find{|h| ah.history_id == h.id}
+          alert   = alerts.find{|a| ah.alert_id == a.id}
+          next if alert.nil?
+          history.add_to_cached_alerts( alert )
+        end
+
+        #
+        # Present the histories in time-ascending order (which is not the default..)
+        #
+        histories.reverse
       end
 
     end

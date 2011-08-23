@@ -10,8 +10,8 @@ module Mauve
     property :alert_id,   Integer, :key => true
     property :history_id, Integer, :key => true
 
-    belongs_to :alert  
-    belongs_to :history 
+    belongs_to :alert
+    belongs_to :history
 
     def self.migrate!
       #
@@ -53,8 +53,8 @@ module Mauve
     # If these properties change.. then the migration above will break horribly. FIXME.
     #
     property :id, Serial
-    property :type,  String, :required => true, :default => "unknown"
-    property :event, Text, :required => true, :default => "Nothing set"
+    property :type,  String, :required => true, :default => "unknown", :lazy => false
+    property :event, Text, :required => true, :default => "Nothing set", :lazy => false
     property :created_at, Time, :required => true
 
     has n, :alerts, :through => :alerthistory
@@ -88,8 +88,31 @@ module Mauve
     def set_created_at(context = :default)
       self.created_at = Time.now unless self.created_at.is_a?(Time) 
     end
-    
+
     public
+
+    #
+    # Blasted datamapper not eager-loading my model.
+    #
+    def add_to_cached_alerts(a)
+      @cached_alerts ||= []
+      if a.is_a?(Array) and a.all?{|m| m.is_a?(Alert)}
+        @cached_alerts += a
+      elsif a.is_a?(Alert)
+        @cached_alerts << a
+      else
+        raise ArgumentError, "#{a.inspect} not an Alert"
+      end
+    end
+
+    def alerts
+      @cached_alerts ||= super
+    end
+
+    def reload
+      @cached_alerts = nil
+      super
+    end
 
     def logger
       Log4r::Logger.new self.class.to_s
