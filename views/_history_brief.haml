@@ -1,0 +1,6 @@
+%p
+  = history.created_at.strftime("%R")
+  - history.alerts.each do |alert|
+    = alert.subject
+    = alert.summary
+  = history.event

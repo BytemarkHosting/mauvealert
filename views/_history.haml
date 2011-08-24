@@ -1,0 +1,10 @@
+- if @today.nil? or %w(day month year).any?{|s| @today.send(s) != history.created_at.send(s)}
+  %h2
+    = history.created_at.strftime("%a %d %b %Y")
+%p
+  = history.created_at.strftime("%R")
+  - history.alerts.each do |alert|
+    = alert.subject
+    = alert.summary
+  = history.event
+  - @today = history.created_at

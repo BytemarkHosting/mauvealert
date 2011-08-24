@@ -1,0 +1,7 @@
+%p
+  = history.created_at.strftime("%R")
+  - these_alerts = (@alerts.nil? ? history.alerts : @alerts.select{|a| history.alert_ids.include?(a.id)})
+  - these_alerts.each do |alert|
+    = alert.subject
+    = alert.summary
+  = history.event
