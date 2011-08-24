@@ -412,7 +412,11 @@ module Mauve
       #
       #
       def all_raised
-        all(:raised_at.not => nil, :acknowledged_at => nil, :cleared_at => nil)
+        all(:raised_at.not => nil, :order => [:raised_at.asc]) & (all(:cleared_at => nil) | all(:raised_at.gte => :cleared_at))
+      end
+      
+      def all_unacknowledged
+        all_raised - all_acknowledged
       end
 
       def all_acknowledged
@@ -420,7 +424,7 @@ module Mauve
       end
 
       def all_cleared
-        all(:cleared_at.not => nil, :acknowledged_at => nil)
+        all - all_raised - all_acknowledged
       end
 
       # Returns a hash of all the :urgent, :normal and :low alerts.

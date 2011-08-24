@@ -442,14 +442,15 @@ module Mauve
 
         def parse_command(msg)
           case msg.body
-            when /help/i
-              do_parse_help(msg)
             when /show\s?/i
               do_parse_show(msg)
             when /ack/i
               do_parse_ack(msg)
+            when /(\w+\W+){5,}\w/
+              do_parse_help(msg)
+              File.executable?('/usr/games/fortune') ? `/usr/games/fortune -s -n 60`.chomp : "I'd love to stay and chat, but I'm really quite busy"
             else
-              File.executable?('/usr/games/fortune') ? `/usr/games/fortune -s -n 60`.chomp : "Sorry.  I don't understand.  Try asking me for help."
+              do_parse_help(msg)
           end          
         end
 
@@ -458,8 +459,8 @@ module Mauve
           cmd = $1
           
           return case cmd
-            when "show"
-              <<EOF
+            when /^show/
+               <<EOF
 Show command: Lists all raised or acknowledged alerts, or the first or last few.
 e.g.
   show  -- shows all raised alerts
@@ -493,11 +494,11 @@ EOF
           
           items = case type
             when "acknowledged"
-              Alert.all_acknowledged
+              Alert.all_acknowledged.all(:order => [:acknowledged_at.asc])
             when "events"
               History.all(:created_at.gte => Time.now - 24.hours)
             else 
-              Alert.all_raised
+              Alert.all_unacknowledged.all(:order => [:raised_at.asc])
           end
 
           if first_or_last == "first"

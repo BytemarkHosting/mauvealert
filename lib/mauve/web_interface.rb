@@ -283,7 +283,7 @@ EOF
       
       counts = Hash.new{|h,k| h[k] = 0}
 
-      Alert.all_raised.each{|a| counts[a.level] += 1}
+      Alert.all_unacknowledged.each{|a| counts[a.level] += 1}
 
       (AlertGroup::LEVELS.reverse.collect{|l| counts[l]}+
         [Alert.all_acknowledged.length, Alert.all_cleared.length]).to_json
@@ -559,7 +559,7 @@ EOF
       end  
  
       def find_active_alerts
-        @alerts_raised  = Alert.all_raised
+        @alerts_raised  = Alert.all_unacknowledged
         @alerts_cleared = Alert.all_cleared
         @alerts_ackd    = Alert.all_acknowledged
 
