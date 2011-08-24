@@ -260,7 +260,12 @@ module Mauve
       self.will_unacknowledge_at = ack_until
       self.update_type = "acknowledged"
 
-      logger.error("Couldn't save #{self}") unless save
+      unless save
+        logger.error("Couldn't save #{self}") 
+        false
+      else
+        true
+      end
     end
     
     def unacknowledge!
@@ -269,7 +274,12 @@ module Mauve
       self.will_unacknowledge_at = nil
       self.update_type = (raised? ? "raised" : "cleared")
 
-      logger.error("Couldn't save #{self}") unless save
+      unless save
+        logger.error("Couldn't save #{self}") 
+        false
+      else
+        true
+      end
     end
     
     def raise!(at = Time.now)
@@ -303,7 +313,12 @@ module Mauve
         self.update_type = "raised" if self.update_type.nil? or self.update_type != "changed" or self.original_attributes[Alert.properties[:update_type]] == "cleared"
       end
       
-      logger.error("Couldn't save #{self}") unless save
+      unless save
+        logger.error("Couldn't save #{self}") 
+        false
+      else
+        true
+      end
     end
     
     def clear!(at = Time.now)
@@ -329,7 +344,12 @@ module Mauve
         self.update_type = "cleared"
       end
 
-      logger.error("Couldn't save #{self}") unless save
+      unless save
+        logger.error("Couldn't save #{self}") 
+        false
+      else
+        true
+      end
     end
       
     # Returns the time at which a timer loop should call poll_event to either

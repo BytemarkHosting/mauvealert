@@ -12,9 +12,11 @@ if alert.source != alert.subject
 %> -- from <%= alert.source %><%
 end 
 %>. <%=WebInterface.url_for(alert)%><%
-if was_suppressed and not is_suppressed 
+if defined? was_suppressed and defined? is_suppressed
+  if was_suppressed and not is_suppressed 
 %> (Normal service has resumed.)<%
-elsif is_suppressed and not was_suppressed
+  elsif is_suppressed and not was_suppressed
 %> (Further alerts suppressed until things calm down.)<%
-end 
+  end 
+end
 %>

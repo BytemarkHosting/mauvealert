@@ -1,18 +1,19 @@
 %h2
   Events List
-%p
-  %a{:href => "/events/list/#{(@start-1.day-10).strftime("%Y-%m-%d")}?"+request.query_string}
-    &larr; Previous day
-  = @start.strftime("%Y-%m-%d")
-  %a{:href => "/events/list/#{(@start+1.day+10).strftime("%Y-%m-%d")}?"+request.query_string}
-    Next day &rarr;
-  |
-  %a{:href => "/events/calendar/#{@start.strftime("%Y-%m")}?"+request.query_string}
-    Calendar view
-= partial('events_form')
+- if @start
+  %p
+    %a{:href => "/events/list/#{(@start-1.day+1.hour).strftime("%F")}?"+request.query_string}
+      &larr; Previous day
+    = @start.strftime("%F")
+    %a{:href => "/events/list/#{(@start+1.day+1.hour).strftime("%F")}?"+request.query_string}
+      Next day &rarr;
+    |
+    %a{:href => "/events/calendar/#{@start.strftime("%Y-%m")}?"+request.query_string}
+      Calendar view
+  = partial('events_form')
 - if @events.length > 0
   = partial('history', :collection => @events)
 - else
   %p
     %strong
-      No events for today.
+      No events.

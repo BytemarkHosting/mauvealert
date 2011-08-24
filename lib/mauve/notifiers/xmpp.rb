@@ -414,14 +414,15 @@ module Mauve
             # Received a message with a body.
             #
             jid = msg.from
+            logger.debug "Received #{msg.body} from #{jid}"
           end
 
           #
           # I don't have time to talk to myself! 
           #
           if jid and jid.strip != @client.jid.strip
-            txt = File.executable?('/usr/games/fortune') ? `/usr/games/fortune -s -n 60`.chomp : "I'd love to stay and chat, but I'm really too busy." 
-            send_message(jid, txt)
+            reply = parse_command(msg)
+            send_message(jid, reply)
           end
         end
 
@@ -438,6 +439,138 @@ module Mauve
                 msg.body =~ /\b#{Regexp.escape(@client.jid.node)}\b/i)
             receive_normal_message(msg) 
           end
+        end
+
+        def parse_command(msg)
+          case msg.body
+            when /help/i
+              do_parse_help(msg)
+            when /show\s?/i
+              do_parse_show(msg)
+            when /ack/i
+              do_parse_ack(msg)
+            else
+              "Sorry.  I don't understand.  Try asking me for help"
+          end          
+        end
+
+        def do_parse_help(msg)
+          msg.body =~ /help\s+(\w+)/i
+          cmd = $1
+          
+          return case cmd
+            when "show"
+              <<EOF
+Show command: Lists all raised or acknowledged alerts, or the first or last few.
+e.g.
+  show  -- shows all raised alerts
+  show ack -- shows all acknowledged alerts
+  show first 10 acknowledged -- shows first 10 acknowledged
+  show last 5 raised -- shows last 5 raised alerts 
+EOF
+            when /^ack/
+              <<EOF
+Acknowledge command: Acknowledges one or more alerts for a set period of time.  This can only be done from a "private" chat.
+e.g.
+  ack 1 for 2 hours -- acknowledges alert no. 1 for 2 wall-clock hours
+  ack 1,2,3 for 2 working hours -- acknowledges alerts 1, 2, and 3 for 2 working hours
+EOF
+            else
+              "I am Mauve #{Mauve::VERSION}.  I understand \"help\", \"show\" and \"acknowledge\" commands.  Try \"help show\"."
+          end       
+        end
+
+        def do_parse_show(msg)
+          return "Sorry -- I don't understand your show command." unless
+             msg.body =~ /show(?:\s+(first|last)\s+(\d+))?(?:\s+(events|raised|ack(?:d|nowledged)?))?/i
+
+          first_or_last = $1
+          n_items = ($2 || -1).to_i
+
+          type = $3 || "raised"
+          type = "acknowledged" if type =~ /^ack/
+          
+          msg = []
+          
+          items = case type
+            when "acknowledged"
+              Alert.all_acknowledged
+            when "events"
+              History.all(:created_at.gte => Time.now - 24.hours)
+            else 
+              Alert.all_raised
+          end
+
+          if first_or_last == "first"
+            items = items.first(n_items) if n_items >= 0 
+          elsif first_or_last == "last"
+            items = items.last(n_items) if n_items >= 0 
+          end
+
+          return "Nothing to show" if items.length == 0          
+
+          template_file = File.join(File.dirname(__FILE__),"templates","xmpp.txt.erb")
+          if File.exists?(template_file)
+            template = File.read(template_file)
+          else
+            logger.error("Could not find xmpp.txt.erb template")
+            template = nil
+          end 
+
+          (["Alerts #{type}:"] + items.collect do |alert| 
+            "#{alert.id}: " + ERB.new(template).result(binding).chomp
+          end).join("\n")
+        end
+
+        def do_parse_ack(msg)
+          return "Sorry -- I don't understand your acknowledge command." unless
+             msg.body =~ /ack(?:nowledge)?\s+([\d,]+)\s+for\s+(\d+)\s+(work(?:ing)|day(?:time)|wall(?:-?clock))?\s*hours?/i
+          
+          alerts, n_hours, type_hours = [$1,$2, $3]
+
+          alerts = alerts.split(",")
+          n_hours = n_hours.to_i
+
+          type_hours = case type_hours
+            when /^wall/
+              "wallclock"
+            when /^work/
+              "working"
+            else
+              "daytime"
+          end
+          
+          ack_until = Time.now.in_x_hours(n_hours, type_hours)
+          username = get_username_for(msg.from)
+
+          if is_muc?(Configuration.current.people[username].xmpp)
+            return "I'm sorry -- if you want to acknowledge alerts, please do it from a private chat"
+          end
+
+          msg = []
+          msg << "Acknowledgment results:" if alerts.length > 1
+
+          alerts.each do |alert_id|
+            alert = Alert.get(alert_id)
+
+            if alert.nil?
+              msg << "#{alert_id}: alert not found" 
+              next
+            end
+
+            if alert.cleared?
+              msg << "#{alert_id}: alert already cleared" if alert.cleared?
+              next
+            end
+
+            if alert.acknowledge!(Configuration.current.people[username], ack_until)
+              msg << "#{alert_id}: Acknowledged until #{ack_until.to_s_human}"
+            else
+              msg << "#{alert_id}: Acknowledgment failed."
+            end
+          end
+
+          return msg.join("\n")
         end
 
         def check_alert_conditions(destination, conditions)
@@ -498,13 +631,21 @@ module Mauve
           results.include?(true)
         end
 
-        def is_known_contact?(jid)
+        #
+        # Returns the username of the jid, if any
+        #
+        def get_username_for(jid)
           jid = JID.new(jid) unless jid.is_a?(JID)
 
-          Configuration.current.people.any? do |username, person|
+          ans = Configuration.current.people.find do |username, person|
             next unless person.xmpp.is_a?(JID)
             person.xmpp.strip == jid.strip
           end
+          ans.nil? ? ans : ans.first
+        end
+
+        def is_known_contact?(jid)
+           !get_username_for(jid).nil?
         end
         
       end

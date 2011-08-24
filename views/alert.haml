@@ -47,11 +47,14 @@
     %th History
     %td
       %ul#histories
-        - @alert.histories.first(10).each do |history|
+        - @alert.histories.all(:created_at.gte => Time.now - 3.days).each do |history|
           %li
             = history.event
             at
             = (history.created_at.nil? ? "unkown" : history.created_at.to_s_human)
+        %p
+          %a{:href => "/events/alert/#{@alert.id}"}
+            View full event history
 %h2 Actions
 - if !@alert.acknowledged?
   %form{:method => :post, :action => "/alert/#{@alert.id}/acknowledge"}

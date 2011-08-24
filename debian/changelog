@@ -1,3 +1,9 @@
+mauvealert (3.5.0) stable; urgency=low
+
+  * Added XMPP interface
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 24 Aug 2011 12:24:55 +0100
+
 mauvealert (3.4.4) stable; urgency=low
 
   * Added events calendar

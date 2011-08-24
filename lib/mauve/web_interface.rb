@@ -193,7 +193,7 @@ EOF
       # ack_until is in milliseconds!
       ack_until  = params[:ack_until]
       n_hours    = params[:n_hours]    || 2
-      type_hours = params[:type_hours] || "daylight"
+      type_hours = params[:type_hours] || "daytime"
       alerts     = params[:alerts]     || []
       note       = params[:note]       || nil
 
@@ -327,6 +327,7 @@ EOF
     get '/alert/:id' do
       find_active_alerts
       @alert = Alert.get!(params['id'])
+
       haml :alert
     end
     
@@ -395,10 +396,16 @@ EOF
     
     ########################################################################
    
- 
-
     get '/events/alert/:id' do
+      query = {:alert => {}, :history => {}}
+      query[:alert][:id] = params[:id]
 
+      query[:history][:type] = ["update", "notification"]
+
+      @alert  = Alert.get!(params['id'])
+      @events = find_events(query)
+
+      haml :events_list
     end
 
     get '/events/calendar' do
@@ -465,16 +472,37 @@ EOF
 
     get '/events/list/:start' do
       if params[:start] =~ /\A(\d{4,4})-(\d{1,2})-(\d{1,2})\Z/
-        @start = Time.local($1.to_i,$2.to_i,$3.to_i,0,0,0,0)
+        start = Time.local($1.to_i,$2.to_i,$3.to_i,0,0,0,0)
       else
         t = Time.now
+        start = Time.local(t.year, t.month, t.day, 0,0,0,0)
+      end
+
+      finish = start + 1.day + 1.hour
+
+      redirect "/events/list/#{start.strftime("%Y-%m-%d")}/#{finish.strftime("%Y-%m-%d")}"
+    end
+    
+    get '/events/list/:start/:finish' do
+
+      t = Time.now
+      if params[:start] =~ /\A(\d{4,4})-(\d{1,2})-(\d{1,2})\Z/
+        @start = Time.local($1.to_i,$2.to_i,$3.to_i,0,0,0,0)
+      else
         @start = Time.local(t.year, t.month, t.day, 0,0,0,0)
       end
       
+      if params[:finish] =~ /\A(\d{4,4})-(\d{1,2})-(\d{1,2})\Z/
+        finish = Time.local($1.to_i,$2.to_i,$3.to_i,0,0,0,0)
+      else
+        t += 1.day + 1.hour
+        finish = Time.local(t.year, t.month, t.day, 0,0,0,0)
+      end
+
       query = {:history => {}}
       query[:history][:created_at.gte] = @start
-      query[:history][:created_at.lt]  = @start + 1.day
-
+      query[:history][:created_at.lt]  = finish
+      
       @events = find_events(query)
 
       haml :events_list
