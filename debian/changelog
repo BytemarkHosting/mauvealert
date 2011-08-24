@@ -1,3 +1,10 @@
+mauvealert (3.5.1) stable; urgency=low
+
+  * Fixed XMPP interface to allow ack's from groupchat.
+  * Fixed XMPP interface to allow private chats to work.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 24 Aug 2011 16:55:30 +0100
+
 mauvealert (3.5.0) stable; urgency=low
 
   * Added XMPP interface

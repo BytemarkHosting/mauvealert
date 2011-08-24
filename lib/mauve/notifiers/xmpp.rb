@@ -122,7 +122,7 @@ module Mauve
               end
             end.join
           end
-          
+
           @client.add_message_callback do |m|
             receive_message(m)
           end
@@ -140,6 +140,7 @@ module Mauve
             #
             unless ex.nil? or @closing 
               logger.warn(["Caught",ex.class,ex.to_s,"during XMPP",where].join(" "))
+              logger.debug ex.backtrace.join("\n")
               @closing = true
               connect
               @mucs.each do |jid, muc|
@@ -220,15 +221,13 @@ module Mauve
             alert.to_s
           end
 
-          send_message(destination_jid, txt, xhtml)
+          msg_type = (is_muc?(destination_jid) ? :groupchat : :chat)
+
+          send_message(destination_jid, txt, xhtml, msg_type)
         end
 
         # Sends a message to the destionation.
-        #
-        # @param [String] destination The (full) JID to send to.
-        # @param [String] msg The (formatted) message to send.
-        # @return [NIL] nada.
-        def send_message(jid, msg, html_msg=nil)
+        def send_message(jid, msg, html_msg=nil, msg_type=:chat)
           jid = JID.new(jid) unless jid.is_a?(JID)
 
           message = Message.new(jid)
@@ -242,12 +241,14 @@ module Mauve
             end
           end
 
-          if is_muc?(jid)
+          message.to   = jid
+          message.type = msg_type
+
+          if message.type == :groupchat and is_muc?(jid)
             jid = join_muc(jid.strip)
             muc = @mucs[jid][:client]
 
             if muc
-              message.to   = muc.jid
               muc.send(message)
               true
             else
@@ -261,11 +262,6 @@ module Mauve
             ensure_roster_and_subscription!(jid)
 
             if check_jid_has_presence(jid)
-              #
-              # We set the chat type to chat
-              #
-              message.type = :chat
-              message.to = jid
               @client.send(message)
               true
             else
@@ -372,6 +368,13 @@ module Mauve
         protected
 
         def receive_message(msg)
+          #
+          # Don't talk to self
+          #
+          if @jid == msg.from or @mucs.any?{|jid, muc| muc.is_a?(Hash) and muc.has_key?(:client) and muc[:client].jid == msg.from}
+            return nil
+          end 
+
           # We only want to hear messages from known contacts.
           unless is_known_contact?(msg.from)
             # ignore message
@@ -414,15 +417,11 @@ module Mauve
             # Received a message with a body.
             #
             jid = msg.from
-            logger.debug "Received #{msg.body} from #{jid}"
           end
 
-          #
-          # I don't have time to talk to myself! 
-          #
-          if jid and jid.strip != @client.jid.strip
+          if jid 
             reply = parse_command(msg)
-            send_message(jid, reply)
+            send_message(jid, reply, nil, msg.type)
           end
         end
 
@@ -433,10 +432,10 @@ module Mauve
           # match our resource or node in the body.
           #
           if @mucs[msg.from.strip][:client].is_a?(MUC::MUCClient) and
-                msg.from != @mucs[msg.from.strip][:client].jid and
                 msg.x("jabber:x:delay") == nil and 
                 (msg.body =~ /\b#{Regexp.escape(@mucs[msg.from.strip][:client].jid.resource)}\b/i or
                 msg.body =~ /\b#{Regexp.escape(@client.jid.node)}\b/i)
+
             receive_normal_message(msg) 
           end
         end
@@ -524,9 +523,9 @@ EOF
 
         def do_parse_ack(msg)
           return "Sorry -- I don't understand your acknowledge command." unless
-             msg.body =~ /ack(?:nowledge)?\s+([\d,]+)\s+for\s+(\d+)\s+(work(?:ing)|day(?:time)|wall(?:-?clock))?\s*hours?/i
+             msg.body =~ /ack(?:nowledge)?\s+([\d,]+)\s+for\s+(\d+)\s+(work(?:ing)|day(?:time)|wall(?:-?clock))?\s*hours?(?:\s(.*))?/i
           
-          alerts, n_hours, type_hours = [$1,$2, $3]
+          alerts, n_hours, type_hours, note = [$1,$2, $3, $4]
 
           alerts = alerts.split(",")
           n_hours = n_hours.to_i
@@ -603,7 +602,6 @@ EOF
         def check_jid_has_presence(jid, presence_or_presences = [:online, :unknown])
           jid = JID.new(jid) unless jid.is_a?(JID)
 
-
           return true if is_muc?(jid)
 
           reconnect unless @client
@@ -636,16 +634,52 @@ EOF
         #
         def get_username_for(jid)
           jid = JID.new(jid) unless jid.is_a?(JID)
-
+       
+          #
+          # Resolve MUC JIDs.
+          #
+          if is_muc?(jid)
+            muc_jid = get_jid_from_muc_jid(jid)
+            jid = muc_jid unless muc_jid.nil?
+          end
+ 
           ans = Configuration.current.people.find do |username, person|
             next unless person.xmpp.is_a?(JID)
             person.xmpp.strip == jid.strip
           end
+
           ans.nil? ? ans : ans.first
         end
 
+        #
+        # Tries to establish a real JID from a MUC JID.
+        #
+        def get_jid_from_muc_jid(jid)
+          #
+          # Resolve the JID for MUCs.
+          #
+          jid = JID.new(jid) unless jid.is_a?(JID)
+          return nil unless @mucs.has_key?(jid.strip)
+          return nil unless @mucs[jid.strip].has_key?(:client)
+          return nil unless @mucs[jid.strip][:client].active?
+
+          roster = @mucs[jid.strip][:client].roster[jid.resource]
+          return nil unless roster
+
+          x = roster.x('http://jabber.org/protocol/muc#user')
+          return nil unless x
+
+          items = x.items
+          return nil if items.nil? or items.empty?
+
+          jids = items.collect{|item| item.jid}
+          return nil if jids.empty?
+
+          jids.first
+        end
+
         def is_known_contact?(jid)
-           !get_username_for(jid).nil?
+          !get_username_for(jid).nil?
         end
         
       end
