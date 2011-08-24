@@ -449,7 +449,7 @@ module Mauve
             when /ack/i
               do_parse_ack(msg)
             else
-              "Sorry.  I don't understand.  Try asking me for help"
+              File.executable?('/usr/games/fortune') ? `/usr/games/fortune -s -n 60`.chomp : "Sorry.  I don't understand.  Try asking me for help."
           end          
         end
 
