@@ -13,6 +13,8 @@ module Mauve
     belongs_to :alert
     belongs_to :history
 
+    after :destroy, :remove_unreferenced_histories
+
     def self.migrate!
       #
       # This copies the alert IDs from the old History table to the new AlertHistories thing, but only if there are no AertHistories 
@@ -39,6 +41,12 @@ module Mauve
           repository(:default).adapter.execute(statement)
         end
       end
+    end
+
+    private
+
+    def remove_unreferenced_histories
+      self.history.destroy unless self.history.alerts.count > 0
     end
 
   end

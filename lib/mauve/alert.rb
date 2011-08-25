@@ -85,6 +85,7 @@ module Mauve
     before :save, :do_sanitize_html
     before :save, :take_copy_of_changes
     after  :save, :notify_if_needed
+    after  :destroy, :destroy_associations
 
     validates_with_method :check_dates
     
@@ -171,15 +172,15 @@ module Mauve
       html_permitted_in = [:detail]
 
       attributes.each do |key, val|
-        next if html_permitted_in.include?(key)
         next unless val.is_a?(String)
+        next if html_permitted_in.include?(key)
 
         attribute_set(key, Alert.remove_html(val))
       end
 
       html_permitted_in.each do |key|
-        val = attribute_get(key)
         next unless val.is_a?(String)
+        val = attribute_get(key)
         attribute_set(key, Alert.clean_html(val))
       end
     end
@@ -240,6 +241,10 @@ module Mauve
       true
     end
 
+    def destroy_associations
+      AlertHistory.all(:alert_id => self.id).destroy
+    end
+
     public
     
     def notify
@@ -254,6 +259,12 @@ module Mauve
       raise ArgumentError unless person.is_a?(Person)
       raise ArgumentError unless ack_until.is_a?(Time)
       raise ArgumentError, "Cannot acknowledge a cleared alert" if self.cleared?
+
+      #
+      # Limit acknowledgment time.
+      #
+      limit = Time.now + 15.days
+      ack_until = limit if ack_until > limit
  
       self.acknowledged_by = person.username
       self.acknowledged_at = Time.now
