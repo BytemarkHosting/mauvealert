@@ -72,15 +72,7 @@ module Mauve
 
           m.header.to = destination
           m.header.from = @from
-          m.header.date = ( case alert.update_type
-            when "cleared" 
-              alert.cleared_at
-            when "acknowledged"
-              alert.acknowledged_at
-            else
-              alert.raised_at
-            end )
-
+          m.header.date = Time.now
           m.header['Content-Type'] = "multipart/alternative"
 
           txt_template = File.join(File.dirname(__FILE__), "templates", "email.txt.erb")
