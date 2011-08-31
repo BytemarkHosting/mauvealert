@@ -1,3 +1,10 @@
+mauvealert (3.5.2) stable; urgency=low
+
+  * Added holiday checks
+  * Suppression now a bit less jumpy.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 31 Aug 2011 13:07:50 +0100
+
 mauvealert (3.5.1) stable; urgency=low
 
   * Fixed XMPP interface to allow ack's from groupchat.

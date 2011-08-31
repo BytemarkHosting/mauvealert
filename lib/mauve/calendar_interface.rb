@@ -15,132 +15,125 @@ module Mauve
   # @author yann Golanski.
   class CalendarInterface 
     
-    TIMEOUT = 7
+    class << self
 
-    public
-
-    # Gets a list of ssologin on support.
-    #
-    # Class method.
-    #
-    # @param [String] url A Calendar API url.
-    # @return [Array] A list of all the username on support.
-    def self.get_users_on_support(url)
-      result = get_URL(url)
-      logger = Log4r::Logger.new "Mauve::CalendarInterface"
-      logger.debug("Cheching who is on support: #{result}")
-      return result 
-    end
-
-    # Check to see if the user is on support.
-    #
-    # Class method.
-    #
-    # @param [String] url A Calendar API url.
-    # @param [String] usr User single sign on.
-    # @return [Boolean] True if on support, false otherwise.
-    def self.is_user_on_support?(url, usr)
-      logger = Log4r::Logger.new "Mauve::CalendarInterface"
-      list = get_URL(url)
-      if true == list.include?("nobody")
-        logger.error("Nobody is on support thus alerts are ignored.")
-        return false
+      def logger
+        @logger ||= Log4r::Logger.new(self.to_s)
       end
-      result = list.include?(usr)
-      logger.debug("Cheching if #{usr} is on support: #{result}")
-      return result
-    end
 
-    # Check to see if the user is on holiday.
-    #
-    # Class method.
-    #
-    # @param [String] url A Calendar API url.
-    # @param [String] usr User single sign on.
-    # @return [Boolean] True if on holiday, false otherwise.
-    def self.is_user_on_holiday?(url, usr)
-      list = get_URL(url)
-      return false if true == list.nil? or true == list.empty?
-      pattern = /[\d]{4}-[\d]{2}-[\d]{2}\s[\d]{2}:[\d]{2}:[\d]{2}/
-      result = (list[0].match(pattern))? true : false
-      logger = Log4r::Logger.new "Mauve::CalendarInterface"
-      logger.debug("Cheching if #{usr} is on holiday: #{result}")
-      return result
-    end
+      # Gets a list of ssologin on support.
+      #
+      # Class method.
+      #
+      # @param [String] url A Calendar API url.
+      # @return [Array] A list of all the username on support.
+      def get_users_on_support(url)
+        result = do_get(url)
 
-  
-    private
+        if result.is_a?(String)
+          result = result.split("\n")
+        else
+          result = []
+        end
 
-    # Gets a URL from the wide web.
-    #
-    # Must NOT crash Mauveserver.
-    #
-    # Class method.
-    #
-    # @TODO: boot this in its own class since list of ips will need it too.
-    #
-    # @param [String] url A Calendar API url.
-    # @retur [Array] An array of strings, each newline creates an new item.
-    def self.get_URL (uri_str, limit = 11)
-
-      logger = Log4r::Logger.new "Mauve::CalendarInterface"
-      
-      if 0 == limit
-        logger.warn("HTTP redirect deeper than 11 on #{uri_str}.")
-        return false
+        return result
       end
-      
-      begin
-        uri_str = 'http://' + uri_str unless uri_str.match(uri_str) 
-        url = URI.parse(uri_str)
-        http = Net::HTTP.new(url.host, url.port)
-        http.open_timeout = TIMEOUT
-        http.read_timeout = TIMEOUT
-        if (url.scheme == "https")
-          http.use_ssl = true
-          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        end
-        response = nil
-        if nil == url.query
-          response = http.start { http.get(url.path) }
+
+      # Check to see if the user is on support.
+      #
+      # Class method.
+      #
+      # @param [String] url A Calendar API url.
+      # @param [String] usr User single sign on.
+      # @return [Boolean] True if on support, false otherwise.
+      def is_user_on_support?(url, usr)
+        return get_users_on_support(url).include?(usr)
+      end
+
+      # Check to see if the user is on holiday.
+      #
+      # Class method.
+      #
+      # @param [String] url A Calendar API url.
+      # @param [String] usr User single sign on.
+      # @return [Boolean] True if on holiday, false otherwise.
+      def is_user_on_holiday?(url, usr)
+        result = do_get(url)
+
+        if result.is_a?(String) and result =~ /^\d{4}(-\d\d){2}[ T](\d\d:){2}\d\d/
+          return result
         else
-          response = http.start { http.get("#{url.path}?#{url.query}") }
+          return false
         end
-        case response
-        when Net::HTTPRedirection
-          then
-          newURL = response['location'].match(/^http/)?
-            response['Location']:
-            uri_str+response['Location']
-          self.getURL(newURL, limit-1)
-        else
-          return response.body.split("\n")
+      end
+
+    
+      private
+
+      # Grab a URL from the wide web.
+      #
+      # @TODO: boot this in its own class since list of ips will need it too.
+      #
+      # @param [String] uri -- a URL
+      # @return [String or nil] -- the contents of the URI or nil if an error has been encountered.
+      #
+      def do_get (uri, limit = 11)
+
+        if 0 == limit
+          logger.warn("HTTP redirect too deep for #{uri}.")
+          return nil
         end
-      rescue Errno::EHOSTUNREACH => ex
-        logger.warn("no route to host.")
-        return Array.new
-      rescue Timeout::Error => ex
-        logger.warn("time out reached.")
-        return Array.new
-      rescue ArgumentError => ex
-        unless uri_str.match(/\/$/)
-          logger.debug("Potential missing '/' at the end of hostname #{uri_str}")
-          uri_str += "/"
-          retry
-        else
-          str = "ArgumentError raise: #{ex.message} #{ex.backtrace.join("\n")}"
-          logger.fatal(str)
-          return Array.new
-          #raise ex
+        
+        begin
+          uri = URI.parse(uri) unless uri.is_a?(URI::HTTP)
+
+          raise ArgumentError, "#{uri_str.inspect} doesn't look like an HTTP uri" unless uri.is_a?(URI::HTTP)
+
+          http = Net::HTTP.new(uri.host, uri.port)
+
+          http.open_timeout = http.read_timeout = TIMEOUT
+ 
+          if (uri.scheme == "https")
+            http.use_ssl = true
+            http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+          end
+
+          response = http.start { http.get(uri.request_uri()) }
+
+          if response.is_a?(Net::HTTPOK)
+              return response.body
+
+          elsif response.is_a?(Net::HTTPRedirection) and response.has_key?('Location')
+            location = response['Location']
+            
+            #
+            # Bodge locations..
+            #
+            if location =~ /^\//
+              location = uri.class.build([uri.userinfo, uri.host, uri.port, nil, nil, nil]).to_s + location
+            end
+
+            return do_get(location, limit-1) 
+
+          else
+            logger.warn("Request to #{uri.to_s} returned #{response.code} #{response.message}.")
+            return nil
+
+          end
+
+        rescue Timeout::Error => ex
+          logger.error("Time out reached during fetch of #{uri.to_s}.")
+
+        rescue StandardError => ex
+          logger.error("Time out reached during fetch of #{uri.to_s}.")
+
         end
-      rescue => ex
-        str = "ArgumentError raise: #{ex.message} #{ex.backtrace.join("\n")}"
-        logger.fatal(str)
-        return Array.new
-        #raise ex
+
+        return nil
       end
 
     end
+
   end
 
 end

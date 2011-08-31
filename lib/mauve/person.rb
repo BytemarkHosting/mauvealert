@@ -118,14 +118,13 @@ module Mauve
       # We only suppress notifications if we were suppressed before we started,
       # and are still suppressed.
       #
-      if was_suppressed and self.suppressed?
+      if (was_suppressed and self.suppressed?) or self.is_on_holiday?
         note =  "#{alert.update_type.capitalize} notification to #{self.username} suppressed"
         logger.info note + " about #{alert}."
         History.create(:alerts => [alert], :type => "notification", :event => note)
         return true 
       end
 
-    
       # FIXME current_alerts is very slow.  So much so it slows everything
       # down.  A lot.  
       result = NotificationCaller.new(
@@ -168,12 +167,12 @@ module Mauve
       end
     end
     
-    protected
     # Whether the person is on holiday or not.
     #
     # @return [Boolean] True if person on holiday, false otherwise.
     def is_on_holiday? ()
-      return false if true == holiday_url.nil? or '' == holiday_url
+      return false if holiday_url.nil? or holiday_url.empty?
+
       return CalendarInterface.is_user_on_holiday?(holiday_url, username)
     end
 
