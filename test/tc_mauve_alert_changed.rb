@@ -64,7 +64,7 @@ EOF
         reminders     += 1
       end
 
-      AlertChanged.all.each{|ac| ac.poll}
+      AlertChanged.all.each{|ac| ac.poll; logger_pop}
     end
 
     # OK now clear the alert, send one notification and but not an alert_changed.

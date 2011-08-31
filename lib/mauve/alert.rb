@@ -172,15 +172,16 @@ module Mauve
       html_permitted_in = [:detail]
 
       attributes.each do |key, val|
-        next unless val.is_a?(String)
         next if html_permitted_in.include?(key)
+        next unless val.is_a?(String)
 
         attribute_set(key, Alert.remove_html(val))
       end
 
-      html_permitted_in.each do |key|
+      attributes.each do |key, val|
+        next unless html_permitted_in.include?(key)
         next unless val.is_a?(String)
-        val = attribute_get(key)
+
         attribute_set(key, Alert.clean_html(val))
       end
     end

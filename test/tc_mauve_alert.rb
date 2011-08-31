@@ -109,12 +109,16 @@ EOF
     )
 
     alert.raise!
+    logger_pop
+
     assert(alert.raised?)
 
     #
     # This acknowledges an alert for 3 mins.
     #
     alert.acknowledge!(person, Time.now + 3.minutes)
+    logger_pop
+
     assert_equal(person.username, alert.acknowledged_by)
     assert_equal(Time.now, alert.acknowledged_at)
     assert_equal(Time.now + 3.minutes, alert.will_unacknowledge_at)
@@ -132,6 +136,8 @@ EOF
     # The alert should unacknowledge itself.
     #
     alert.poll
+    logger_pop
+
     assert(!alert.acknowledged?)
   end
 

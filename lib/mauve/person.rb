@@ -8,10 +8,7 @@ module Mauve
     attr_reader :notification_thresholds, :last_pop3_login
   
     def initialize(*args)
-      #
-      # By default send 10 thresholds in a minute maximum
-      #
-      @notification_thresholds = { 60 => Array.new(10) }
+      @notification_thresholds = nil
       @suppressed = false
       #
       # TODO fix up web login so pop3 can be used as a proxy.
@@ -25,7 +22,14 @@ module Mauve
     def suppressed?
       @suppressed
     end
-    
+   
+    def notification_thresholds
+      #
+      # By default send 10 thresholds in a minute maximum
+      #
+      @notification_thresholds ||= { } 
+    end
+ 
     # This class implements an instance_eval context to execute the blocks
     # for running a notification block for each person.
     # 
@@ -86,6 +90,7 @@ module Mauve
     end 
 
     #
+    #
     # Sends the alert
     #
     def send_alert(level, alert)
@@ -93,20 +98,21 @@ module Mauve
 
       was_suppressed = self.suppressed?
 
-      @suppressed = @notification_thresholds.any? do |period, previous_alert_times|
+      @suppressed = self.notification_thresholds.any? do |period, previous_alert_times|
           #
           # Choose the second one as the first.
           #
           first = previous_alert_times[1]
-          first.is_a?(Time) and (now - first) < period
+          last  = previous_alert_times[-1]
+
+          first.is_a?(Time) and (
+           (now - first) < period or
+           (was_suppressed and (now - last) < period)
+          )
       end
 
-      if self.suppressed?
-        logger.info("Suspending further notifications to #{username} until further notice.") unless was_suppressed
         
-      else
-        logger.info "Starting to send notifications again for #{username}." if was_suppressed
-      end
+      logger.info "Starting to send notifications again for #{username}." if was_suppressed and not self.suppressed?
       
       #
       # We only suppress notifications if we were suppressed before we started,
@@ -135,12 +141,12 @@ module Mauve
         # 
         # Remember that we've sent an alert
         #
-        @notification_thresholds.each do |period, previous_alert_times|
+        self.notification_thresholds.each do |period, previous_alert_times|
           #
           # Hmm.. not sure how to make this thread-safe.
           #
-          @notification_thresholds[period].push Time.now
-          @notification_thresholds[period].shift
+          self.notification_thresholds[period].push Time.now
+          self.notification_thresholds[period].shift
         end
 
         return true

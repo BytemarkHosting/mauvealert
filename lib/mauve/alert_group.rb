@@ -133,8 +133,9 @@ module Mauve
       #
       sent_to = []
       notifications.each do |notification|
-        sent_to = notification.notify(alert, sent_to)
+        sent_to << notification.notify(alert, sent_to)
       end
+
     end
 
     #

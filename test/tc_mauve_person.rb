@@ -9,6 +9,8 @@ require 'pp'
 
 class TcMauvePerson < Mauve::UnitTest 
 
+  include Mauve
+
   def setup
     super
     setup_database
@@ -19,15 +21,83 @@ class TcMauvePerson < Mauve::UnitTest
     super
   end
 
-  def test_suppressed?
-
-  end
-
   def test_send_alert
+    #
+    # Allows us to pick up notifications sent.
+    #
+    $sent_notifications = []
 
-  end
+    config =<<EOF
+person ("test") {
+  all { $sent_notifications << Time.now ; true }
+  suppress_notifications_after( 6 => 60.seconds )
+}
 
-  def test_do_send_alert
+alert_group("default") {
+  level URGENT
+
+  notify("test") {
+    every 10.seconds
+  } 
+}
+EOF
+  
+    Configuration.current = ConfigurationBuilder.parse(config)
+    Server.instance.setup
+    person = Configuration.current.people["test"]
+
+    alert = Alert.new(
+      :alert_id  => "test",
+      :source    => "test",
+      :subject   => "test"
+    )
+    alert.raise!
+    assert_equal(false,    person.suppressed?, "Person suppressed before we even begin!")
+
+    start_time = Time.now
+
+    #
+    # 6 alerts every 60 seconds.
+    #
+    [ [0, true, false],
+      [5, true, false],
+      [10, true, false],
+      [15, true, false],
+      [20, true, false],
+      [25, true, true], # 6th alert -- suppress from now on
+      [30, false, true], 
+      [35, false, true],
+      [40, false, true],
+      [60, false, true], # One minute after starting -- should still be suppressed
+      [65, false, true],
+      [70, false, true],
+      [75, false, true],
+      [80, false, true],
+      [85, true, false], # One minute after the last alert was sent, start sending again.
+      [90, true, false]
+    ].each do |offset, notification_sent, suppressed|
+      # 
+      # Advance in to the future!
+      #
+      Timecop.freeze(start_time + offset)
+
+      person.send_alert(alert.level, alert)
+
+      assert_equal(suppressed,    person.suppressed?)
+
+      if notification_sent 
+        assert_equal(1, $sent_notifications.length, "Notification not sent when it should have been.")
+        #
+        # Pop the notification off the buffer.
+        #
+        last_notification_sent_at = $sent_notifications.pop
+        assert_equal(Time.now, person.notification_thresholds[60][-1], "Notification thresholds not updated")
+      else
+        assert_equal(0, $sent_notifications.length, "Notification sent when it should not have been.")
+      end
+
+      logger_pop
+    end
 
   end
 

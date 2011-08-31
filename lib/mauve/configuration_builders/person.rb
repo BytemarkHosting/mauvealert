@@ -41,6 +41,7 @@ module Mauve
       def suppress_notifications_after(h)
         raise ArgumentError.new("notification_threshold must be specified as e.g. (10 => 1.minute)") unless
           h.kind_of?(Hash) && h.keys[0].kind_of?(Integer) && h.values[0].kind_of?(Integer)
+
         @result.notification_thresholds[h.values[0]] = Array.new(h.keys[0])
       end
     end
@@ -53,6 +54,10 @@ module Mauve
     def created_person(person)
       name = person.username
       raise BuildException.new("Duplicate person '#{name}'") if @result.people[name]
+      #
+      # Add a default notification threshold
+      #
+      person.notification_thresholds[60] = Array.new(10) if person.notification_thresholds.empty?
       @result.people[person.username] = person
     end
 

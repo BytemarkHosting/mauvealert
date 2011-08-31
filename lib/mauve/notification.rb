@@ -99,6 +99,7 @@ module Mauve
     ## Return true if the alert has not been acknowledged within a certain time.
     # 
     def unacknowledged(seconds)
+      @test_time = @time if @test_time.nil?
       @alert &&
         @alert.raised? &&
         !@alert.acknowledged? &&
