@@ -173,7 +173,7 @@ module Mauve
     def is_on_holiday? ()
       return false if holiday_url.nil? or holiday_url.empty?
 
-      return CalendarInterface.is_user_on_holiday?(holiday_url, username)
+      return CalendarInterface.is_user_on_holiday?(holiday_url)
     end
 
   end

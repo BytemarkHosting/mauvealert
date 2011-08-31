@@ -28,7 +28,7 @@ module Mauve
       # @param [String] url A Calendar API url.
       # @return [Array] A list of all the username on support.
       def get_users_on_support(url)
-        result = do_get(url)
+        result = do_get_with_cache(url)
 
         if result.is_a?(String)
           result = result.split("\n")
@@ -57,11 +57,11 @@ module Mauve
       # @param [String] url A Calendar API url.
       # @param [String] usr User single sign on.
       # @return [Boolean] True if on holiday, false otherwise.
-      def is_user_on_holiday?(url, usr)
-        result = do_get(url)
+      def is_user_on_holiday?(url)
+        result = do_get_with_cache(url)
 
         if result.is_a?(String) and result =~ /^\d{4}(-\d\d){2}[ T](\d\d:){2}\d\d/
-          return result
+          return true
         else
           return false
         end
@@ -91,7 +91,10 @@ module Mauve
 
           http = Net::HTTP.new(uri.host, uri.port)
 
-          http.open_timeout = http.read_timeout = TIMEOUT
+          #
+          # Five second timeouts.
+          #
+          http.open_timeout = http.read_timeout = 5
  
           if (uri.scheme == "https")
             http.use_ssl = true
@@ -101,9 +104,9 @@ module Mauve
           response = http.start { http.get(uri.request_uri()) }
 
           if response.is_a?(Net::HTTPOK)
-              return response.body
+            return response.body
 
-          elsif response.is_a?(Net::HTTPRedirection) and response.has_key?('Location')
+          elsif response.is_a?(Net::HTTPRedirection) and response.key?('Location')
             location = response['Location']
             
             #
@@ -130,6 +133,21 @@ module Mauve
         end
 
         return nil
+      end
+
+      def do_get_with_cache(url, cache_until = Time.now + 5.minutes)
+        @cache ||= {}
+
+        if @cache.has_key?(url.to_s)
+          result, cache_until = @cache[url.to_s]
+
+          return result if cache_until >= Time.now and not result.nil?
+        end
+
+        result = do_get(url)
+        @cache[url] = [result, cache_until] unless result.nil?
+
+        return result
       end
 
     end
