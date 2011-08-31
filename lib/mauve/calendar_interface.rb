@@ -125,10 +125,11 @@ module Mauve
           end
 
         rescue Timeout::Error => ex
-          logger.error("Time out reached during fetch of #{uri.to_s}.")
+          logger.error("Timeout caught during fetch of #{uri.to_s}.")
 
         rescue StandardError => ex
-          logger.error("Time out reached during fetch of #{uri.to_s}.")
+          logger.error("#{ex.class} caught during fetch of #{uri.to_s}: #{ex.to_s}.")
+          logger.debug(ex.backtrace.join("\n"))
 
         end
 
