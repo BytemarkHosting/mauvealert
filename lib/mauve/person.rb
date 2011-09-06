@@ -5,7 +5,7 @@ require 'log4r'
 module Mauve
   class Person < Struct.new(:username, :password, :holiday_url, :urgent, :normal, :low, :email, :xmpp, :sms)
   
-    attr_reader :notification_thresholds, :last_pop3_login
+    attr_reader :notification_thresholds, :last_pop3_login, :suppressed
   
     def initialize(*args)
       @notification_thresholds = nil
@@ -18,9 +18,22 @@ module Mauve
     end
    
     def logger ; @logger ||= Log4r::Logger.new self.class.to_s ; end
+
+    def suppressed? ; @suppressed ; end
  
-    def suppressed?
-      @suppressed
+    def should_suppress?
+      now = Time.now
+
+      return self.notification_thresholds.any? do |period, previous_alert_times|
+        #
+        # Choose the second one as the first, apart from if the array is only one in length.
+        #
+        first = previous_alert_times.first
+        last  = previous_alert_times.last
+   
+        (first.is_a?(Time) and (now - first) < period) or
+          (last.is_a?(Time) and @suppressed and (now - last) < period) 
+      end
     end
    
     def notification_thresholds
@@ -96,22 +109,9 @@ module Mauve
     def send_alert(level, alert)
       now = Time.now
 
-      was_suppressed = self.suppressed?
+      was_suppressed = @suppressed
+      @suppressed    = self.should_suppress?
 
-      @suppressed = self.notification_thresholds.any? do |period, previous_alert_times|
-          #
-          # Choose the second one as the first.
-          #
-          first = previous_alert_times[1]
-          last  = previous_alert_times[-1]
-
-          first.is_a?(Time) and (
-           (now - first) < period or
-           (was_suppressed and (now - last) < period)
-          )
-      end
-
-        
       logger.info "Starting to send notifications again for #{username}." if was_suppressed and not self.suppressed?
       
       #
@@ -148,12 +148,17 @@ module Mauve
           self.notification_thresholds[period].shift
         end
 
+        #
+        # Re-run the suppression check, to see if we should be suppressed now.
+        #
+        @suppressed    = self.should_suppress?
+
         return true
       end
 
       return false
     end
-    
+   
     # 
     # Returns the subset of current alerts that are relevant to this Person.
     #

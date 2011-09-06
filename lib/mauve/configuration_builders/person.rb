@@ -39,10 +39,13 @@ module Mauve
       end
    
       def suppress_notifications_after(h)
-        raise ArgumentError.new("notification_threshold must be specified as e.g. (10 => 1.minute)") unless
-          h.kind_of?(Hash) && h.keys[0].kind_of?(Integer) && h.values[0].kind_of?(Integer)
+        raise ArgumentError.new("notification_threshold must be specified as e.g. (10 => 1.minute)") unless h.kind_of?(Hash)
 
-        @result.notification_thresholds[h.values[0]] = Array.new(h.keys[0])
+        h.each do |k,v|
+          raise ArgumentError.new("notification_threshold must be specified as e.g. (10 => 1.minute)") unless k.is_a?(Integer) and v.is_a?(Integer)
+
+          @result.notification_thresholds[v] = Array.new(k)
+        end
       end
     end
   end
