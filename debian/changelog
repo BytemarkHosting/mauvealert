@@ -1,4 +1,4 @@
-mauvealert (3.5.4) lucid; urgency=low
+mauvealert (3.5.4) stable; urgency=low
 
   * Fixed up alert suppression to work better
   * Also allow multiple suppression clauses in config
