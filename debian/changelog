@@ -1,3 +1,11 @@
+mauvealert (3.5.4) lucid; urgency=low
+
+  * Fixed up alert suppression to work better
+  * Also allow multiple suppression clauses in config
+  * Test for dual alerts when an alert unacknowledges.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 06 Sep 2011 11:06:09 +0100
+
 mauvealert (3.5.3) stable; urgency=low
 
   * Fixed do_get timeout
