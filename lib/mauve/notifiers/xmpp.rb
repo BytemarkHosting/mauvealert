@@ -563,7 +563,7 @@ EOF
 
           begin
             ack_until = Time.now.in_x_hours(n_hours, type_hours)
-          rescue => RangeError
+          rescue RangeError 
             return "I'm sorry, you tried to acknowedge for far too long, and my buffers overflowed!"
           end
 

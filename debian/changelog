@@ -1,4 +1,4 @@
-mauvealert (3.5.6) lucid; urgency=low
+mauvealert (3.5.6) stable; urgency=low
 
   * XMPP interface now saves note.
 
