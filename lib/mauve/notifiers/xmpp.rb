@@ -561,7 +561,12 @@ EOF
               "wallclock"
           end
 
-          ack_until = Time.now.in_x_hours(n_hours, type_hours)
+          begin
+            ack_until = Time.now.in_x_hours(n_hours, type_hours)
+          rescue => RangeError
+            return "I'm sorry, you tried to acknowedge for far too long, and my buffers overflowed!"
+          end
+
           username = get_username_for(msg.from)
 
           if is_muc?(Configuration.current.people[username].xmpp)
@@ -569,7 +574,9 @@ EOF
           end
 
           msg = []
-          msg << "Acknowledgment results:" if alerts.length > 1
+          msg << "Acknowledgement results:" if alerts.length > 1
+
+          succeeded = []
 
           alerts.each do |alert_id|
             alert = Alert.get(alert_id)
@@ -585,10 +592,20 @@ EOF
             end
 
             if alert.acknowledge!(Configuration.current.people[username], ack_until)
-              msg << "#{alert_id}: Acknowledged until #{ack_until.to_s_human}"
+              msg << "#{alert_id}: Acknowledged until #{alert.will_unacknowledge_at}"
+              succeeded << alert
             else
-              msg << "#{alert_id}: Acknowledgment failed."
+              msg << "#{alert_id}: Acknowledgement failed."
             end
+          end
+  
+          #
+          # Add the note.
+          #
+          unless note.to_s.empty?
+            note = Alert.remove_html(note)
+            h = History.new(:alerts => succeeded, :type => "note", :event => username+" noted "+note.to_s)
+            logger.debug h.errors unless h.save
           end
 
           return msg.join("\n")
