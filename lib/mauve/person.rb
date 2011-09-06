@@ -21,15 +21,21 @@ module Mauve
 
     def suppressed? ; @suppressed ; end
  
-    def should_suppress?
-      now = Time.now
+    #
+    # This 
+    #
+    def should_suppress?(with_notification_at = nil, now = Time.now)
 
       return self.notification_thresholds.any? do |period, previous_alert_times|
         #
-        # Choose the second one as the first, apart from if the array is only one in length.
-        #
-        first = previous_alert_times.first
-        last  = previous_alert_times.last
+        # This is going to work out if we would be suppressed if 
+        if with_notification_at.nil?
+         first = previous_alert_times.first
+         last  = previous_alert_times.last
+        else
+         first = previous_alert_times[1]
+         last  = with_notification_at
+        end
    
         (first.is_a?(Time) and (now - first) < period) or
           (last.is_a?(Time) and @suppressed and (now - last) < period) 
@@ -111,14 +117,15 @@ module Mauve
 
       was_suppressed = @suppressed
       @suppressed    = self.should_suppress?
+      will_suppress  = self.should_suppress?(now)
 
-      logger.info "Starting to send notifications again for #{username}." if was_suppressed and not self.suppressed?
+      logger.info "Starting to send notifications again for #{username}." if was_suppressed and not @suppressed
       
       #
       # We only suppress notifications if we were suppressed before we started,
       # and are still suppressed.
       #
-      if (was_suppressed and self.suppressed?) or self.is_on_holiday?
+      if @suppressed or self.is_on_holiday?
         note =  "#{alert.update_type.capitalize} notification to #{self.username} suppressed"
         logger.info note + " about #{alert}."
         History.create(:alerts => [alert], :type => "notification", :event => note)
@@ -132,7 +139,7 @@ module Mauve
         alert,
         [],
         # current_alerts,
-        {:is_suppressed  => @suppressed,
+        {:will_suppress  => will_suppress,
          :was_suppressed => was_suppressed, }
       ).instance_eval(&__send__(level))
 
@@ -144,14 +151,10 @@ module Mauve
           #
           # Hmm.. not sure how to make this thread-safe.
           #
-          self.notification_thresholds[period].push Time.now
+          self.notification_thresholds[period].push now
           self.notification_thresholds[period].shift
         end
 
-        #
-        # Re-run the suppression check, to see if we should be suppressed now.
-        #
-        @suppressed    = self.should_suppress?
 
         return true
       end

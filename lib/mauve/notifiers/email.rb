@@ -52,7 +52,7 @@ module Mauve
         
         def prepare_message(destination, alert, all_alerts, conditions = {})
           was_suppressed = conditions[:was_suppressed] || false
-          is_suppressed  = conditions[:is_suppressed]  || false
+          will_suppress  = conditions[:will_suppress]  || false
           
           m = RMail::Message.new
          

@@ -1,5 +1,5 @@
   <html xmlns="http://jabber.org/protocol/xhtml-im"><body xmlns="OAhttp://www.w3.org/1999/xhtml">
-<a href="<%=WebInterface.url_for(alert)%>"><%= alert.update_type.upcase %></a>: <% 
+<a href="<%=WebInterface.url_for(alert)%>"><%= alert.id%>: <%= alert.update_type.upcase %></a>: <% 
 case alert.update_type
 when "cleared"
 %><%= alert.cleared_at.to_s_relative %><% 
@@ -8,14 +8,16 @@ when "acknowledged"
 else
 %><%= alert.raised_at.to_s_relative %><% 
 end 
-%>: <%= alert.subject %>: <%= alert.summary %><%
+%>: <strong><%= alert.subject %>:</strong> <%= alert.summary %><%
 if alert.source != alert.subject 
 %> -- from <%= alert.source %><%
 end 
 %>.<%
-if was_suppressed and not is_suppressed 
-%><em> Normal service has resumed.</em><%
-elsif is_suppressed and not was_suppressed
-%><em> Further alerts suppressed until things calm down.</em><%
-end 
+if defined? was_suppressed and defined? will_suppress
+  if was_suppressed and not will_suppress 
+%><br /><em>Normal service has resumed.</em><%
+  elsif will_suppress and not was_suppressed
+%><br /><em>Further alerts suppressed until things calm down.</em><%
+  end
+end
 %></body></html>

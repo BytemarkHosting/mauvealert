@@ -196,7 +196,7 @@ module Mauve
           destination_jid = JID.new(destination)         
  
           was_suppressed = conditions[:was_suppressed] || false
-          is_suppressed  = conditions[:is_suppressed]  || false
+          will_suppress  = conditions[:will_suppress]  || false
           
           if conditions && !check_alert_conditions(destination_jid, conditions) 
             logger.info("Alert conditions not met, not sending XMPP alert to #{destination_jid}")
@@ -442,15 +442,14 @@ module Mauve
 
         def parse_command(msg)
           case msg.body
+            when /help(\s+\w+)?/i
+              do_parse_help(msg)
             when /show\s?/i
               do_parse_show(msg)
             when /ack/i
               do_parse_ack(msg)
-            when /(\w+\W+){5,}\w/
-              do_parse_help(msg)
-              File.executable?('/usr/games/fortune') ? `/usr/games/fortune -s -n 60`.chomp : "I'd love to stay and chat, but I'm really quite busy"
             else
-              do_parse_help(msg)
+              File.executable?('/usr/games/fortune') ? `/usr/games/fortune -s -n 60`.chomp : "I'd love to stay and chat, but I'm really quite busy"
           end          
         end
 
@@ -462,18 +461,30 @@ module Mauve
             when /^show/
                <<EOF
 Show command: Lists all raised or acknowledged alerts, or the first or last few.
+
 e.g.
   show  -- shows all raised alerts
   show ack -- shows all acknowledged alerts
   show first 10 acknowledged -- shows first 10 acknowledged
-  show last 5 raised -- shows last 5 raised alerts 
+  show last 5 raised -- shows last 5 raised alerts
 EOF
             when /^ack/
               <<EOF
-Acknowledge command: Acknowledges one or more alerts for a set period of time.  This can only be done from a "private" chat.
+Acknowledge command: Acknowledges one or more alerts for a set period of time.
+
+The syntax is
+
+  acknowledge <alert list> for <time period> because <note>
+
+ * The alert list is a comma separated list.
+ * The time period can be spefied in terms of days, hours, minutes, seconds,
+    which can be wall-clock (default), working, or daytime (see the examples).
+ * The note is appended to the acknowledgement.
+
 e.g.
-  ack 1 for 2 hours -- acknowledges alert no. 1 for 2 wall-clock hours
+  acknowledge 1 for 2 hours -- acknowledges alert no. 1 for 2 wall-clock hours
   ack 1,2,3 for 2 working hours -- acknowledges alerts 1, 2, and 3 for 2 working hours
+  ack 4 for 3 days because something bad happened -- acknowledge alert 4 for 3 wall-clock days with the note "something bad happened"
 EOF
             else
               "I am Mauve #{Mauve::VERSION}.  I understand \"help\", \"show\" and \"acknowledge\" commands.  Try \"help show\"."
@@ -518,28 +529,38 @@ EOF
           end 
 
           (["Alerts #{type}:"] + items.collect do |alert| 
-            "#{alert.id}: " + ERB.new(template).result(binding).chomp
+            ERB.new(template).result(binding).chomp
           end).join("\n")
         end
 
         def do_parse_ack(msg)
           return "Sorry -- I don't understand your acknowledge command." unless
-             msg.body =~ /ack(?:nowledge)?\s+([\d,]+)\s+for\s+(\d+)\s+(work(?:ing)|day(?:time)|wall(?:-?clock))?\s*hours?(?:\s(.*))?/i
+             msg.body =~ /ack(?:nowledge)?\s+([\d,]+)\s+for\s+(\d+(?:\.\d+)?)\s+(work(?:ing)?|day(?:time)?|wall(?:-?clock)?)?\s*(day|hour|min(?:ute)?|sec(?:ond))s?(?:\s+because\s+(.*))?/i
           
-          alerts, n_hours, type_hours, note = [$1,$2, $3, $4]
+          alerts, n_hours, type_hours, dhms, note = [$1,$2, $3, $4, $5]
 
           alerts = alerts.split(",")
-          n_hours = n_hours.to_i
+
+          n_hours = case dhms
+            when /^day/
+              n_hours.to_f * 24.0
+            when /^min/
+              n_hours.to_f / 60.0
+            when /^sec/
+              n_hours.to_f / 3600.0
+            else
+              n_hours.to_f
+          end
 
           type_hours = case type_hours
-            when /^wall/
-              "wallclock"
+            when /^day/
+              "daytime"
             when /^work/
               "working"
             else
-              "daytime"
+              "wallclock"
           end
-          
+
           ack_until = Time.now.in_x_hours(n_hours, type_hours)
           username = get_username_for(msg.from)
 

@@ -19,9 +19,9 @@ end
 
 -----------------------------------------------------------------------
 
-<% if was_suppressed and not is_suppressed 
+<% if was_suppressed and not will_suppress 
 %>Better now.  Your notifications have now restarted.<% 
-elsif is_suppressed and not was_suppressed 
+elsif will_suppress and not was_suppressed 
 %>Too noisy!  Your notifications have been suppressed.<% end %>
 
 --

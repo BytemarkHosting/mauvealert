@@ -59,31 +59,29 @@ EOF
     #
     # 6 alerts every 60 seconds.
     #
-    [ [0, true, false],
-      [5, true, false],
-      [10, true, false],
-      [15, true, false],
-      [20, true, false],
-      [25, true, true], # 6th alert -- suppress from now on
-      [30, false, true], 
-      [35, false, true],
-      [40, false, true],
-      [60, false, true], # One minute after starting -- should still be suppressed
-      [65, false, true],
-      [70, false, true],
-      [75, false, true],
-      [80, false, true],
-      [85, true, false], # One minute after the last alert was sent, start sending again.
-      [90, true, false]
-    ].each do |offset, notification_sent, suppressed|
+    [ [0, true],
+      [5, true],
+      [10, true],
+      [15, true],
+      [20, true],
+      [25, true], # 6th alert -- suppress from now on
+      [30, false], 
+      [35, false],
+      [40, false],
+      [60, false], # One minute after starting -- should still be suppressed
+      [65, false],
+      [70, false],
+      [75, false],
+      [80, false],
+      [85, true], # One minute after the last alert was sent, start sending again.
+      [90, true]
+    ].each do |offset, notification_sent|
       # 
       # Advance in to the future!
       #
       Timecop.freeze(start_time + offset)
 
       person.send_alert(alert.level, alert)
-
-      assert_equal(suppressed,    person.suppressed?, "Suppressed (or not) when it should (or shouldn't) be at #{Time.now}.")
 
       if notification_sent 
         assert_equal(1, $sent_notifications.length, "Notification not sent when it should have been at #{Time.now}.")
@@ -145,22 +143,20 @@ EOF
     #
     # 1 alerts every 60 seconds.
     #
-    [ [0, true,   true],
-      [5, false,  true],
-      [15, false, true],
-      [30, false, true],
-      [60, true,  true], # One minute after starting -- should send an alert, but still be suppressed.
-      [90, false, true],
-      [120, true, true] # Two minutes after starting -- should send an alert, but still be suppressed.
-    ].each do |offset, notification_sent, suppressed|
+    [ [0, true ],
+      [5, false],
+      [15, false],
+      [30, false],
+      [60, true ], # One minute after starting -- should send an alert.
+      [90, false],
+      [120, true] # Two minutes after starting -- should send an alert.
+    ].each do |offset, notification_sent|
       # 
       # Advance in to the future!
       #
       Timecop.freeze(start_time + offset)
 
       person.send_alert(alert.level, alert)
-
-      assert_equal(suppressed,    person.should_suppress?, "Suppressed (or not) when it should (or shouldn't) be at #{Time.now}.")
 
       if notification_sent 
         assert_equal(1, $sent_notifications.length, "Notification not sent when it should have been at #{Time.now}.")

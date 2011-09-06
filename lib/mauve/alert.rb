@@ -24,7 +24,7 @@ module Mauve
     # http://www.mail-archive.com/datamapper@googlegroups.com/msg02314.html
     #
     def self.create_view!
-      the_distant_future = Time.now + 10000.days # it is the year 2000 - the humans are dead
+      the_distant_future = Time.now + 2000.days # it is the year 2000 - the humans are dead
       ["BEGIN TRANSACTION",
        "DROP VIEW IF EXISTS mauve_alert_earliest_dates",
        "CREATE VIEW 
