@@ -1,5 +1,5 @@
 module Mauve
 
-  VERSION="3.5.6"
+  VERSION="3.5.7"
 
 end

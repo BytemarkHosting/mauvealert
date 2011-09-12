@@ -1,3 +1,9 @@
+mauvealert (3.5.7) stable; urgency=low
+
+  * Reminders are now unconditionally cleared when an alert is cleared.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 12 Sep 2011 11:18:09 +0100
+
 mauvealert (3.5.6) stable; urgency=low
 
   * XMPP interface now saves note.
