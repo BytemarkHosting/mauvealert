@@ -127,6 +127,64 @@ EOF
    
   end
 
+  def test_only_set_one_alert_changed_on_a_reminder_after_multiple_raises_and_clears
+    config=<<EOF
+person("office_chat") {
+  all { true }
+}
+
+alert_group("test_group") {
+
+  level NORMAL
+
+  notify("office_chat") {
+    every 1.hour
+    during { working_hours?  }
+  }
+
+}
+EOF
+
+
+    Configuration.current = ConfigurationBuilder.parse(config)
+
+    Server.instance.setup
+
+    alert = Alert.new(:source => "test", :alert_id => "test_alert", :summary => "test alert")
+
+    #
+    # Raise and clear the alert multiple times.
+    #
+    5.times do    
+      alert.raise!
+      Timecop.freeze(Time.now + 15.minutes)
+      alert.clear!
+      Timecop.freeze(Time.now + 15.minutes)
+    end
+
+    #
+    # No notification should have been sent, since it is the middle of the night
+    #
+    assert_equal(0,Server.instance.notification_buffer.length, "No notifications should have been sent.")
+    assert(alert.cleared?)
+
+    #
+    # Raise one final time.
+    #
+    alert.raise!
+    #
+    # Still no alerts should be sent.
+    #
+    assert_equal(0,Server.instance.notification_buffer.length, "No notifications should have been sent.")
+    assert(alert.raised?)
+
+    #
+    # Only one AlertChanged should be set now, with a reminder time of 8.30.
+    #
+    assert_equal(1, AlertChanged.all(:remind_at.not => nil).length, "Too many reminders are due to be sent.")
+
+  end
+
 end
 
 

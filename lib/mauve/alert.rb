@@ -356,11 +356,25 @@ module Mauve
         self.update_type = "cleared"
       end
 
-      unless save
+      if save
+        #
+        # Clear all reminders.
+        #
+        self.changes.all(:remind_at.not => nil, :at.lte => at, :update_type => "raised").each do |ac|
+          ac.remind_at = nil
+          ac.save
+        end
+
+        #
+        # Return true.
+        #
+        true
+      else
+        #
+        # Oops.
+        #
         logger.error("Couldn't save #{self}") 
         false
-      else
-        true
       end
     end
       
