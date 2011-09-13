@@ -149,6 +149,10 @@ module Mauve
               end
             end
           end
+        rescue StandardError => ex
+          logger.error "Connect failed #{ex.to_s}"
+          logger.debug ex.backtrace.join("\n")
+          @client = nil
         end  
 
         #
