@@ -1,3 +1,9 @@
+mauvealert (3.5.8) stable; urgency=low
+
+  *  Added rescue clause to XMPP connect
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 13 Sep 2011 07:56:38 +0100
+
 mauvealert (3.5.7) stable; urgency=low
 
   * Reminders are now unconditionally cleared when an alert is cleared.

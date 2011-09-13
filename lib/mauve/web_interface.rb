@@ -507,7 +507,31 @@ EOF
 
       haml :events_list
     end
+
+    get '/search' do
+      @alerts = []
+      haml :search
+    end
  
+    get '/search/results' do
+      query = {}
+      allowed = %w(source subject alert_id summary)
+
+      params.each do |k,v|
+        next if v.to_s.empty?
+        query[k.to_sym.send("like")] = v.to_s if allowed.include?(k)
+      end
+
+      @alerts = Alert.all(query)
+
+      haml :search
+    end
+
+    post '/suppress' do
+      haml :suppress
+    end
+
+
     ########################################################################
     
     helpers do

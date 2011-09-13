@@ -223,7 +223,8 @@ module Mauve
         h = History.new(:alerts => [self], :type => "update")
 
         if self.update_type == "acknowledged"
-          h.event = "ACKNOWLEDGED by #{self.acknowledged_by} until #{self.will_unacknowledge_at}"
+          h.event = "ACKNOWLEDGEDuntil #{self.will_unacknowledge_at}"
+          h.user  = self.acknowledged_by
 
         elsif is_a_change
           h.event = "CHANGED: "

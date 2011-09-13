@@ -24,8 +24,8 @@ module Mauve
         # 
         # This is horrid. FIXME!
         #
-        history_schema = '"id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "type" VARCHAR(50) DEFAULT \'unknown\' NOT NULL, "event" TEXT DEFAULT \'Nothing set\' NOT NULL, "created_at" TIMESTAMP NOT NULL'
-        history_cols   = 'id, type, event, created_at'
+        history_schema = '"id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "type" VARCHAR(50) DEFAULT \'unknown\' NOT NULL, "event" TEXT DEFAULT \'Nothing set\' NOT NULL, "user" VARCHAR(50) DEFAULT NULL, "created_at" TIMESTAMP NOT NULL'
+        history_cols   = 'id, type, event, user, created_at'
         ##
         # Now adjust the Histories table to remove its alert_id col
         #
@@ -63,6 +63,7 @@ module Mauve
     property :id, Serial
     property :type,  String, :required => true, :default => "unknown", :lazy => false
     property :event, Text, :required => true, :default => "Nothing set", :lazy => false
+    property :user, String
     property :created_at, Time, :required => true
 
     has n, :alerts, :through => :alerthistory
