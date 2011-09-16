@@ -1,3 +1,12 @@
+mauvealert (3.5.9) stable; urgency=low
+
+  * Improve documentation in code
+  * Fix XMPP crash problem properly
+  * Fix XMPP acknowledge syntax for minutes, seconds, etc.
+  * Update template to remove colon between the subject and summary.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 16 Sep 2011 13:20:51 +0100
+
 mauvealert (3.5.8) stable; urgency=low
 
   *  Added rescue clause to XMPP connect
