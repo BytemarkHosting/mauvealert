@@ -152,6 +152,7 @@ module Mauve
         rescue StandardError => ex
           logger.error "Connect failed #{ex.to_s}"
           logger.debug ex.backtrace.join("\n")
+          self.close
           @client = nil
         end  
 
@@ -173,6 +174,7 @@ module Mauve
             end
             @client.close!
           end
+          @client = nil
         end
 
         def ready?
@@ -232,6 +234,8 @@ module Mauve
 
         # Sends a message to the destionation.
         def send_message(jid, msg, html_msg=nil, msg_type=:chat)
+          return false unless self.ready?
+
           jid = JID.new(jid) unless jid.is_a?(JID)
 
           message = Message.new(jid)
@@ -277,7 +281,11 @@ module Mauve
         #
         # Joins a chat, and returns the stripped JID of the chat joined.
         #
-        def join_muc(jid, password=nil) 
+        def join_muc(jid, password=nil)
+          self.connect unless self.ready?
+
+          return unless self.ready?
+ 
           if jid.is_a?(String) and jid =~ /^muc:(.*)/
             jid = JID.new($1) 
           end
@@ -328,7 +336,7 @@ module Mauve
         #
         def is_muc?(jid)
           (jid.is_a?(JID)    and @mucs.keys.include?(jid.strip)) or
-          (jid.is_a?(String) and jid =~ /^muc:(.*)/)
+          (jid.to_s =~ /^muc:(.*)/)
 
           #
           # It would be nice to use service discovery to determin this, but it
@@ -354,6 +362,10 @@ module Mauve
         # is necessary to ensure both are true.
         #
         def ensure_roster_and_subscription!(jid)
+          self.connect unless self.ready?
+
+          return unless self.ready?
+
           return jid if is_muc?(jid)
 
           jid = JID.new(jid) unless jid.is_a?(JID)
@@ -643,11 +655,13 @@ EOF
         # is met, false otherwise. Note that if the alerter can't see the alertee's
         # presence, only 'unknown' will match - generally, you'll want [:online, :unknown]
         def check_jid_has_presence(jid, presence_or_presences = [:online, :unknown])
-          jid = JID.new(jid) unless jid.is_a?(JID)
-
           return true if is_muc?(jid)
 
-          reconnect unless @client
+          jid = JID.new(jid) unless jid.is_a?(JID)
+
+          self.connect unless self.ready?
+
+          return false unless self.ready?
 
           presences = [presence_or_presences].flatten
           roster_item = @roster.find(jid)
