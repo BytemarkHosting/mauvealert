@@ -3,6 +3,11 @@ require 'mauve/alert'
 require 'log4r'
 
 module Mauve
+  #
+  # This corresponds to a alert_group clause in the configuration.  It is what
+  # is used to classify alerts into levels, and thus who gets notified about it
+  # and when.
+  #
   class AlertGroup < Struct.new(:name, :includes, :acknowledgement_time, :level, :notifications)
 
     # 
@@ -15,6 +20,11 @@ module Mauve
     
     class << self
 
+      # Finds all AlertGroups that match an alert.
+      #
+      # @param [Mauve::Alert] alert
+      #
+      # @return [Array] AlertGroups that match
       def matches(alert)
         grps = all.select { |alert_group| alert_group.includes?(alert) }
 
@@ -26,10 +36,14 @@ module Mauve
         grps
       end
 
+      # @return [Log4r::Logger]
       def logger
         Log4r::Logger.new self.to_s
       end
 
+      # All AlertGroups
+      #
+      # @return [Array]
       def all
         return [] if Configuration.current.nil?
 
@@ -44,6 +58,7 @@ module Mauve
       # the first one should be returned thus making this useless. If you want
       # a list of all the alerts matching a level, use Alert.get_all().
       # 
+      # @return [Array]
       def all_alerts_by_level(level)
         Configuration.current.alert_groups.map do |alert_group|
           alert_group.level == level ? alert_group.current_alerts : []
@@ -52,18 +67,26 @@ module Mauve
 
     end
     
+    # Creates a new AlertGroup
+    #
+    # @param name Name of alert group
+    #
+    # @return [AlertGroup] self
     def initialize(name)
       self.name = name
       self.level = :normal
       self.includes = Proc.new { true }
+      self
     end
     
-    def inspect
+    # @return [String]
+    def to_s
       "#<AlertGroup:#{name} (level #{level})>"
     end
   
     # The list of current raised alerts in this group.
     #
+    # @return [Array] Array of Mauve::Alert
     def current_alerts
       Alert.all(:cleared_at => nil, :raised_at.not => nil).select { |a| includes?(a) }
     end
@@ -71,7 +94,8 @@ module Mauve
     # Decides whether a given alert belongs in this group according to its
     # includes { } clause
     #
-    # @param [Alert] alert An alert to test for belongness to group.
+    # @param [Mauve::Alert] alert
+    #
     # @return [Boolean] Success or failure.
     def includes?(alert)
 
@@ -86,18 +110,22 @@ module Mauve
 
     alias matches_alert? includes?
 
+    # @return [Log4r::Logger]
     def logger ; self.class.logger ; end
 
     # Signals that a given alert (which is assumed to belong in this group)
     # has undergone a significant change.  We resend this to every notify list.
-    #    
+    # 
+    # @param [Mauve::Alert] alert 
+    #
+    # @return [Boolean] indicates success or failure of alert.
     def notify(alert)
       #
       # If there are no notifications defined. 
       #
       if notifications.nil?
         logger.warn("No notifications found for #{self.inspect}")
-        return
+        return false
       end
 
       #
@@ -136,12 +164,15 @@ module Mauve
         sent_to << notification.notify(alert, sent_to)
       end
 
+      return (sent_to.length > 0)
     end
 
-    #
     # This sorts by priority (urgent first), and then alphabetically, so the
     # first match is the most urgent.
     #
+    # @param [Mauve::AlertGroup] other
+    #
+    # @return [Integer]
     def <=>(other)
       [LEVELS.index(self.level), self.name]  <=> [LEVELS.index(other.level), other.name]
     end

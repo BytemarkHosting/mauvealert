@@ -6,6 +6,10 @@ require 'mauve/source_list'
 require 'sanitize'
 
 module Mauve
+  #
+  # This is a view of the Alert table, which allows easy finding of the next
+  # alert due to trigger.
+  #
   class AlertEarliestDate
  
     include DataMapper::Resource
@@ -52,9 +56,14 @@ module Mauve
     end
 
   end
-  
+ 
+  #
+  # Woo! An alert.
+  #
   class Alert
+    # @deprecated Not used anymore?
     def bytesize; 99; end
+    # @deprecated Not used anymore?
     def size; 99; end
     
     include DataMapper::Resource
@@ -89,31 +98,23 @@ module Mauve
 
     validates_with_method :check_dates
     
+    default_scope(:default).update(:order => [:source, :importance])
+    
+    # @return [String]
     def to_s 
       "#<Alert #{id}, alert_id #{alert_id}, source #{source}>"
     end
 
-    #
-    # This is to stop datamapper inserting duff dates into the database.
-    #
-    def check_dates
-      bad_dates = self.attributes.find_all do |key, value|
-        value.is_a?(Time) and (value < (Time.now - 3650.days) or value > (Time.now + 3650.days))
-      end
-
-      if bad_dates.empty?
-        true
-      else
-        [ false, "The dates "+bad_dates.collect{|k,v| "#{v.to_s} (#{k})"}.join(", ")+" are invalid." ]
-      end
-    end
-
-    default_scope(:default).update(:order => [:source, :importance])
-   
+    # @return [Log4r::Logger] the logger instance.
     def logger
       @logger ||= self.class.logger
     end
 
+    # @deprecated Not sure if this is used any more.
+    #
+    # @param [Integer] Seconds 
+    #
+    # @return [String]
     def time_relative(secs)
       secs = secs.to_i.abs
       case secs
@@ -127,45 +128,63 @@ module Mauve
     end
 
     #
-    # AlertGroup.matches must always return a an array of groups.
-    #
+    # @return [Mauve::AlertGroup] The first matching AlertGroup for this alert
     def alert_group
       @alert_group ||= AlertGroup.matches(self).first
     end
 
-    #
     # Pick out the source lists that match this alert by subject.
     #
+    # @return [Array] All the SourceList matches
     def source_lists
       Mauve::Configuration.current.source_lists.select{|label, list| list.includes?(self.subject)}.collect{|sl| sl.first}
     end
 
-    def in_source_list?(g)
-      list = Mauve::Configuration.current.source_lists[g]
+    # Checks to see if included in a named source list
+    #
+    # @param [String] listname
+    # @return [Boolean]
+    def in_source_list?(listname)
+      list = Mauve::Configuration.current.source_lists[listname]
+      return false unless list.is_a?(SourceList)
       list.includes?(self.subject)
     end
 
+    # Returns the alert level 
     #
-    #
-    #
+    # @return [Symbol] The alert level, as per its AlertGroup.
     def level
       @level ||= self.alert_group.level
     end
   
+    # An array used to sort compare
+    # 
+    # @return [Array] 
     def sort_tuple
       [AlertGroup::LEVELS.index(self.level), (self.raised_at || self.cleared_at || Time.now)]
     end
 
+    # Comparator.  Uses sort_tuple to compare with another alert
+    #
+    # @param [Mauve::Alert] other Other alert
+    #
+    # @return [Integer]
     def <=>(other)
       other.sort_tuple <=> self.sort_tuple
     end
  
+    # The alert subject
+    #
+    # @return [String]
     def subject; attribute_get(:subject) || attribute_get(:source) || "not set" ; end
+
+    # The alert detail
+    # 
+    # @return [String]
     def detail;  attribute_get(:detail)  || "_No detail set._" ; end
  
     protected
 
-    #
     # This cleans the HTML before saving.
     #
     def do_sanitize_html
@@ -185,8 +204,21 @@ module Mauve
         attribute_set(key, Alert.clean_html(val))
       end
     end
-
+    
+    # This is to stop datamapper inserting duff dates into the database.
     #
+    def check_dates
+      bad_dates = self.attributes.find_all do |key, value|
+        value.is_a?(Time) and (value < (Time.now - 3650.days) or value > (Time.now + 3650.days))
+      end
+
+      if bad_dates.empty?
+        true
+      else
+        [ false, "The dates "+bad_dates.collect{|k,v| "#{v.to_s} (#{k})"}.join(", ")+" are invalid." ]
+      end
+    end
+
     # This allows us to take a copy of the changes before we save.
     #
     def take_copy_of_changes
@@ -196,9 +228,9 @@ module Mauve
       end
     end
 
-    #
     # This sends notifications.  It is called after each save.
     #
+    # @return [Boolean] 
     def notify_if_needed
       #
       # Make sure we don't barf
@@ -243,20 +275,33 @@ module Mauve
       true
     end
 
+    # Remove all history for an alert, when an alert is destroyed.
+    #
+    #
     def destroy_associations
       AlertHistory.all(:alert_id => self.id).destroy
     end
 
     public
     
+    # Send a notification for this alert.
+    #
+    # @return [Boolean] Showing if an alert has been sent.
     def notify
       if self.alert_group.nil?
         logger.warn "Could not notify for #{self} since there are no matching alert groups"
+        false
       else
         self.alert_group.notify(self)
       end
     end
 
+    # Acknowledge an alert
+    #
+    # @param [Mauve::Person] person The person acknowledging the alert
+    # @param [Time] ack_until The time when the alert should unacknowledge
+    #
+    # @return [Boolean] showing the acknowledgment has been successful
     def acknowledge!(person, ack_until = Time.now+3600)
       raise ArgumentError unless person.is_a?(Person)
       raise ArgumentError unless ack_until.is_a?(Time)
@@ -281,6 +326,9 @@ module Mauve
       end
     end
     
+    # Unacknowledge an alert
+    #
+    # @return [Boolean] showing the unacknowledgment has been successful
     def unacknowledge!
       self.acknowledged_by = nil
       self.acknowledged_at = nil
@@ -294,7 +342,12 @@ module Mauve
         true
       end
     end
-    
+   
+    # Raise an alert at a specified time
+    #    
+    # @param [Time] at The time at which the alert should be raised.
+    #
+    # @return [Boolean] showing the raise has been successful
     def raise!(at = Time.now)
       #
       # OK if this is an alert updated in the last run, do not raise, just postpone.
@@ -334,6 +387,11 @@ module Mauve
       end
     end
     
+    # Clear an alert at a specified time
+    #    
+    # @param [Time] at The time at which the alert should be cleared.
+    #
+    # @return [Boolean] showing the clear has been successful
     def clear!(at = Time.now)
       #
       # Postpone clearance if we're in the sleep period.
@@ -379,47 +437,57 @@ module Mauve
       end
     end
       
-    # Returns the time at which a timer loop should call poll_event to either
-    # raise, clear or unacknowldge this event.
-    # 
+    # The next time this alert should be polled, either to raise, clear, or
+    # unacknowledge, or nil if nothing is due.
+    #
+    # @return [Time, NilClass]
     def due_at
       [will_clear_at, will_raise_at, will_unacknowledge_at].compact.sort.first
     end
     
+    # Polls the alert, raising or clearing as needed.
+    #
+    # @return [Boolean] showing the poll was successful
     def poll
       logger.debug("Polling #{self.to_s}")
-      raise! if (will_unacknowledge_at and will_unacknowledge_at <= Time.now) or
+      if (will_unacknowledge_at and will_unacknowledge_at <= Time.now) or
         (will_raise_at and will_raise_at <= Time.now)
-      clear! if will_clear_at && will_clear_at <= Time.now
+        raise!
+      elsif will_clear_at && will_clear_at <= Time.now
+        clear!
+      else
+        true
+      end
     end
 
 
+    # Is the alert raised?
     #
-    # Tests to see if an alert is raised/acknowledged given a certain set of
-    # dates/times.
-    #
-    #
-
+    # @return [Boolean]
     def raised?
       !raised_at.nil? and (cleared_at.nil? or raised_at > cleared_at)
     end
 
+    # Is the alert acknowledged?
+    #
+    # @return [Boolean]
     def acknowledged?
       !acknowledged_at.nil?
     end
 
+    # Is the alert cleared? Cleared is just the opposite of raised.
     #
-    # Cleared is just the opposite of raised.
-    #
+    # @return [Boolean]
     def cleared?
       !raised?
     end
  
     class << self
     
+      # Removes HTML from a string
       #
-      # Utility methods to clean/remove html
-      #
+      # @param [String] txt String to clean
+      # @return [String]
       def remove_html(txt)
         Sanitize.clean(
           txt.to_s,
@@ -427,6 +495,10 @@ module Mauve
         )
       end
 
+      # Cleans HTML in a string, removing dangerous elements/contents.
+      #
+      # @param [String] txt String to clean
+      # @return [String]
       def clean_html(txt)
         Sanitize.clean(
           txt.to_s,
@@ -434,22 +506,30 @@ module Mauve
         )
       end
     
+      # All alerts currently raised
       #
-      # Find stuff
-      #
-      #
+      # @return [Array]
       def all_raised
         all(:raised_at.not => nil, :order => [:raised_at.asc]) & (all(:cleared_at => nil) | all(:raised_at.gte => :cleared_at))
       end
       
+      # All alerts currently raised and unacknowledged
+      #
+      # @return [Array]
       def all_unacknowledged
         all_raised - all_acknowledged
       end
 
+      # All alerts currently acknowledged
+      #
+      # @return [Array]
       def all_acknowledged
         all(:acknowledged_at.not => nil)
       end
 
+      # All alerts currently cleared
+      #
+      # @return [Array]
       def all_cleared
         all - all_raised - all_acknowledged
       end
@@ -469,24 +549,31 @@ module Mauve
         return hash
       end
 
-      # 
-      # Returns the next Alert that will have a timed action due on it, or nil
-      # if none are pending.
+      # Find the next Alert that will have a timed action due on it, or nil if
+      # none are pending.
       #
+      # @return [Mauve::Alert, Nilclass]
       def find_next_with_event
         earliest_alert = AlertEarliestDate.first(:order => [:earliest])
         earliest_alert ? earliest_alert.alert : nil
       end
 
+      # @deprecated Not sure this is used any more.
+      #
+      # @return [Array]
       def all_overdue(at = Time.now)
         AlertEarliestDate.all(:earliest.lt => at, :order => [:earliest]).collect do |earliest_alert|
           earliest_alert ? earliest_alert.alert : nil
         end
       end
      
-      #
       # Receive an AlertUpdate buffer from the wire.
       #
+      # @param [String] update The update string, as received over UDP
+      # @param [Time] reception_time The time the update was received
+      # @param [String] ip_source The IP address of the source of the update
+      #
+      # @return [NilClass]
       def receive_update(update, reception_time = Time.now, ip_source="network")
 
         update = Proto::AlertUpdate.parse_from_string(update) unless update.kind_of?(Proto::AlertUpdate)
@@ -631,6 +718,8 @@ module Mauve
         return nil 
       end
 
+      #
+      # @return [Log4r::Logger] The class logger
       def logger
         Log4r::Logger.new(self.to_s)
       end

@@ -6,7 +6,19 @@ module Mauve
   class Person < Struct.new(:username, :password, :holiday_url, :urgent, :normal, :low, :email, :xmpp, :sms)
   
     attr_reader :notification_thresholds, :last_pop3_login, :suppressed
-  
+ 
+    # Set up a new Person
+    #
+    # @param [Hash] args The options for setting up the person
+    #   @option args [String] :username The person's username
+    #   @option args [String] :password The SHA1 sum of the person's password
+    #   @option args [String] :holiday_url The URL that can be checked by Mauve::CalendarInterface#is_user_on_holiday?
+    #   @option args [Proc] :urgent The block to execute when an urgent-level notification is issued
+    #   @option args [Proc] :normal The block to execute when an normal-level notification is issued
+    #   @option args [Proc] :low The block to execute when an low-level notification is issued
+    #   @option args [String] :email The person's email address
+    #   @option args [String] :sms The person's mobile number
+    # 
     def initialize(*args)
       @notification_thresholds = nil
       @suppressed = false
@@ -17,13 +29,19 @@ module Mauve
       super(*args)
     end
    
+    # @return Log4r::Logger
     def logger ; @logger ||= Log4r::Logger.new self.class.to_s ; end
 
+    # Determines if notifications to the user are currently suppressed
+    #
+    # @return [Boolean]
     def suppressed? ; @suppressed ; end
  
+    # Works out if a notification should be suppressed.  If no parameters are supplied, it will 
     #
-    # This 
-    #
+    # @param [Time] Theoretical time of notification
+    # @param [Time] Current time.
+    # @return [Boolean] If suppression is needed.
     def should_suppress?(with_notification_at = nil, now = Time.now)
 
       return self.notification_thresholds.any? do |period, previous_alert_times|
@@ -42,10 +60,10 @@ module Mauve
       end
     end
    
+    # The notification thresholds for this user
+    #
+    # @return [Hash]
     def notification_thresholds
-      #
-      # By default send 10 thresholds in a minute maximum
-      #
       @notification_thresholds ||= { } 
     end
  
@@ -54,6 +72,13 @@ module Mauve
     # 
     class NotificationCaller
 
+      # Set up the notification caller
+      #
+      # @param [Mauve::Person] person
+      # @param [Mauve::Alert] alert
+      # @param [Array] other_alerts
+      # @param [Hash] base_conditions
+      #
       def initialize(person, alert, other_alerts, base_conditions={})
         @person = person
         @alert = alert
@@ -61,24 +86,35 @@ module Mauve
         @base_conditions = base_conditions
       end
       
+      # @return Log4r::Logger
       def logger ; @logger ||= Log4r::Logger.new self.class.to_s ; end
 
+      # This method makes sure things like +xmpp+ and +email+ work.
       #
-      # This method makes sure things like
+      # @param [String] name The notification method to use
+      # @param [Array or Hash] args Extra conditions to pass to this notification method
       #
-      #   xmpp
-      #
-      #  works
-      #
+      # @return [Boolean] if the notifcation has been successful
       def method_missing(name, *args)
+        #
+        # Work out the notification method
+        #
+        notification_method = Configuration.current.notification_methods[name.to_s]
+
+        @logger.warn "Notification method '#{name}' not defined  (#{@person.username})" if notification_method.nil?
+
         #
         # Work out the destination
         #
         if args.first.is_a?(String)
           destination = args.pop
-        else 
+        elsif @person.respond_to?(name)
           destination = @person.__send__(name)
+        else
+          destination = nil
         end
+
+        @logger.warn "#{name} destination for #{@person.username} not set" if destination.nil?
 
         if args.first.is_a?(Array)
           conditions  = @base_conditions.merge(args[0])
@@ -86,15 +122,16 @@ module Mauve
           conditions  = @base_conditions
         end
 
-        notification_method = Configuration.current.notification_methods[name.to_s]
 
-        raise NoMethodError.new("#{name} not defined as a notification method") unless notification_method
-
-        # Methods are expected to return true or false so the user can chain
-        # them together with || as fallbacks.  So we have to catch exceptions
-        # and turn them into false.
-        #
-        res = notification_method.send_alert(destination, @alert, @other_alerts, conditions)
+        if notification_method and destination 
+          # Methods are expected to return true or false so the user can chain
+          # them together with || as fallbacks.  So we have to catch exceptions
+          # and turn them into false.
+          #
+          res = notification_method.send_alert(destination, @alert, @other_alerts, conditions)
+        else
+          res = false
+        end
 
         #
         # Log the result
@@ -108,10 +145,12 @@ module Mauve
 
     end 
 
-    #
-    #
     # Sends the alert
     #
+    # @param [Symbol] level Level at which the alert should be sent
+    # @param [Mauve::Alert] alert Alert we're notifiying about
+    #
+    # @return [Boolean] if the notification was successful
     def send_alert(level, alert)
       now = Time.now
 
@@ -132,8 +171,6 @@ module Mauve
         return true 
       end
 
-      # FIXME current_alerts is very slow.  So much so it slows everything
-      # down.  A lot.  
       result = NotificationCaller.new(
         self,
         alert,
@@ -143,7 +180,7 @@ module Mauve
          :was_suppressed => was_suppressed, }
       ).instance_eval(&__send__(level))
 
-      if result
+      if [result].flatten.any?
         # 
         # Remember that we've sent an alert
         #
@@ -168,6 +205,7 @@ module Mauve
     # This is currently very CPU intensive, and slows things down a lot.  So
     # I've commented it out when sending notifications.
     #
+    # @return [Array] alerts relevant to this person
     def current_alerts
       Alert.all_raised.select do |alert|
         my_last_update = AlertChanged.first(:person => username, :alert_id => alert.id)

@@ -21,26 +21,41 @@ require 'rack/handler/webrick'
 # Bodge up thin logging.
 # 
 module Thin
+  #
+  # Bodge up thin logging.
+  #
   module Logging
-    
+
+    # Log a message at "info" level
+    #
+    # @param [String] m
     def log(m=nil)
       # return if Logging.silent?
       logger = Log4r::Logger.new "Mauve::HTTPServer"
       logger.info(m || yield)
     end
     
+    # Log a message at "debug" level
+    #
+    # @param [String] m
     def debug(m=nil)
       # return unless Logging.debug?
       logger = Log4r::Logger.new "Mauve::HTTPServer"
       logger.debug(m || yield)
     end
     
+    # Log a trace at "debug" level
+    #
+    # @param [String] m
     def trace(m=nil)
       return unless Logging.trace?
       logger = Log4r::Logger.new "Mauve::HTTPServer"
       logger.debug(m || yield)
     end
     
+    # Log a message at "error" level
+    #
+    # @param [String] e
     def log_error(e=$!)
       logger = Log4r::Logger.new "Mauve::HTTPServer"
       logger.error(e)
@@ -58,8 +73,16 @@ end
 #
 class RackErrorsProxy
 
+  #
+  # Set up the instance
+  #
+  # @param [Log4r::Logger] l The logger instance.
+  #
   def initialize(l); @logger = l; end
 
+  # Log a message at "error" level
+  #
+  # @param [String or Array] msg
   def write(msg)
     case msg
       when String then @logger.info(msg.chomp)
@@ -72,6 +95,8 @@ class RackErrorsProxy
   alias_method :<<, :write
   alias_method :puts, :write
 
+  # no-op
+  #
   def flush; end
 end
 
@@ -81,7 +106,7 @@ end
 module Mauve
 
   # 
-  # API to control the web server
+  # The HTTP Server object
   #
   class HTTPServer < MauveThread
 
@@ -90,6 +115,9 @@ module Mauve
     attr_reader :port, :ip, :document_root, :base_url
     attr_reader :session_secret 
     
+    #
+    # Initialze the server
+    #
     def initialize
       super
       self.port = 1288
@@ -98,11 +126,18 @@ module Mauve
       self.session_secret = "%x" % rand(2**100)
     end
    
+    # Set the port
+    #
+    # @param [Intger] pr The port number between 1 and 2**16-1
+    # @raise [ArgumentError] If the port is not valid
     def port=(pr)
-      raise ArgumentError, "port must be an integer between 0 and #{2**16-1}" unless pr.is_a?(Integer) and pr < 2**16 and pr > 0
+      raise ArgumentError, "port must be an integer between 1 and #{2**16-1}" unless pr.is_a?(Integer) and pr < 2**16 and pr > 0
       @port = pr
     end
     
+    # Set the listening IP address
+    #
+    # @param [String] i The IP
     def ip=(i)
       raise ArgumentError, "ip must be a string" unless i.is_a?(String)
       #
@@ -112,6 +147,12 @@ module Mauve
       @ip = i
     end
 
+    # Set the document root.
+    # @param [String] d The directory where the templates etc are kept.
+    # @raise [ArgumentError] If d is not a string
+    # @raise [Errno::ENOTDIR] If d does not exist
+    # @raise [Errno::ENOTDIR] If d is not a directory
+    #
     def document_root=(d)
       raise ArgumentError, "document_root must be a string" unless d.is_a?(String)
       raise Errno::ENOENT, d unless File.exists?(d)
@@ -120,6 +161,10 @@ module Mauve
       @document_root = d
     end
 
+    # Set the base URL
+    #
+    # @param [String] b The base URL, including https?://
+    # @raise [ArgumentError] If b is not a string, or https?:// is missing
     def base_url=(b)
       raise ArgumentError, "base_url must be a string" unless b.is_a?(String)
       raise ArgumentError, "base_url should start with http:// or https://" unless b =~ /^https?:\/\//
@@ -128,12 +173,42 @@ module Mauve
       #
       @base_url = b.chomp("/")
     end
-
+    
+    # Set the cookie session secret
+    #
+    # @param [String] s The secret
+    # @raise [ArgumentError] if s is not a string
     def session_secret=(s)
       raise ArgumentError, "session_secret must be a string" unless s.is_a?(String)
       @session_secret = s 
     end
 
+    # Return the base_url
+    #
+    # @return [String]
+    def base_url
+      @base_url ||= "http://"+Server.instance.hostname
+    end
+    
+    # Stop the server
+    #
+    def stop
+      @server.stop if @server and @server.running?
+      super
+    end
+
+    # Stop the server, faster than #stop
+    #
+    def join
+      @server.stop! if @server and @server.running?
+      super
+    end
+
+    private
+
+    #
+    # @private This is the main loop to keep the server going.
+    #
     def main_loop
       unless @server and @server.running?
         # 
@@ -143,20 +218,5 @@ module Mauve
         @server.start
       end
     end
-
-    def base_url
-      @base_url ||= "http://"+Server.instance.hostname
-    end
-    
-    def stop
-      @server.stop if @server and @server.running?
-      super
-    end
-
-    def join
-      @server.stop! if @server and @server.running?
-      super
-    end
-
   end    
 end

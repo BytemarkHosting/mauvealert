@@ -9,20 +9,14 @@ module Mauve
 
   # A simple construct to match sources.
   #
-  # This class stores mamed lists of IP addresses.  It stores them in a hash
-  # indexed by the name of the list.  One can pass IPv4, IPv6 and hostnames
-  # as list elements but they will all be converted into IP addresses at 
-  # the time of the list creation.
-  #
   # One can ask if an IPv4, IPv6, hostname or url (match on hostname only) is
   # contained within a list.  If the query is not an IP address, it will be
-  # converted into one before the checks are made.
+  # converted into one as the checks are made.
   #
   # Note that the matching is greedy.  When a hostname maps to several IP
   # addresses and only one of tbhose is included in the list, a match 
-  # will occure.  
+  # will occur.
   #
-  # @author Yann Golanski
   class SourceList 
 
     attr_reader :label, :list
@@ -37,6 +31,26 @@ module Mauve
 
     alias username label
 
+    # Adds a source onto the list.
+    #
+    # The source can be a string, or array of strings.  Each one can be an IPv6
+    # or IPv4 address or range, or a hostname.
+    #
+    # Hostnames can have *, or numeric ranges in their name.  A '*' represents
+    # any character except ".".  A range can be specified as 1..4, meaning 1,
+    # 2, 3 or 4.
+    #
+    # e.g.  1.2.3.4/24
+    #       2001:dead::beef/64
+    #       app1..10.my-customer.com
+    #       *.db.my-customer.com
+    #
+    # Hostnames are also resolved into IP addresses, and re-resolved every 30
+    # minutes.
+    #
+    # @param [String or Array] l The source(s) to add.
+    # @return [SourceList]
+    #
     def +(l)
       arr = [l].flatten.collect do |h|
         # "*"              means [^\.]+
@@ -52,12 +66,15 @@ module Mauve
               gsub(/\./, "\\.").
               gsub(/\*/, "[0-9a-z\\-]+") +
               "\\.?$")
-        elsif h.is_a?(String) and h =~ /^[0-9a-f\.:\/]+$/i
+        elsif h.is_a?(String) and h =~ /^[0-9a-f\.:]+(\/\d+)?$/i
           IPAddr.new(h)
-        else
+        elsif h.is_a?(String) or h.is_a?(Regexp)
           h
+        else
+          logger.warn "Cannot add #{h.inspect} to source list #{@label} as it is not a string or regular expression."
+          nil
         end
-      end.flatten
+      end.flatten.reject{|h| h.nil?}
 
       arr.each do |source|
         ##
@@ -79,13 +96,26 @@ module Mauve
 
     alias add_to_list +
 
+    # @return [Log4r::Logger]
     def logger
       @logger ||= Log4r::Logger.new self.class.to_s
     end
 
-    ## 
+    # 
     # Return whether or not a list contains a source.
-    ##
+    #
+    # First the hostname is checked for a URI, using URI#parse, and then the
+    # hostname is extracted from there.  If that fails, the original hostname
+    # is used.
+    #
+    # Next we check against our list, including all IPs for any hostnames in
+    # that list.
+    #
+    # If nothing is found, the hostname is then resolved to its IPs, and we
+    # check to see if those IPs are in our list. 
+    #
+    # @param [String] host The host to look for.
+    # @return [Boolean]
     def includes?(host)
       #
       # Redo resolution every thirty minutes
@@ -133,14 +163,20 @@ module Mauve
         ips.any?{|ip| list_ip.include?(ip)}
       end
       
+      return false
     end
 
+    # 
+    # Resolve all hostnames in the list to IP addresses.
+    #
+    # @return [Array] The new list.
+    #
     def resolve
       @last_resolved_at = Time.now
 
       new_list = @list.collect do |host| 
         if host.is_a?(String)
-          ips = [host] + MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
+          [host] + MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
         else
           host
         end

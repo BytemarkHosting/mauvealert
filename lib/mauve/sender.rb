@@ -4,12 +4,40 @@ require 'socket'
 require 'mauve/mauve_resolv'
 require 'mauve/mauve_time'
 
-module Mauve 
+module Mauve
+  #
+  # This is the class that send the Mauve packets.
+  #
   class Sender
+    #
+    # This is the default mauve receiving port.
+    #
     DEFAULT_PORT = 32741
 
     include Resolv::DNS::Resource::IN
-    
+
+    # Set up a new sender.  It takes a list of destinations and uses DNS to
+    # resolve names to addresses.
+    #
+    # A destination can look like
+    #
+    #   1.2.3.4:5678
+    #   1.2.3.4
+    #   [2001:1af:ba8::dead]:5678
+    #   [2001:1af:ba8::dead]
+    #   mauve.host:5678
+    #   mauve.host
+    #
+    # If no port is specified, DEFAULT_PORT is used.
+    #
+    # If a hostname is used, SRV records are used, with the prefix
+    # +_mauvealert._udp+ to determine the real hostname and port to which
+    # alerts should be sent.
+    #
+    # Otherwise AAAA and A records are looked up.
+    #
+    # @param [Array] destinations List of destinations to which the update is to be sent.
+    #
     def initialize(*destinations)
       destinations = destinations.flatten
       
@@ -101,9 +129,12 @@ module Mauve
 
     end
 
+    # Send an update.
     #
-    # Returns the number of packets sent.
+    # @param [Mauve::Proto] update The update to send
+    # @param [Integer] vebose The verbosity -- higher is more.
     #
+    # @return [Integer] the number of packets sent.
     def send(update, verbose=0)
 
       #

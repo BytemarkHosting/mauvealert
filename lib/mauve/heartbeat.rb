@@ -3,17 +3,23 @@ require 'mauve/proto'
 require 'mauve/mauve_thread'
 require 'log4r'
 
-#
-# This class is responsible for sending a heartbeat to another mauve instance elsewhere.
-#
 module Mauve
 
+  #
+  # This class is responsible for sending a heartbeat to another mauve instance elsewhere.
+  #
   class Heartbeat < MauveThread
 
     include Singleton
 
+    #
+    # Allow access to some basics.
+    #
     attr_reader   :raise_after, :destination, :summary, :detail
 
+    #
+    # This sets up the Heartbeat singleton
+    #
     def initialize
       super
 
@@ -24,6 +30,10 @@ module Mauve
       @poll_every     = 60
     end
 
+    #
+    # This is the time period after which an alert is raised by the remote Mauve instance.
+    # @param [Integer] i Seconds
+    # @return [Integer] Seconds
     def raise_after=(i)
       raise ArgumentError "raise_after must be an integer" unless i.is_a?(Integer)      
       @raise_after = i
@@ -31,25 +41,39 @@ module Mauve
 
     alias send_every=  poll_every=
 
+    # Sets the summary of the heartbeat
+    #
+    # @param [String] s Summary
     def summary=(s)
       raise ArgumentError "summary must be a string" unless s.is_a?(String)
       @summary = s
     end
 
+    # Sets the detail of the heartbeat
+    #
+    # @param [String] d Detail
     def detail=(d)
       raise ArgumentError "detail must be a string" unless d.is_a?(String)
       @detail = d
     end
 
+    # Sets the destinantion Mauve instance
+    #
+    # @param [String] d Destination
+    #
     def destination=(d)
       raise ArgumentError "destination must be a string" unless d.is_a?(String)
       @destination = d
     end
 
+    # @return [Log4r::Logger]
     def logger
       @logger ||= Log4r::Logger.new(self.class.to_s)
     end
 
+    private
+
+    # @private This is the main heartbeat loop.
     def main_loop
       #
       # Don't send if no destination set.

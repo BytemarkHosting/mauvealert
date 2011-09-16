@@ -8,12 +8,22 @@ require 'ipaddr'
 
 module Mauve
 
+  #
+  # This is the thread that accepts the packets.
+  #
   class UDPServer < MauveThread
 
     include Singleton
 
     attr_reader   :ip, :port
 
+    # Yup.  Creates a new UDPServer.
+    #
+    # Defaults:
+    #   * listening IP: 127.0.0.1
+    #   * listening port: 32741
+    #   * polls every: 0 seconds
+    #
     def initialize
       #
       # Set up some defaults.
@@ -26,16 +36,50 @@ module Mauve
       super
     end
  
+    #
+    # This sets the IP which the server will listen on.
+    # 
+    # @param [String] i The new IP 
+    # @return [IPAddr]
+    #
     def ip=(i)
       raise ArgumentError, "ip must be a string" unless i.is_a?(String)
       @ip = IPAddr.new(i)
     end
  
+    # Sets the listening port
+    #
+    # @param [Integer] pr The new port
+    # @return [Integer]
+    #
     def port=(pr)
       raise ArgumentError, "port must be an integer between 0 and #{2**16-1}" unless pr.is_a?(Integer) and pr < 2**16 and pr > 0
       @port = pr
     end
+   
+    # This stops the UDP server, by signalling to the thread to stop, and
+    # sending a zero-length packet to the socket.
+    #
+    def stop
+      @stop = true
+      #
+      # Triggers loop to close socket.
+      #
+      UDPSocket.open(Socket.const_get(@socket.addr[0])).send("", 0, @socket.addr[2], @socket.addr[1]) unless @socket.nil? or @socket.closed?
 
+      super
+    end
+
+    private
+
+    #
+    # This opens the socket for listening.
+    #
+    # It tries to increase the default receiving buffer to 10M, and will warn
+    # if this fails to increase the buffer at all.
+    #
+    # @return [Nilclass]
+    #
     def open_socket
       #
       # Specify the family when opening the socket.
@@ -48,7 +92,7 @@ module Mauve
       @socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF, 10*1024*1024)
       new = @socket.getsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF).unpack("i").first
 
-      raise "Could not increase Socket::SO_RCVBUF.  Had #{old} ended up with #{new}!" if old > new 
+      logger.warn "Could not increase Socket::SO_RCVBUF.  Had #{old} ended up with #{new}!" if old > new 
 
       logger.debug("Successfully increased Socket::SO_RCVBUF from #{old} to #{new}.")
 
@@ -57,6 +101,8 @@ module Mauve
       logger.info("Opened socket on #{@ip.to_s}:#{@port}")
     end
 
+    # This closes the socket.  IOErrors are caught and logged.
+    #
     def close_socket
       return if @socket.nil?  or @socket.closed?
 
@@ -71,6 +117,13 @@ module Mauve
       logger.info("Closed socket")
     end
 
+    # This is the main loop.  It receives from the UDP port, and records the
+    # time the packet arrives.  It then pushes the packet onto the Server's
+    # packet buffer for the processor to pick up later.
+    #
+    # If a zero-length packet is received, and the thread has been signalled to
+    # stop, then the socket is closed, and the thread exits.
+    #
     def main_loop
       return if self.should_stop?
 
@@ -99,7 +152,7 @@ module Mauve
       # If we get a zero length packet, and we've been flagged to stop, we stop!
       #
       if packet.first.length == 0 and self.should_stop?
-        self.close_socket 
+        close_socket 
         return
       end
 
@@ -107,16 +160,6 @@ module Mauve
       # Push packet onto central queue
       #
       Server.packet_push([packet[0], packet[1], received_at])
-    end
-
-    def stop
-      @stop = true
-      #
-      # Triggers loop to close socket.
-      #
-      UDPSocket.open(Socket.const_get(@socket.addr[0])).send("", 0, @socket.addr[2], @socket.addr[1]) unless @socket.nil? or @socket.closed?
-
-      super
     end
 
   end

@@ -45,13 +45,21 @@ class ObjectBuilder
   
   attr_reader   :result
   attr_accessor :block_result
-  
+ 
+  # Generates a new builder
+  # 
+  # @param [ObjectBuidler] context The level of the builder
+  # @param [Array] args The arguments to pass on to the builder_setup
+  #
   def initialize(context, *args)
     @context = context
     @result  = nil
     builder_setup(*args)
   end
   
+  # Generates an anonymous name
+  #
+  # @return [String]
   def anonymous_name
     @@sequence ||= 0 # not inherited, don't want it to be
     @@sequence  += 1
@@ -60,6 +68,15 @@ class ObjectBuilder
   
   class << self
   
+    # Defines a new builder
+    #
+    # @param [String] word The builder's name
+    # @param [Class] clazz The Class the builder represents
+    #
+    # @macro [attach] is_builder
+    #   @return The +$1+ builder.
+    #
+    # @return [NilClass]
     def is_builder(word, clazz)
       define_method(word.to_sym) do |*args, &block|
         builder = clazz.new(*([@context] + args))
@@ -72,59 +89,84 @@ class ObjectBuilder
           end
         end
       end
+
+      return nil
     end
     
     # FIXME: implement is_builder_deferred to create object at end of block?
     
+    # Defines a new block attribute
+    # @param [String] word The block attribute's name
+    # @macro [attach] is_block_attribute
+    #   @return [NilClass] Allows use of the +$1+ word to define a block.
     def is_block_attribute(word)
       define_method(word.to_sym) do |*args, &block|
         @result.__send__("#{word}=".to_sym, block)
       end
     end
-    
+   
+    # Defines a new attribute
+    # @param [String] word The attribute's name
+    # @macro [attach] is_attribute
+    #   @return [NilClass] Allows use of the +$1+ word to set an attribute.
+    #
     def is_attribute(word)
       define_method(word.to_sym) do |*args, &block|
         @result.__send__("#{word}=".to_sym, args[0])
       end
     end
     
+    # Defines a new boolean attribute
+    # @param [String] word The boolean attribute's name
+    # @macro [attach] is_flag_attribute
+    #   @return [NilClass] Allows use of the +$1+ word to set an boolean attribute.
     def is_flag_attribute(word)
       define_method(word.to_sym) do |*args, &block|
         @result.__send__("#{word}=".to_sym, true)
       end
     end
   
+    # Loads a new file
+    # 
+    # @param [String] file
     def load(file)
       parse(File.read(file), file)
     end
    
+    # Parses a string
+    #
+    # @param [String] string The string to parse
+    # @param [String] file The filename that the string was read from, for helpful error messages.
+    #
+    # @raise [BuildException] When an expected exception is raised
+    # @raise [NameError]
+    # @raise [SyntaxError] 
+    # @raise [ArgumentError]
+    #
+    # @return [ObjectBuidler] The 
     def parse(string, file="string")
       builder = self.new
-      begin
-        builder.instance_eval(string, file)
-      rescue NameError => ex
-        # 
-        # Ugh.  Catch NameError and re-raise as a BuildException
-        #
-        f,l = ex.backtrace.first.split(":").first(2)
-        if f == file
-          build_ex = BuildException.new "Unknown word `#{ex.name}' in #{file} at line #{l}"
-          build_ex.set_backtrace ex.backtrace
-          raise build_ex
-        else
-          raise ex
-        end
-      rescue SyntaxError, ArgumentError => ex
-        if ex.backtrace.find{|l| l =~ /^#{file}:(\d+):/}
-          build_ex = BuildException.new "#{ex.message} in #{file} at line #{$1}"
-          build_ex.set_backtrace ex.backtrace
-          raise build_ex
-        else
-          raise ex
-        end
-      end
-
+      builder.instance_eval(string, file)
       builder.result
+    rescue NameError, NoMethodError => ex
+      # 
+      # Ugh.  Catch NameError and re-raise as a BuildException
+      #
+      if ex.backtrace.find{|l| l =~ /^#{file}:(\d+):/}
+        build_ex = BuildException.new "Unknown word `#{ex.name}' in #{file} at line #{$1}"
+        build_ex.set_backtrace ex.backtrace
+        raise build_ex
+      else
+        raise ex
+      end
+    rescue SyntaxError, ArgumentError => ex
+      if ex.backtrace.find{|l| l =~ /^#{file}:(\d+):/}
+        build_ex = BuildException.new "#{ex.message} in #{file} at line #{$1}"
+        build_ex.set_backtrace ex.backtrace
+        raise build_ex
+      else
+        raise ex
+      end
     end
  
     def inherited(*args)

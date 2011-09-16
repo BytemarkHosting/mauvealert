@@ -39,12 +39,12 @@ class TcMauveDuringRunner < Mauve::UnitTest
   def test_now?
     alert = Alert.new
     time = Time.now
-    during = Proc.new { @test_time }
+    during = Proc.new { Time.now == @test_time }
 
     dr = DuringRunner.new(time, alert, &during)
     
-    assert_equal(time, dr.now?)
-    assert_equal(time+3600, dr.now?(time+3600))
+    assert_equal(true, dr.now?)
+    assert_equal(false, dr.now?(time+3600))
     assert_equal(time, dr.time)
   end
 

@@ -1,14 +1,19 @@
 require 'date'
 require 'time'
 
-
-# Seconds, minutes, hours, days, and weeks... More than that, we 
-# really should not need it.
+#
+# Extra methods for integer to calculate periods in seconds.
+#
 class Integer
+  # @return [Integer]
   def seconds; self; end
+  # @return [Integer] n minutes of seconds
   def minutes; self*60; end
+  # @return [Integer] n hours of seconds
   def hours; self*3600; end
+  # @return [Integer] n days of seconds
   def days; self*86400; end
+  # @return [Integer] n weeks of seconds
   def weeks; self*604800; end
   alias_method :day, :days
   alias_method :hour, :hours
@@ -16,36 +21,22 @@ class Integer
   alias_method :week, :weeks
 end
 
-class Date
-  def to_time
-    Time.parse(self.to_s)
-  end
-end
-
-class DateTime
-  def to_time
-    Time.parse(self.to_s)
-  end
-
-  def to_s_relative(*args)
-    self.to_s_relative(*args)
-  end
-
-  def to_s_human
-    self.to_s_human
-  end
-
-  def in_x_hours(*args)
-    self.in_x_hours(*args)
-  end
-
-end
-
+#
+# Extra methods for Time.
+#
 class Time
+  #
+  # Method to work out when something is due, with different classes of hours.
+  #
+  # @param [Integer] n The number of hours in the future
+  # @param [String] type One of wallclock, working, or daytime.
+  # 
+  # @return [Time]
+  #
   def in_x_hours(n, type="wallclock")
     t = self.dup
     #
-    # Do this in minutes rather than hours
+    # Do this in seconds rather than hours
     #
     n = n.to_i*3600
   
@@ -103,34 +94,42 @@ class Time
     t
   end
 
+  # Test to see if we're in working hours. The working day is from 8.30am until
+  # 17:00
   #
-  # The working day is from 8.30am until 17:00
-  #
+  # @return [Boolean]
   def working_hours?
     (1..5).include?(self.wday) and ((9..16).include?(self.hour) or  (self.hour == 8 && self.min >= 30))
   end
 
+  # Test to see if it is currently daytime.  The daytime day is 14 hours long
   #
-  # The daytime day is 14 hours long
-  #
+  # @return [Boolean]
   def daytime_hours?
     (8..21).include?(self.hour)
   end
   
+  
+  # We're always in wallclock hours
   #
-  # The daytime day is 14 hours long
-  #
+  # @return [true]
   def wallclock_hours?
     true
   end
   
+  # Test to see if we're in the DEAD ZONE!   This is from 3 - 6am every day.
   #
-  # In the DEAD ZONE! 
-  #
+  # @return [Boolean]
   def dead_zone?
     (3..6).include?(self.hour)
   end
-    
+  
+  # Format the time as a string, relative to +now+
+  #
+  # @param [Time] now The time we're using as a base
+  # @raise [ArgumentError] if +now+ is not a Time
+  # @return [String]
+  #
   def to_s_relative(now = Time.now)
     #
     # Make sure now is the correct class

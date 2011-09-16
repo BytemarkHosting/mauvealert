@@ -4,6 +4,10 @@ require 'mauve/alert'
 require 'log4r'
 
 module Mauve
+  # This is the look-up table for Alerts and History to allow one History to
+  # have many Alerts and vice-versa
+  #
+  #
   class AlertHistory
     include DataMapper::Resource
 
@@ -15,6 +19,10 @@ module Mauve
 
     after :destroy, :remove_unreferenced_histories
 
+    # This is a horid migration to allow a move from an older version of Mauve
+    # without this table.
+    #
+    #
     def self.migrate!
       #
       # This copies the alert IDs from the old History table to the new AlertHistories thing, but only if there are no AertHistories 
@@ -45,12 +53,20 @@ module Mauve
 
     private
 
+    # This just removes histories that this AlertHistory used to refer to, if
+    # they have no other alerts associated with them
+    #
+    #
     def remove_unreferenced_histories
       self.history.destroy unless self.history.alerts.count > 0
     end
 
   end
 
+  # This class keeps a history for Mauve.  One History can relate to zero or
+  # more Alerts, allowing notes to be added.
+  #
+  #
   class History
     include DataMapper::Resource
     
@@ -73,7 +89,6 @@ module Mauve
 
     protected
 
-    #
     # This cleans the HTML before saving.
     #
     def do_sanitize_html  
@@ -93,16 +108,21 @@ module Mauve
       end
     end
 
-
+    # Update the created_at time on the object
+    #
     def set_created_at(context = :default)
       self.created_at = Time.now unless self.created_at.is_a?(Time) 
     end
 
     public
 
+    # This adds an alert or an array of alerts to the cache of alerts
+    # associated with this model.
     #
     # Blasted datamapper not eager-loading my model.
     #
+    # @param [Array or Alert] a Array of Alerts or a single Alert
+    # @raise ArgumentError If +a+ is not an Array or an Alert
     def add_to_cached_alerts(a)
       @cached_alerts ||= []
       if a.is_a?(Array) and a.all?{|m| m.is_a?(Alert)}
@@ -114,15 +134,22 @@ module Mauve
       end
     end
 
+    # Find all the alerts for this History.  This caches the alerts found.
+    # Call #reload to get rid of the cache.
+    #
+    # @return [Array] Alerts
     def alerts
       @cached_alerts ||= super
     end
 
+    # Reload the object, and clear the cache.
+    #
     def reload
       @cached_alerts = nil
       super
     end
 
+    # @return Log4r::Logger
     def logger
       Log4r::Logger.new self.class.to_s
     end

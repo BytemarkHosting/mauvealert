@@ -5,10 +5,19 @@ require 'timeout'
 
 module Mauve
 
+  #
+  # Base class for authentication.
+  #
   class Authentication
     
     ORDER = []
 
+    # Autenticates a user.
+    #
+    # @param [String] login
+    # @param [String] password
+    #
+    # @return [FalseClass] Always returns false.
     def authenticate(login, password)
       raise ArgumentError.new("Login must be a string, not a #{login.class}") if String != login.class
       raise ArgumentError.new("Password must be a string, not a #{password.class}") if String != password.class
@@ -19,18 +28,28 @@ module Mauve
       false
     end
 
+    # @return [Log4r::Logger]
     def logger
       self.class.logger
     end
-
+    
+    # @return [Log4r::Logger]
     def self.logger
       @logger ||= Log4r::Logger.new(self.to_s)
     end
 
+    # This calls all classes in the ORDER array one by one.  If all classes
+    # fail, a 5 second sleep rate-limits authentication attempts. 
+    #
+    # @param [String] login
+    # @param [String] password
+    #
+    # @return [Boolean] Success or failure.
+    #
     def self.authenticate(login, password)
       result = false
 
-      ORDER.each do |klass|
+      ORDER.any? do |klass|
         auth = klass.new
 
         result = begin
@@ -41,10 +60,9 @@ module Mauve
           false
         end
 
-        if true == result
-          logger.info "Authenticated #{login} using #{auth.class.to_s}"
-          break
-        end
+        logger.info "Authenticated #{login} using #{auth.class.to_s}" if true == result
+
+        result
       end
 
       unless true == result
@@ -59,12 +77,20 @@ module Mauve
   end
 
 
+  # This is the Bytemark authentication mechansim.
+  #
   class AuthBytemark < Authentication
 
     Mauve::Authentication::ORDER << self
 
+    # Set up the Bytemark authenticator
     #
-    # TODO: allow configuration of where the server is.
+    # @todo allow configuration of where the server is.
+    #
+    # @param [String] srv Authentication server name
+    # @param [String] port Port overwhich authentication should take place
+    #
+    # @return [Mauve::AuthBytemark]
     #
     def initialize (srv='auth.bytemark.co.uk', port=443)
       raise ArgumentError.new("Server must be a String, not a #{srv.class}") if String != srv.class
@@ -72,10 +98,16 @@ module Mauve
       @srv = srv
       @port = port
       @timeout = 7
+
+      self
     end
 
-    ## Not really needed.
-    def ping ()
+    # Tests to see if a server is alive, alive-o.
+    #
+    # @deprecated Not really needed.
+    #
+    # @return [Boolean]
+    def ping
       begin
         Timeout.timeout(@timeout) do
           s = TCPSocket.open(@srv, @port)
@@ -90,6 +122,12 @@ module Mauve
       return false
     end
 
+    # Authenticate against the Bytemark server
+    #
+    # @param [String] login
+    # @param [String] password
+    #
+    # @return [Boolean]
     def authenticate(login, password)
       super
 
@@ -111,10 +149,19 @@ module Mauve
 
   end
 
+  # This is the local authentication mechansim, i.e. against the values in the
+  # Mauve config file.
+  #
   class AuthLocal < Authentication
 
     Mauve::Authentication::ORDER << self
 
+    # Authenticate against the local configuration
+    #
+    # @param [String] login
+    # @param [String] password
+    #
+    # @return [Boolean]
     def authenticate(login,password)
       super
       Digest::SHA1.hexdigest(password) == Mauve::Configuration.current.people[login].password

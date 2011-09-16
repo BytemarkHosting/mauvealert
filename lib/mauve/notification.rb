@@ -6,7 +6,7 @@ module Mauve
   # This class provides an execution context for the code found in 'during'
   # blocks in the configuration file.  This code specifies when an alert
   # should cause notifications to be generated, and can access @time and
-  # @alert variables.  There are also some helper methods to provide
+  # \@alert variables.  There are also some helper methods to provide
   # oft-needed functionality such as hours_in_day.
   #
   # e.g. to send alerts only between 10 and 11 am:
@@ -15,7 +15,7 @@ module Mauve
   #   
   # ... later on ...
   #   
-  #   DuringRunner.new(Time.now, my_alert, &during).inside?
+  #   DuringRunner.new(Time.now, my_alert, &during).now?
   #
   # ... or to ask when an alert will next be cued ...
   #
@@ -28,6 +28,14 @@ module Mauve
 
     attr_reader :time, :alert, :during
 
+    #
+    # Sets up the class
+    #
+    # @param [Time] time The time we're going to test
+    # @param [Mauve::Alert or Nilclass] alert The alert that we can use in tests.
+    # @param [Proc] during The Proc that is evaluated inside the instance to decide if now is now!
+    # @raise [ArgumentError] if +time+ is not a Time
+    #
     def initialize(time, alert=nil, &during)
       raise ArgumentError.new("Must supply time (not #{time.inspect})") unless time.is_a?(Time)
       @time = time
@@ -36,14 +44,21 @@ module Mauve
       @logger = Log4r::Logger.new "Mauve::DuringRunner"
     end
     
+    # This evaluates the +during+ block, returning the result.
     #
-    #
-    #
+    # @param [Time] t Set the time at which to evaluate the +during+ block.
+    # @return [Boolean]
     def now?(t=@time)
       @test_time = t
-      res = instance_eval(&@during)
+      instance_eval(&@during) ? true : false
     end
 
+    # This finds the next occurance of the +during+ block evaluating to true.
+    # It returns nil if an occurence cannot be found within the next 8 days.
+    #
+    # @param [Integer] after Skip time forward this many seconds before starting
+    # @return [Time or nil]
+    #
     def find_next(after = 0)
       t = @time+after
       #
@@ -86,18 +101,28 @@ module Mauve
     
     protected
 
+    # Returns true if the current hour is in the list of hours given.
+    # 
+    # @param [Array] hours List of hours (as Integers)
+    # @return [Boolean]
     def hours_in_day(*hours)
       @test_time = @time if @test_time.nil?
       x_in_list_of_y(@test_time.hour, hours.flatten)
-    end
-    
+    end   
+ 
+    # Returns true if the current day is in the list of days given
+    #
+    # @param [Array] days List of days (as Integers)
+    # @return [Boolean]
     def days_in_week(*days)
       @test_time = @time if @test_time.nil?
       x_in_list_of_y(@test_time.wday, days.flatten)
     end
     
-    ## Return true if the alert has not been acknowledged within a certain time.
-    # 
+    # Tests if the alert has not been acknowledged within a certain time.
+    #
+    # @param [Integer] seconds Number of seconds
+    # @return [Boolean]
     def unacknowledged(seconds)
       @test_time = @time if @test_time.nil?
       @alert &&
@@ -106,6 +131,11 @@ module Mauve
         (@test_time - @alert.raised_at) >= seconds
     end
     
+    # Checks to see if x is contained in y
+    #
+    # @param [Array] y Array to search for +x+
+    # @param [Object] x
+    # @return [Boolean]
     def x_in_list_of_y(x,y)
       y.any? do |range|
         if range.respond_to?("include?")
@@ -116,16 +146,17 @@ module Mauve
       end
     end
 
+    # Test to see if we're in working hours.  See Time#working_hours?
+    #
+    # @return [Boolean]
     def working_hours? 
       @test_time = @time if @test_time.nil?
       @test_time.working_hours?
     end
 
-    # Return true in the dead zone between 3 and 7 in the morning.
+    # Test to see if we're in the dead zone.  See Time#dead_zone?
     #
-    # Nota bene that this is used with different times in the reminder section.
-    #
-    # @return [Boolean] Whether now is a in the dead zone or not.
+    # @return [Boolean]
     def dead_zone?
       @test_time = @time if @test_time.nil?
       @test_time.dead_zone?
@@ -139,20 +170,31 @@ module Mauve
   #
   class Notification < Struct.new(:people, :level, :every, :during, :list)
 
-    def to_s
-      "#<Notification:of #{people.map { |p| p.username }.join(',')} at level #{level} every #{every}>"
-    end
- 
-    attr_reader :thread_list
-
+    # Set up a new notification
+    #
+    # @param [Array] people List of Mauve::Person to notify
+    # @param [Symbol] level Level at which to notify
     def initialize(people, level)
       self.level = level
       self.every = 300
       self.people = people
     end
 
+    # @return [String]
+    def to_s
+      "#<Notification:of #{people.map { |p| p.username }.join(',')} at level #{level} every #{every}>"
+    end
+
+    # @return Log4r::Logger 
     def logger ;  Log4r::Logger.new self.class.to_s ; end
 
+    # Push a notification on to the queue for this alert.  The Mauve::Notifier
+    # will then pop it off and do the notification in a separate thread.
+    #
+    # @param [Mauve::Alert or Mauve::AlertChanged] alert The alert in question
+    # @param [Array] already_sent_to A list of people that have already received this alert.
+    #
+    # @return [Array] The list of people that have received this alert.
     def notify(alert, already_sent_to = [])
 
       if people.nil? or people.empty?
@@ -187,7 +229,13 @@ module Mauve
 
       return already_sent_to
     end
-    
+   
+    # Work out when this notification should next get sent.  Nil will be
+    # returned if the alert is not raised.
+    #
+    # @param [Mauve::Alert] alert The alert in question
+    # @return [Time or nil] The time a reminder should get sent, or nil if it
+    #   should never get sent again.
     def remind_at_next(alert)
       return nil unless alert.raised?
 

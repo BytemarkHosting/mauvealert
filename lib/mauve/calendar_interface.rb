@@ -8,25 +8,20 @@ module Mauve
 
   # Interface to the Bytemark calendar.
   #
-  # Nota Bene that this does not include a chaching mechanism.  Some caching
-  # is implemented in the Person object.
-  #
-  # @see Mauve::Person
-  # @author yann Golanski.
   class CalendarInterface 
     
     class << self
 
+      # @return [Log4r::Logger]
       def logger
         @logger ||= Log4r::Logger.new(self.to_s)
       end
 
       # Gets a list of ssologin on support.
       #
-      # Class method.
-      #
       # @param [String] url A Calendar API url.
-      # @return [Array] A list of all the username on support.
+      #
+      # @return [Array] A list of all the usernames on support.
       def get_users_on_support(url)
         result = do_get_with_cache(url)
 
@@ -41,10 +36,9 @@ module Mauve
 
       # Check to see if the user is on support.
       #
-      # Class method.
-      #
       # @param [String] url A Calendar API url.
       # @param [String] usr User single sign on.
+      #
       # @return [Boolean] True if on support, false otherwise.
       def is_user_on_support?(url, usr)
         return get_users_on_support(url).include?(usr)
@@ -56,6 +50,7 @@ module Mauve
       #
       # @param [String] url A Calendar API url.
       # @param [String] usr User single sign on.
+      # 
       # @return [Boolean] True if on holiday, false otherwise.
       def is_user_on_holiday?(url)
         result = do_get_with_cache(url)
@@ -72,7 +67,7 @@ module Mauve
 
       # Grab a URL from the wide web.
       #
-      # @TODO: boot this in its own class since list of ips will need it too.
+      # @todo boot this in its own class since list of ips will need it too.
       #
       # @param [String] uri -- a URL
       # @return [String or nil] -- the contents of the URI or nil if an error has been encountered.
@@ -136,6 +131,12 @@ module Mauve
         return nil
       end
 
+      # This does HTTP fetches with a 5 minute cache
+      #
+      # @param [String] url
+      # @param [Time] cache_until
+      #
+      # @return [String or nil]
       def do_get_with_cache(url, cache_until = Time.now + 5.minutes)
         @cache ||= {}
 

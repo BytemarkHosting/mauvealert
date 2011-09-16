@@ -30,10 +30,14 @@ module Mauve
 
         def logger
           @logger ||= Log4r::Logger.new self.class.to_s.sub(/::Default$/,"")
-
         end
 
         def send_alert(destination, alert, all_alerts, conditions = {})
+
+          logger.debug [destination, alert, all_alerts, conditions]
+
+          return false if destination.nil?
+
           message = prepare_message(destination, alert, all_alerts, conditions)
           args  = [@server, @port]
           args += [@username, @password, @login_method.to_sym] if @login_method

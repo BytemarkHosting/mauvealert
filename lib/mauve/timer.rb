@@ -7,6 +7,9 @@ require 'log4r'
 
 module Mauve
 
+  #
+  # This is the thread that looks for reminders and heartbeat alerts to poll.
+  #
   class Timer < MauveThread
 
     include Singleton
@@ -20,6 +23,14 @@ module Mauve
       super
     end
 
+    private
+
+    # This is the trigger for heartbeats and reminders.
+    # 
+    # It looks up the next event, and sleeps until it is due.  If an update
+    # comes in (via the processor) it is broken out of its sleep, and starts
+    # again when woken up.
+    #
     def main_loop
       #
       # Get the next alert.

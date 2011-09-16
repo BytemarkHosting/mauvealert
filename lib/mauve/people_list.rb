@@ -4,14 +4,18 @@ require 'mauve/calendar_interface'
 
 module Mauve 
 
-  # Stores a list of name.
+  # Stores a list of Mauve::Person
   #
-  # @author Yann Golanski
+  #
   class PeopleList 
 
     attr_reader :label, :list
 
-    # Default contrustor.
+    # Create a new list
+    #
+    # @param [String] label The name of the list
+    # @raise [ArgumentError] if the label is not a string
+    #
     def initialize(label)
       raise ArgumentError, "people_list label must be a string" unless label.is_a?(String)
       @label = label
@@ -20,6 +24,10 @@ module Mauve
 
     alias username label
 
+    # Append an Array or String to a list
+    #
+    # @param [Array or String] arr
+    # @return [Mauve::PeopleList] self
     def +(arr)
       case arr
         when Array
@@ -44,15 +52,14 @@ module Mauve
 
     alias add_to_list +
 
-    #
-    # Set up the logger
+    # @return Log4r::Logger
     def logger
       @logger ||=  Log4r::Logger.new self.class.to_s
     end
 
-    #
     # Return the array of people
     #
+    # @return [Array]
     def people
 
       l = list.collect do |name|

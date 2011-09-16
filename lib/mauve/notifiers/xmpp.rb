@@ -85,15 +85,25 @@ module Mauve
           @client = nil
         end
 
+        # The logger instance
+        # 
+        # @return [Log4r::Logger]
         def logger
           # Give the logger a sane name
           @logger ||= Log4r::Logger.new self.class.to_s.sub(/::Default$/,"")
         end
        
+        # Sets the client's JID
+        #
+        # @param [String] jid The JID required.
+        # @return [Jabber::JID] The client JID.
         def jid=(jid)
           @jid = JID.new(jid)
         end
- 
+
+        # Connects to the XMPP server, and sets up the roster
+        #
+        # @return [Jabber::Client, NilClass] The connected client, or nil in the case of failure
         def connect
           logger.debug "Starting connection to #{@jid}"
 
@@ -156,13 +166,14 @@ module Mauve
           @client = nil
         end  
 
-        #
-        # Kills the processor thread
-        #
         def stop
           @client.stop
         end
-
+  
+        #
+        # Closes the XMPP connection, if possible.  Sets @client to nil.
+        #
+        # @return [NilClass]
         def close
           @closing = true
           if @client 
@@ -177,27 +188,32 @@ module Mauve
           @client = nil
         end
 
+        # Determines if the client is ready.
+        #
+        # @return [Boolean]
         def ready?
           @client.is_a?(Jabber::Client) and @client.is_connected?
         end
         
-        # 
-        # Takes an alert and converts it into a message.
-        #
-        def convert_alert_to_message(alert)
-        end
-
         # Attempt to send an alert using XMPP. 
-        # +destination+ is the JID you're sending the alert to. This should be
-        # a bare JID in the case of an individual, or muc:<room>@<server> for 
-        # chatrooms (XEP0045). The +alert+ object is turned into a pretty
-        # message and sent to the destination as a message, if the +conditions+
-        # are met. all_alerts are currently ignored.
         #
-        # The only suported condition at the moment is :if_presence => [choices]
-        # which checks whether the jid in question has a presence matching one
-        # or more of the choices - see +check_jid_has_presence+ for options.
-
+        # @param [String] destination The JID you're sending the alert to. This should be
+        #   a bare JID in the case of an individual, or +muc:room@server+ for
+        #   chatrooms (XEP0045).
+        #
+        # @param [Mauve::Alert] alert This is turned into a pretty
+        #   message and sent to the destination as a message, if +conditions+
+        #   are met.
+        #
+        # @param [Array] all_alerts Currently ignored.
+        #
+        # @param [Hash] conditions Conditions that determine if an alert should be sent
+        #
+        # @option conditions [Array] :if_presence Checks whether the jid in question
+        #   has a presence matching one or more of the choices - see
+        #   Mauve::Notifiers::Xmpp::Default#check_jid_has_presence for options.
+        #
+        # @return [Boolean] 
         def send_alert(destination, alert, all_alerts, conditions = {})
           destination_jid = JID.new(destination)         
  
@@ -650,7 +666,6 @@ EOF
         #   :unavailable -                  - jabber status is away, dnd or xa
         #   :unknown                        - don't know (not in roster)
         #
-        # For MUCs: TODO
         # Returns true if at least one of the presence specifiers for the jid
         # is met, false otherwise. Note that if the alerter can't see the alertee's
         # presence, only 'unknown' will match - generally, you'll want [:online, :unknown]

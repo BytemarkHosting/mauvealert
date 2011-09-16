@@ -25,11 +25,14 @@ module Mauve
     #
     THREAD_CLASSES = [UDPServer, HTTPServer, Pop3Server, Processor, Timer, Notifier, Heartbeat]
 
-    attr_reader :hostname, :database, :initial_sleep
+    attr_reader   :hostname, :database, :initial_sleep
     attr_reader   :packet_buffer, :notification_buffer, :started_at
 
     include Singleton
 
+    # Initialize the Server, setting up a blank configuration if no
+    # configuration has been created already.
+    #
     def initialize
       super
       @hostname    = "localhost"
@@ -51,29 +54,47 @@ module Mauve
       Configuration.current = Configuration.new if Mauve::Configuration.current.nil?
     end
 
+    # Set the hostname of this Mauve instance.
+    #
+    # @param [String] h The hostname
     def hostname=(h)
       raise ArgumentError, "hostname must be a string" unless h.is_a?(String)
       @hostname = h
     end
 
+    # Set the database
+    #
+    # @param [String] d The database
     def database=(d)
       raise ArgumentError, "database must be a string" unless d.is_a?(String)
       @database = d
     end
-
+    
+    # Set the sleep period during which notifications about old alerts are
+    # suppressed.
+    #
+    # @param [Integer] s The initial sleep period.
     def initial_sleep=(s)
       raise ArgumentError, "initial_sleep must be numeric" unless s.is_a?(Numeric)
       @initial_sleep = s
     end
 
+    # Test to see if we should suppress alerts because we're in the initial sleep period
+    #
+    # @return [Boolean]
     def in_initial_sleep?
       Time.now < self.started_at + self.initial_sleep
     end
 
+    # return [Log4r::Logger]
     def logger
       @logger ||= Log4r::Logger.new(self.class.to_s)
     end
 
+    # This sorts out the Server.  It empties the notification and packet
+    # buffers.  It configures and migrates the database.
+    #  
+    # @return [NilClass]
     def setup
       #
       #
@@ -103,15 +124,45 @@ module Mauve
       return nil
     end
 
+    # This sets up the server, and then starts the main loop.
+    #
     def start
 #      self.state = :starting
 
-      self.setup
+      setup
       
-      self.run_thread { self.main_loop }
+      run_thread { main_loop }
     end
 
     alias run start 
+    
+    #
+    # This stops the main loop, and all the threads that are defined in THREAD_CLASSES above.
+    #
+    def stop
+      if self.state == :stopping
+        # uh-oh already told to stop.
+        logger.error "Stop already called.  Killing self!"
+        Kernel.exit 1 
+      end
+
+      self.state = :stopping
+
+      THREAD_CLASSES.each do |klass|
+        klass.instance.stop unless klass.instance.nil?
+      end
+      
+      thread_list = Thread.list 
+      thread_list.delete(Thread.current)
+
+      thread_list.each do |t|
+        t.exit
+      end      
+
+      self.state = :stopped
+    end
+
+    private
 
     def main_loop
       thread_list = Thread.list 
@@ -185,29 +236,6 @@ module Mauve
       end
     end
     
-    def stop
-      if self.state == :stopping
-        # uh-oh already told to stop.
-        logger.error "Stop already called.  Killing self!"
-        Kernel.exit 1 
-      end
-
-      self.state = :stopping
-
-      THREAD_CLASSES.each do |klass|
-        klass.instance.stop unless klass.instance.nil?
-      end
-      
-      thread_list = Thread.list 
-      thread_list.delete(Thread.current)
-
-      thread_list.each do |t|
-        t.exit
-      end      
-
-      self.state = :stopped
-    end
-
 
     class << self
 
@@ -218,17 +246,23 @@ module Mauve
       # processing them crash, the buffer itself is not lost with the thread.
       #
 
-      #
-      # These methods pop things on and off the packet_buffer
-      #
+      # Push a packet onto the back of the +packet_buffer+
+      # 
+      # @param [String] a Packet from the UDP server
       def packet_enq(a)
         instance.packet_buffer.push(a)
       end
 
+      # Shift a packet off the front of the +packet buffer+
+      #
+      # @return [String] the oldest UDP packet
       def packet_deq
         instance.packet_buffer.shift
       end
 
+      # Returns the current length of the +packet_buffer+
+      #
+      # @return [Integer}
       def packet_buffer_size
         instance.packet_buffer.size
       end
@@ -236,17 +270,23 @@ module Mauve
       alias packet_push packet_enq
       alias packet_pop  packet_deq
       
+      # Push a notification on to the back of the +notification_buffer+
       #
-      # These methods pop things on and off the notification_buffer
-      #
+      # @param [Array] a Notification array, consisting of a Person and the args to Mauve::Person#send_alert
       def notification_enq(a)
         instance.notification_buffer.push(a)
       end
 
+      # Shift a notification off the front of the +notification_buffer+
+      #
+      # @return [Array] Notification array, consisting of a Person and the args to Mauve::Person#send_alert
       def notification_deq
         instance.notification_buffer.shift
       end
 
+      # Return the current length of the +notification_buffer+
+      #
+      # @return [Integer]
       def notification_buffer_size
         instance.notification_buffer.size
       end
