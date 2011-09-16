@@ -131,7 +131,7 @@ div#navbar a {
 }
 
 div#navbar li#nav_index a {
-  background-image: url(/common/images/BytemarkLogo180.png);
+  background-image: url(/images/BytemarkLogo180.png);
   background-repeat:no-repeat;
   background-position:left center;
   padding-left: 180px;
