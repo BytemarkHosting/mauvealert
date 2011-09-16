@@ -34,11 +34,15 @@ class Time
   # @return [Time]
   #
   def in_x_hours(n, type="wallclock")
+    raise ArgumentError, "n must be numeric" unless n.is_a?(Numeric)
+    raise ArgumentError, "type must be a string" unless type.is_a?(String)
+
     t = self.dup
+
     #
     # Do this in seconds rather than hours
     #
-    n = n.to_i*3600
+    n = (n*3600).to_i
   
     test = case type
       when "working"

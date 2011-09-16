@@ -12,6 +12,10 @@ require 'mauve/notifiers/debug'
 # A couple of monkey patches to fix up all this nonsense.
 #
 module Jabber
+  #
+  # Monkey patch of the close commands.  For good reasons, though I can't
+  # remember why.
+  #
   class Stream
     def close
       #
@@ -47,22 +51,17 @@ end
 
 
 module Mauve
-  module Notifiers    
+  module Notifiers
+ 
+    #
+    # This is the Jabber/XMMP notifiers module.
+    #
     module Xmpp
-      
-#      class CountingMUCClient < Jabber::MUC::SimpleMUCClient
-#
-#        attr_reader :participants
-#
-#        def initialize(*a)
-#          super(*a)
-#          @participants = 0
-#          self.on_join  { @participants += 1 }
-#          self.on_leave { @participants -= 1 }
-#        end
-#
-#      end
-#      
+
+      #
+      # The default provider is XMMP, although this should really be broken out
+      # into its own provider to allow multple ways of doing XMPP.
+      #
       class Default
 
         include Jabber
@@ -624,7 +623,7 @@ EOF
             end
 
             if alert.acknowledge!(Configuration.current.people[username], ack_until)
-              msg << "#{alert_id}: Acknowledged until #{alert.will_unacknowledge_at}"
+              msg << "#{alert_id}: Acknowledged until #{alert.will_unacknowledge_at.to_s_human}"
               succeeded << alert
             else
               msg << "#{alert_id}: Acknowledgement failed."

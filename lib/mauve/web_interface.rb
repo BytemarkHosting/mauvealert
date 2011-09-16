@@ -197,7 +197,7 @@ EOF
       alerts     = params[:alerts]     || []
       note       = params[:note]       || nil
 
-      n_hours = (n_hours.to_i > 188 ? 188 : n_hours.to_i)
+      n_hours = (n_hours.to_f > 188 ? 188 : n_hours.to_f)
 
       if ack_until.to_s.empty?
         ack_until = Time.now.in_x_hours(n_hours, type_hours.to_s)
@@ -247,7 +247,7 @@ EOF
     get '/ajax/time_in_x_hours/:n_hours/:type_hours' do
       content_type :text
 
-      n_hours = params[:n_hours].to_i
+      n_hours = params[:n_hours].to_f
       type_hours = params[:type_hours].to_s
 
       #
@@ -335,7 +335,7 @@ EOF
       alert = Alert.get(params[:id])
       
       ack_until  = params[:ack_until].to_i
-      n_hours    = params[:n_hours].to_i
+      n_hours    = params[:n_hours].to_f
       type_hours = params[:type_hours].to_s
       note       = params[:note]       || nil
       
@@ -355,7 +355,7 @@ EOF
         logger.debug h.errors unless h.save
       end
       
-      flash['notice'] = "Successfully acknowledged alert <em>#{alert.alert_id}</em> from source #{alert.source}."
+      flash['notice'] = "Successfully acknowledged alert <em>#{alert.alert_id}</em> from source #{alert.source} until #{alert.will_unacknowledge_at.to_s_human}."
       redirect "/alert/#{alert.id}"
     end
 
