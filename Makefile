@@ -23,6 +23,9 @@ clean:
 		ruby ./setup.rb clean ; \
 	fi
 	$(RM) -r tmp
+	$(RM) -r OpenBSD
+	$(RM) setup.rb
+	
 
 distclean: clean
 	if [ -e ./setup.rb ] ; then ruby ./setup.rb distclean ; fi
@@ -35,14 +38,20 @@ test: setup.rb
 setup.rb: /usr/lib/ruby/1.8/setup.rb
 	ln -sf /usr/lib/ruby/1.8/setup.rb .
 
-OpenBSD: OpenBSD/sha256sums
+OpenBSD: OpenBSD/sha256.asc
 
-OpenBSD/sha256sums: OpenBSD/ruby-mauvealert.tar.gz OpenBSD/ruby-protobuf.tar.gz
+OpenBSD/sha256: OpenBSD/ruby-mauvealert.tar.gz OpenBSD/ruby-protobuf.tar.gz
 	#
 	# rejig sha256sum to openbsd sha256
 	# 
+	$(RM) OpenBSD/sha256
 	cd OpenBSD && sha256sum * | sed -e 's/\([^ ]\+\)  \(.*\)$$/SHA256 (\2) = \1/' > sha256
-	gpg --clearsign OpenBSD/sha256sum
+
+OpenBSD/sha256.asc: OpenBSD/sha256
+	#
+	# Sign it.
+	#
+	gpg --clearsign OpenBSD/sha256
 
 OpenBSD/ruby-mauvealert.tar.gz: all setup.rb
 	mkdir -p tmp/ruby-mauvealert
@@ -63,5 +72,5 @@ OpenBSD/ruby-protobuf.tar.gz:
 	mkdir -p OpenBSD
 	tar -C tmp/ruby-protobuf -czvf $@ .
 
-.PHONY: all clean openbsd_tarball test distclean
+.PHONY: all clean openbsd_tarball test distclean OpenBSD
 
