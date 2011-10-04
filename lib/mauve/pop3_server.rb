@@ -410,6 +410,8 @@ module Mauve
 
     end
 
+    protected
+
     #
     # These are the messages in the mailbox.  It looks for the first 100 alert_changed, and formats them into emails, and returns an array of
     #
