@@ -1,3 +1,9 @@
+mauvealert (3.5.10) stable; urgency=low
+
+  * Fixed up Pop3Client class to work.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 04 Oct 2011 15:29:22 +0100
+
 mauvealert (3.5.9) stable; urgency=low
 
   * Improve documentation in code
