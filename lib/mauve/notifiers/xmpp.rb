@@ -566,11 +566,11 @@ EOF
 
         def do_parse_ack(msg)
           return "Sorry -- I don't understand your acknowledge command." unless
-             msg.body =~ /ack(?:nowledge)?\s+([\d,]+)\s+for\s+(\d+(?:\.\d+)?)\s+(work(?:ing)?|day(?:time)?|wall(?:-?clock)?)?\s*(day|hour|min(?:ute)?|sec(?:ond))s?(?:\s+because\s+(.*))?/i
+             msg.body =~ /ack(?:nowledge)?\s+([\d\D]+)\s+for\s+(\d+(?:\.\d+)?)\s+(work(?:ing)?|day(?:time)?|wall(?:-?clock)?)?\s*(day|hour|min(?:ute)?|sec(?:ond))s?(?:\s+because\s+(.*))?/i
           
           alerts, n_hours, type_hours, dhms, note = [$1,$2, $3, $4, $5]
 
-          alerts = alerts.split(",")
+          alerts = alerts.split(/\D/)
 
           n_hours = case dhms
             when /^day/
