@@ -150,12 +150,7 @@ module Mauve
             unless ex.nil? or @closing 
               logger.warn(["Caught",ex.class,ex.to_s,"during XMPP",where].join(" "))
               logger.debug ex.backtrace.join("\n")
-              @closing = true
-              connect
-              @mucs.each do |jid, muc|
-                @mucs.delete(jid)
-                join_muc(muc[:jid], muc[:password])
-              end
+              self.close
             end
           end
         rescue StandardError => ex

@@ -42,23 +42,22 @@ module Mauve
       #
       # Make sure we're connected to the XMPP server if needed on every iteration.
       #
-      if Configuration.current.notification_methods['xmpp'] and !Configuration.current.notification_methods['xmpp'].ready?
+      xmpp = Configuration.current.notification_methods['xmpp']
+
+      if xmpp and !xmpp.ready?
         #
         # Connect to XMPP server
         #
-        xmpp = Configuration.current.notification_methods['xmpp']
-        xmpp.connect
+        xmpp.connect 
 
+        #
+        # Join all chats and shit.  Unless the connection failed.
+        #
         Configuration.current.people.each do |username, person|
           # 
           # Ignore people without XMPP stanzas.
           #
           next unless person.xmpp 
-
-          #
-          # Can't do this unless we're ready.
-          #
-          next unless xmpp.ready?
 
           #
           # For each JID, either ensure they're on our roster, or that we're in
@@ -71,7 +70,8 @@ module Mauve
           end
 
           Configuration.current.people[username].xmpp = jid unless jid.nil?
-        end
+
+        end if xmpp.ready?
 
       end
 
