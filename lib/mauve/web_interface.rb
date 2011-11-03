@@ -5,7 +5,18 @@ require 'json'
 
 require 'mauve/authentication'
 
-require 'sinatra/tilt'
+tilt_lib = "tilt"
+begin
+  require tilt_lib
+rescue LoadError => ex
+  if tilt_lib == "tilt"
+    tilt_lib = "sinatra/tilt" 
+    retry
+  end
+  
+  raise ex
+end
+
 require 'sinatra/base'
 require 'sinatra-partials'
 
