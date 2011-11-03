@@ -108,14 +108,25 @@ module Mauve
       #
       # Update any tables.
       #
-      Mauve.constants.each do |c| 
+      Mauve.constants.each do |c|
         next if %w(AlertEarliestDate).include?(c)
         m = Mauve.const_get(c)
-        m.auto_upgrade! if m.respond_to?("auto_upgrade!")
+        next unless m.respond_to?("auto_upgrade!")
+        m.auto_upgrade!
         # 
         # Don't want to use automigrate, since this trashes the tables.
         #
         # m.auto_migrate! if m.respond_to?("auto_migrate!")
+        #
+        #
+        m.properties.each do |prop|
+          next unless prop.is_a?(DataMapper::Property::EpochTime)
+          logger.info("Updating #{c}.#{prop.name}")
+          statement = "UPDATE mauve_#{DataMapper::Inflector.tableize(c)} SET #{prop.name} = strftime(\"%s\",#{prop.name}) WHERE #{prop.name} LIKE \"%-%-%\";"
+          DataMapper.repository(:default).adapter.execute("BEGIN TRANSACTION;")
+          DataMapper.repository(:default).adapter.execute(statement)
+          DataMapper.repository(:default).adapter.execute("COMMIT TRANSACTION;")
+        end
       end
 
       AlertHistory.migrate!

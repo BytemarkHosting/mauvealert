@@ -80,11 +80,11 @@ module Mauve
     property :type,  String, :required => true, :default => "unknown", :lazy => false
     property :event, Text, :required => true, :default => "Nothing set", :lazy => false
     property :user, String
-    property :created_at, Time, :required => true
+    property :created_at, EpochTime, :required => true
 
     has n, :alerts, :through => :alerthistory
 
-    before :valid?, :set_created_at
+    before :valid?, :do_set_created_at
     before :save,  :do_sanitize_html
 
     protected
@@ -110,7 +110,7 @@ module Mauve
 
     # Update the created_at time on the object
     #
-    def set_created_at(context = :default)
+    def do_set_created_at(context = :default)
       self.created_at = Time.now unless self.created_at.is_a?(Time) 
     end
 
