@@ -272,4 +272,25 @@ EOF
     #
   end
 
+  def test_heartbeats_during_clock_change
+
+    updates = YAML.load_file(File.join(File.dirname(__FILE__),"bst_to_gmt.yaml"))
+
+    Timecop.freeze(updates.first[1]-20.minutes)
+    Configuration.current = ConfigurationBuilder.parse(@test_config)
+    Server.instance.setup
+    assert_equal(Time.now, Server.instance.started_at)
+
+    updates.each do |update, received_at, source_ip|
+      Timecop.freeze(received_at)
+      Alert.receive_update(update, received_at, source_ip)
+      alert = Alert.first
+      assert(alert.cleared?)
+      alert.poll
+      assert(alert.cleared?)
+      assert(0, Server.instance.notification_buffer.length)
+    end
+
+  end
+
 end
