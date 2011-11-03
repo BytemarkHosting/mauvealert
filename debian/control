@@ -3,7 +3,7 @@ Maintainer: Matthew Bloch <matthew@bytemark.co.uk>
 Uploaders: Patrick J Cherry <patrick@bytemark.co.uk>
 Section: ruby
 Priority: optional
-Build-Depends: ruby1.8, debhelper, cdbs, rdoc, txt2man, cdbs
+Build-Depends: ruby1.8, debhelper, cdbs, rdoc, txt2man, cdbs, libsetup-ruby1.8
 Standards-Version: 3.9.1
 
 Package: mauvealert-client
@@ -24,24 +24,20 @@ Architecture: all
 Pre-Depends: libjs-jquery
 Depends: mauvealert-common (>= 3.4.0),
  adduser,
- ruby1.8 (>= 1.8.7),
- libhaml-ruby1.8 | haml,
+ libdm-core-ruby1.8 (>= 1.2.0),
+ libdm-migrations-ruby1.8 (>= 1.2.0),
+ libdm-serializer-ruby1.8 (>= 1.2.0),
+ libdm-sqlite-adapter-ruby1.8 (>= 1.2.0),
+ libdm-types-ruby1.8 (>= 1.2.0),
+ libdm-validations-ruby1.8 (>= 1.2.0),
+ libhaml-ruby1.8,
  liblog4r-ruby1.8,
  libredcloth-ruby1.8,
  librmail-ruby1.8,
- libsinatra-ruby1.8,
- libuuidtools-ruby1.8,
- libwebrick-ruby1.8,
- libdm-core-ruby1.8,
- libdm-do-adapter-ruby1.8,
- libdm-migrations-ruby1.8,
- libdm-serializer-ruby1.8,
- libdm-sqlite-adapter-ruby1.8,
- libdo-sqlite3-ruby1.8,
- libdm-timestamps-ruby1.8,
- libdm-types-ruby1.8,
- libdm-validations-ruby1.8,
- thin1.8 | thin,
+ libsanitize-ruby1.8 (>= 2.0.3),
+ libsinatra-ruby1.8 (>= 1.0),
+ ruby1.8 (>= 1.8.7),
+ thin1.8 (>= 1.2.11),
  libxmpp4r-ruby1.8,
  ${misc:Depends}
 Suggests: mauvealert-client
