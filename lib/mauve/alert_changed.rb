@@ -15,14 +15,23 @@ module Mauve
     property :id, Serial
     property :alert_id, Integer, :required  => true
     property :person, String, :required  => true
-    property :at, Time, :required => true
+    property :at, EpochTime, :required => true
     property :was_relevant, Boolean, :required => true, :default => true
     property :level, String, :required  => true
     property :update_type, String, :required  => true
-    property :remind_at, Time
+    property :remind_at, EpochTime, :required => false
     
     belongs_to :alert
-    
+
+    before :valid?, :do_set_timestamps
+
+    protected
+
+    def do_set_timestamps(context = :default)
+      self.at = Time.now unless self.original_attributes.has_key?("at")
+    end
+
+    public
 
     # @return [String]
     def to_s

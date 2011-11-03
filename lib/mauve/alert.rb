@@ -16,7 +16,7 @@ module Mauve
     
     property :id, Serial
     property :alert_id, Integer
-    property :earliest, Time
+    property :earliest, EpochTime
     belongs_to :alert, :model => "Alert"
     
     # 1) Shame we can't get this called automatically from DataMapper.auto_upgrade!
@@ -28,7 +28,7 @@ module Mauve
     # http://www.mail-archive.com/datamapper@googlegroups.com/msg02314.html
     #
     def self.create_view!
-      the_distant_future = Time.now + 2000.days # it is the year 2000 - the humans are dead
+      the_distant_future = (Time.now + 2000.days).to_i # it is the year 2000 - the humans are dead
       ["BEGIN TRANSACTION",
        "DROP VIEW IF EXISTS mauve_alert_earliest_dates",
        "CREATE VIEW 
@@ -76,21 +76,22 @@ module Mauve
     property :detail, Text, :length=>65535
     property :importance, Integer, :default => 50
 
-    property :raised_at, Time
-    property :cleared_at, Time
-    property :updated_at, Time
-    property :acknowledged_at, Time
+    property :raised_at, EpochTime
+    property :cleared_at, EpochTime
+    property :updated_at, EpochTime
+    property :acknowledged_at, EpochTime
     property :acknowledged_by, String, :lazy => false
     property :update_type, String, :lazy => false
     
-    property :will_clear_at, Time
-    property :will_raise_at, Time
-    property :will_unacknowledge_at, Time
+    property :will_clear_at, EpochTime
+    property :will_raise_at, EpochTime
+    property :will_unacknowledge_at, EpochTime
     has n, :changes, :model => AlertChanged
     has n, :histories, :through => :alerthistory
 
     has 1, :alert_earliest_date
 
+    before :valid?, :do_set_timestamps
     before :save, :do_sanitize_html
     before :save, :take_copy_of_changes
     after  :save, :notify_if_needed
@@ -204,7 +205,11 @@ module Mauve
         attribute_set(key, Alert.clean_html(val))
       end
     end
-    
+
+    def do_set_timestamps(context = :default)
+      self.updated_at = Time.now unless self.original_attributes.has_key?("updated_at")
+    end
+   
     # This is to stop datamapper inserting duff dates into the database.
     #
     def check_dates
@@ -255,7 +260,7 @@ module Mauve
         h = History.new(:alerts => [self], :type => "update")
 
         if self.update_type == "acknowledged"
-          h.event = "ACKNOWLEDGEDuntil #{self.will_unacknowledge_at}"
+          h.event = "ACKNOWLEDGED until #{self.will_unacknowledge_at}"
           h.user  = self.acknowledged_by
 
         elsif is_a_change
@@ -378,7 +383,7 @@ module Mauve
         # Don't clear will_clear_at
         self.update_type = "raised" if self.update_type.nil? or self.update_type != "changed" or self.original_attributes[Alert.properties[:update_type]] == "cleared"
       end
-      
+
       unless save
         logger.error("Couldn't save #{self}") 
         false
@@ -386,7 +391,7 @@ module Mauve
         true
       end
     end
-    
+
     # Clear an alert at a specified time
     #    
     # @param [Time] at The time at which the alert should be cleared.
@@ -576,7 +581,11 @@ module Mauve
       # @return [NilClass]
       def receive_update(update, reception_time = Time.now, ip_source="network")
 
-        update = Proto::AlertUpdate.parse_from_string(update) unless update.kind_of?(Proto::AlertUpdate)
+        unless update.kind_of?(Proto::AlertUpdate)
+          new_update = Proto::AlertUpdate.new
+          new_update.parse_from_string(update)
+          update = new_update
+        end
 
         alerts_updated = []
         
@@ -679,7 +688,7 @@ module Mauve
 
           alert_db.importance = alert.importance if alert.importance != 0 
 
-          alert_db.updated_at = reception_time 
+          alert_db.updated_at = reception_time
 
           if alert_db.raised? 
             #

@@ -4,12 +4,11 @@
 #
 #
 require 'dm-core'
-require 'dm-validations'
+require 'dm-migrations'
+require 'dm-serializer'
 require 'dm-sqlite-adapter-with-mutex'
 require 'dm-types'
-require 'dm-serializer'
-require 'dm-migrations'
-require 'dm-timestamps'
+require 'dm-validations'
 
 # DataMapper::Model.raise_on_save_failure = true
 
