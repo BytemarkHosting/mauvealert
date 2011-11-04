@@ -1,3 +1,12 @@
+mauvealert (3.6.0) stable; urgency=low
+
+  * Changed ack command to split on spaces or commas or both
+  * Fixed initscripts to, erm, work when VERBOSE is not set
+  * Robustificated XMPP some more
+  * Moved all timestamps into epoch time from regular timestamps
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 04 Nov 2011 08:33:13 +0000
+
 mauvealert (3.5.10) stable; urgency=low
 
   * Fixed up Pop3Client class to work.
