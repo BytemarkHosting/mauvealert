@@ -565,7 +565,7 @@ EOF
           
           alerts, n_hours, type_hours, dhms, note = [$1,$2, $3, $4, $5]
 
-          alerts = alerts.split(/\D/)
+          alerts = alerts.split(/\D+/)
 
           n_hours = case dhms
             when /^day/
