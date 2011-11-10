@@ -130,7 +130,9 @@ require 'mauve/configuration_builder'
 require 'mauve/configuration_builders'
 
 begin
-  Mauve::Configuration.current = Mauve::ConfigurationBuilder.load(configuration_file)
+  builder = Mauve::ConfigurationBuilder.new
+  builder.include_file(configuration_file)
+  Mauve::Configuration.current = builder.result
 rescue StandardError => ex
   error ex 
 end
@@ -149,8 +151,9 @@ end
     # Reload configuration
     #
     begin
-      new_config = Mauve::ConfigurationBuilder.load(configuration_file)
-      Mauve::Configuration.current = new_config
+      builder = Mauve::ConfigurationBuilder.new
+      builder.include_file(configuration_file)
+      Mauve::Configuration.current = builder.result
     rescue BuildException => ex
       Mauve::Server.instance.logger.error "Reconfiguration failed: #{ex.to_s}.  Sticking with old one."
     end

@@ -65,9 +65,103 @@ class ObjectBuilder
     @@sequence  += 1
     "anon.#{Time.now.to_i}.#{@@sequence}"
   end
+
+  #
+  # Merge a file into self.  If the file is a relative path, it is relative to
+  # the file from which it has been included.
+  #
+  # @param [String] file The filename to include
+  #
+  # @raise [BuildException] When an expected exception is raised
+  # @raise [NameError]
+  # @raise [SyntaxError] 
+  # @raise [ArgumentError]
+  #
+  # @returns [ObjectBuilder] self
+  def include_file(file)
+    #
+    # Share the current directory with all instances of this class.
+    #
+    @@directory ||= nil   
+ 
+    # 
+    # Do we have an absolute path?
+    #
+    file = File.join(@@directory, file) if !@@directory.nil? and '/' != file[0,1]
+
+    #
+    # Resolve the filename.
+    #
+    file = File.expand_path(file)
+
+    #
+    # Save the current wd
+    #
+    oldwd = @@directory
+
+    #
+    # Set the new one
+    #
+    @@directory = File.dirname(file)
+
+    #
+    # Read the file and eval it.
+    #
+    instance_eval(File.read(file), file)
+
+    #
+    # Reset back to where we were.
+    #
+    @@directory = oldwd
+
+    self
+  rescue NameError, NoMethodError => ex
+    # 
+    # Ugh.  Catch NameError and re-raise as a BuildException
+    #
+    if ex.backtrace.find{|l| l =~ /^#{file}:(\d+):/}
+      build_ex = BuildException.new "Unknown word `#{ex.name}' in #{file} at line #{$1}"
+      build_ex.set_backtrace ex.backtrace
+      raise build_ex
+    else
+      raise ex
+    end
+  rescue SyntaxError, ArgumentError => ex
+    if ex.backtrace.find{|l| l =~ /^#{file}:(\d+):/}
+      build_ex = BuildException.new "#{ex.message} in #{file} at line #{$1}"
+      build_ex.set_backtrace ex.backtrace
+      raise build_ex
+    else
+      raise ex
+    end
+  end
   
+  #
+  # Loads a stack of files in a directory, and merges them into the current object
+  #
+  # @params [String] dir    Directory in which to search for files.
+  # @params [Regexp] regexp Regular expression for filename to include.
+  #
+  # @returns [ObjectBuilder] self
+  def include_directory(dir, regex = /^[a-zA-Z0-9_-]+\.conf$/)
+    files = []
+    #
+    # Exceptions are caught by #include_file
+    #
+    Dir.entries(dir).sort.each do |entry|
+      next unless entry =~ regex
+
+      file = File.join(dir,entry)
+      next unless File.file?(file)
+
+      include_file(file)
+    end
+
+    self
+  end
+
   class << self
-  
+
     # Defines a new builder
     #
     # @param [String] word The builder's name
@@ -125,48 +219,11 @@ class ObjectBuilder
         @result.__send__("#{word}=".to_sym, true)
       end
     end
-  
-    # Loads a new file
-    # 
-    # @param [String] file
-    def load(file)
-      parse(File.read(file), file)
-    end
-   
-    # Parses a string
-    #
-    # @param [String] string The string to parse
-    # @param [String] file The filename that the string was read from, for helpful error messages.
-    #
-    # @raise [BuildException] When an expected exception is raised
-    # @raise [NameError]
-    # @raise [SyntaxError] 
-    # @raise [ArgumentError]
-    #
-    # @return [ObjectBuidler] The 
-    def parse(string, file="string")
+ 
+    def parse(s)
       builder = self.new
-      builder.instance_eval(string, file)
+      builder.instance_eval(s)
       builder.result
-    rescue NameError, NoMethodError => ex
-      # 
-      # Ugh.  Catch NameError and re-raise as a BuildException
-      #
-      if ex.backtrace.find{|l| l =~ /^#{file}:(\d+):/}
-        build_ex = BuildException.new "Unknown word `#{ex.name}' in #{file} at line #{$1}"
-        build_ex.set_backtrace ex.backtrace
-        raise build_ex
-      else
-        raise ex
-      end
-    rescue SyntaxError, ArgumentError => ex
-      if ex.backtrace.find{|l| l =~ /^#{file}:(\d+):/}
-        build_ex = BuildException.new "#{ex.message} in #{file} at line #{$1}"
-        build_ex.set_backtrace ex.backtrace
-        raise build_ex
-      else
-        raise ex
-      end
     end
  
     def inherited(*args)

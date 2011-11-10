@@ -89,7 +89,6 @@ require 'pp'
 
 def error(msg)
   logger = Log4r::Logger['Mauve']
-  logger.error
   logger.error "*** Error: #{msg}"
   logger.error "*** For help, type: #{$0} -h"
 
@@ -139,7 +138,9 @@ module Mauve
 end
 
 begin
-  Mauve::Configuration.current = Mauve::ConfigurationBuilder.load(configuration_file)
+  builder = Mauve::ConfigurationBuilder.new
+  builder.include_file(configuration_file)
+  Mauve::Configuration.current = builder.result
   Mauve::Server.instance.setup
 rescue StandardError => ex
   error ex 
