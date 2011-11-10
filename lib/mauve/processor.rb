@@ -100,7 +100,7 @@ module Mauve
         #
         # Uh-oh.  Nil data?  That's craaaazy
         #
-        break if data.nil?
+        next if data.nil?
         
 
         # logger.debug("Got #{data.inspect} from #{client.inspect}")
@@ -119,7 +119,7 @@ module Mauve
             next
           end
 
-          logger.debug "Update #{update.transmission_id} sent at #{update.transmission_time} from "+
+          logger.debug "Update #{update.transmission_id} sent at #{update.transmission_time} received at #{received_at.to_i} from "+
             "'#{update.source}'@#{ip_source} alerts #{update.alert.length}"
 
           Alert.receive_update(update, received_at, ip_source)
