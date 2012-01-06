@@ -1,4 +1,14 @@
-mauvealert (3.6.2) lucid; urgency=low
+mauvealert (3.6.3) stable; urgency=low
+
+  * Logs received at time in Processor
+  * Added lsb-base dependency
+  * Added test-task to init script
+  * Added include, include_file, and include_directory directives to
+    configuration.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 06 Jan 2012 14:41:45 +0000
+
+mauvealert (3.6.2) stable; urgency=low
 
   * Tinkered with dependencies
 
