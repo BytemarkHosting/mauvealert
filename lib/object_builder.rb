@@ -66,6 +66,13 @@ class ObjectBuilder
     "anon.#{Time.now.to_i}.#{@@sequence}"
   end
 
+  def set_directory_if_not_set(file_or_directory)
+    if File.file?(file_or_directory)
+
+
+    end
+  end
+
   #
   # Merge a file into self.  If the file is a relative path, it is relative to
   # the file from which it has been included.
@@ -80,39 +87,33 @@ class ObjectBuilder
   # @returns [ObjectBuilder] self
   def include_file(file)
     #
-    # Share the current directory with all instances of this class.
+    # Set the configuration directory just once.   All config files are
+    # relative to this dir, unless otherwise specified.
     #
-    @@directory ||= nil   
- 
-    # 
-    # Do we have an absolute path?
-    #
-    file = File.join(@@directory, file) if !@@directory.nil? and '/' != file[0,1]
 
-    #
-    # Resolve the filename.
-    #
-    file = File.expand_path(file)
+    unless defined? @@directory
+      #
+      # Resolve the filename.
+      #
+      file = File.expand_path(file)
 
-    #
-    # Save the current wd
-    #
-    oldwd = @@directory
+      #
+      # Set the new one
+      #
+      @@directory = File.dirname(file)
+    else
+      # 
+      # Do we have an absolute path?
+      #
+      file = File.join(@@directory, file) if '/' != file[0,1]
 
-    #
-    # Set the new one
-    #
-    @@directory = File.dirname(file)
+      file = File.expand_path(file)
+    end
 
     #
     # Read the file and eval it.
     #
     instance_eval(File.read(file), file)
-
-    #
-    # Reset back to where we were.
-    #
-    @@directory = oldwd
 
     self
   rescue NameError, NoMethodError => ex
@@ -126,7 +127,7 @@ class ObjectBuilder
     else
       raise ex
     end
-  rescue SyntaxError, ArgumentError => ex
+  rescue Errno::ENOENT, SyntaxError, ArgumentError => ex
     if ex.backtrace.find{|l| l =~ /^#{file}:(\d+):/}
       build_ex = BuildException.new "#{ex.message} in #{file} at line #{$1}"
       build_ex.set_backtrace ex.backtrace
@@ -143,21 +144,43 @@ class ObjectBuilder
   # @params [Regexp] regexp Regular expression for filename to include.
   #
   # @returns [ObjectBuilder] self
-  def include_directory(dir, regex = /^[a-zA-Z0-9_-]+\.conf$/)
+  def include_directory(dir)
     files = []
+    
+    if defined? @@directory
+      # 
+      # Do we have an absolute path?
+      #
+      dir = File.join(@@directory, dir) if '/' != dir[0,1]
+    end
+    
+    #
+    # Resolve the filename.
+    #
+    dir = File.expand_path(dir)
+
     #
     # Exceptions are caught by #include_file
     #
-    Dir.entries(dir).sort.each do |entry|
-      next unless entry =~ regex
+    Dir.glob(dir).sort.each do |entry|
+      #file = File.join(dir,entry)
+      #pp file
+      #next unless File.file?(file)
 
-      file = File.join(dir,entry)
-      next unless File.file?(file)
-
-      include_file(file)
+      self.include(entry)
     end
 
     self
+  end
+
+  def include(file_or_directory)
+
+
+    if File.file?(file_or_directory)
+      include_file(file_or_directory)
+    else
+      include_directory(file_or_directory)
+    end
   end
 
   class << self
