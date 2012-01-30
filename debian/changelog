@@ -1,3 +1,9 @@
+mauvealert (3.7.1) stable; urgency=low
+
+  * Fixed debian packaging to install everything.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 30 Jan 2012 17:03:48 +0000
+
 mauvealert (3.7.0) stable; urgency=low
 
   * Bundled timer in with processor.  What could go wrong..?
