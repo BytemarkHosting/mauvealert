@@ -1,13 +1,13 @@
 # encoding: UTF-8
 require 'yaml'
 require 'socket'
-# require 'mauve/datamapper'
+require 'mauve/datamapper'
 require 'mauve/proto'
 require 'mauve/alert'
 require 'mauve/history'
 require 'mauve/mauve_thread'
 require 'mauve/mauve_time'
-require 'mauve/timer'
+require 'mauve/notifier'
 require 'mauve/udp_server'
 require 'mauve/pop3_server'
 require 'mauve/processor'
@@ -23,7 +23,7 @@ module Mauve
     #
     # This is the order in which the threads should be started.
     #
-    THREAD_CLASSES = [UDPServer, HTTPServer, Pop3Server, Processor, Timer, Notifier, Heartbeat]
+    THREAD_CLASSES = [UDPServer, HTTPServer, Pop3Server, Processor, Notifier, Heartbeat]
 
     attr_reader   :hostname, :database, :initial_sleep
     attr_reader   :packet_buffer, :notification_buffer, :started_at
@@ -118,7 +118,6 @@ module Mauve
         #
         # m.auto_migrate! if m.respond_to?("auto_migrate!")
         #
-        #
         m.properties.each do |prop|
           next unless prop.is_a?(DataMapper::Property::EpochTime)
           logger.info("Updating #{c}.#{prop.name}")
@@ -126,7 +125,7 @@ module Mauve
           DataMapper.repository(:default).adapter.execute("BEGIN TRANSACTION;")
           DataMapper.repository(:default).adapter.execute(statement)
           DataMapper.repository(:default).adapter.execute("COMMIT TRANSACTION;")
-        end
+        end if DataMapper.repository(:default).adapter.class.to_s == "DataMapper::Adapters::SqliteAdapter"
       end
 
       AlertHistory.migrate!

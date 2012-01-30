@@ -174,8 +174,6 @@ class ObjectBuilder
   end
 
   def include(file_or_directory)
-
-
     if File.file?(file_or_directory)
       include_file(file_or_directory)
     else

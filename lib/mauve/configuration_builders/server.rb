@@ -64,24 +64,6 @@ module Mauve
       end
     end
 
-    #
-    # This is the Timer singleton.
-    #
-    class Timer < ObjectBuilder
-      #
-      # This is the interval at which the Timer thread is run.  This will limit
-      # the rate at which notifications can be sent, if set.
-      #
-      is_attribute "poll_every"
-
-      # Sets up a Mauve::Timer singleton as the result
-      #
-      # @return [Mauve::Timer]
-      def builder_setup
-        @result = Mauve::Timer.instance
-      end
-    end
-
     class Notifier < ObjectBuilder
       #
       # This is the interval at which the notification queue is polled for new
@@ -163,7 +145,6 @@ module Mauve
       is_builder "web_interface", HTTPServer
       is_builder "listener",      UDPServer
       is_builder "processor",     Processor
-      is_builder "timer",         Timer
       is_builder "notifier",      Notifier
       is_builder "heartbeat",     Heartbeat
       is_builder "pop3_server",   Pop3Server
