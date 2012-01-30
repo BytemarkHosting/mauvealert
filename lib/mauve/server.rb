@@ -1,7 +1,7 @@
 # encoding: UTF-8
 require 'yaml'
 require 'socket'
-# require 'mauve/datamapper'
+require 'mauve/datamapper'
 require 'mauve/proto'
 require 'mauve/alert'
 require 'mauve/history'
@@ -118,7 +118,6 @@ module Mauve
         #
         # m.auto_migrate! if m.respond_to?("auto_migrate!")
         #
-        #
         m.properties.each do |prop|
           next unless prop.is_a?(DataMapper::Property::EpochTime)
           logger.info("Updating #{c}.#{prop.name}")
@@ -126,7 +125,7 @@ module Mauve
           DataMapper.repository(:default).adapter.execute("BEGIN TRANSACTION;")
           DataMapper.repository(:default).adapter.execute(statement)
           DataMapper.repository(:default).adapter.execute("COMMIT TRANSACTION;")
-        end
+        end if DataMapper.repository(:default).adapter.class.to_s == "DataMapper::Adapters::SqliteAdapter"
       end
 
       AlertHistory.migrate!

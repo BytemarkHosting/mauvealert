@@ -14,7 +14,6 @@ module Mauve
  
     include DataMapper::Resource
     
-    property :id, Serial
     property :alert_id, Integer
     property :earliest, EpochTime
     belongs_to :alert, :model => "Alert"
@@ -29,6 +28,16 @@ module Mauve
     #
     def self.create_view!
       the_distant_future = (Time.now + 2000.days).to_i # it is the year 2000 - the humans are dead
+
+      case DataMapper.repository(:default).adapter.class.to_s
+        when "DataMapper::Adapters::PostgresAdapter" 
+          ifnull = "COALESCE"
+          min    = "LEAST"
+        else 
+          ifnull = "IFNULL"
+          min    = "MIN"
+      end
+
       ["BEGIN TRANSACTION",
        "DROP VIEW IF EXISTS mauve_alert_earliest_dates",
        "CREATE VIEW 
@@ -37,12 +46,12 @@ module Mauve
         SELECT 
           id AS alert_id,
           NULLIF(
-            MIN(
-              IFNULL(will_clear_at, '#{the_distant_future}'),
-              IFNULL(will_raise_at, '#{the_distant_future}'),
-              IFNULL(will_unacknowledge_at,  '#{the_distant_future}')
+            #{min}(
+              #{ifnull}(will_clear_at, #{the_distant_future}),
+              #{ifnull}(will_raise_at, #{the_distant_future}),
+              #{ifnull}(will_unacknowledge_at,  #{the_distant_future})
             ),
-            '#{the_distant_future}'
+            #{the_distant_future}
           ) AS earliest
         FROM mauve_alerts 
         WHERE
@@ -54,7 +63,6 @@ module Mauve
         repository(:default).adapter.execute(statement.gsub(/\s+/, " "))
       end
     end
-
   end
  
   #
