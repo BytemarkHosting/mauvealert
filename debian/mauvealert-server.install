@@ -25,7 +25,6 @@ lib/mauve/pop3_server.rb                  usr/lib/ruby/1.8/mauve/
 lib/mauve/processor.rb               usr/lib/ruby/1.8/mauve/
 lib/mauve/server.rb                  usr/lib/ruby/1.8/mauve/
 lib/mauve/source_list.rb             usr/lib/ruby/1.8/mauve/
-lib/mauve/timer.rb                   usr/lib/ruby/1.8/mauve/
 lib/mauve/udp_server.rb              usr/lib/ruby/1.8/mauve/
 lib/mauve/web_interface.rb           usr/lib/ruby/1.8/mauve/
 lib/object_builder.rb                usr/lib/ruby/1.8/
