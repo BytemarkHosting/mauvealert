@@ -116,8 +116,8 @@ module Mauve
 
         @logger.warn "#{name} destination for #{@person.username} not set" if destination.nil?
 
-        if args.first.is_a?(Array)
-          conditions  = @base_conditions.merge(args[0])
+        if args.first.is_a?(Hash)
+          conditions  = @base_conditions.merge(args.pop)
         else
           conditions  = @base_conditions
         end
