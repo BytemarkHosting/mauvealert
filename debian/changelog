@@ -1,3 +1,9 @@
+mauvealert (3.7.2) stable; urgency=low
+
+  * Fixed Hash/Array confusions when merging conditions for notification.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 02 Feb 2012 10:59:28 +0000
+
 mauvealert (3.7.1) stable; urgency=low
 
   * Fixed debian packaging to install everything.
