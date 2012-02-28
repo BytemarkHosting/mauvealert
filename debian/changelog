@@ -1,3 +1,9 @@
+mauvealert (3.7.3) stable; urgency=low
+
+  * Added destroy command to XMPP interface.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 28 Feb 2012 14:35:17 +0000
+
 mauvealert (3.7.2) stable; urgency=low
 
   * Fixed Hash/Array confusions when merging conditions for notification.
