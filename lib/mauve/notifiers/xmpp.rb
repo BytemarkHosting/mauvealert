@@ -474,6 +474,8 @@ module Mauve
               do_parse_show(msg)
             when /ack/i
               do_parse_ack(msg)
+            when /destroy\s?/i
+              do_parse_destroy(msg)
             else
               File.executable?('/usr/games/fortune') ? `/usr/games/fortune -s -n 60`.chomp : "I'd love to stay and chat, but I'm really quite busy"
           end          
@@ -512,8 +514,22 @@ e.g.
   ack 1,2,3 for 2 working hours -- acknowledges alerts 1, 2, and 3 for 2 working hours
   ack 4 for 3 days because something bad happened -- acknowledge alert 4 for 3 wall-clock days with the note "something bad happened"
 EOF
+            when /^destroy/
+              <<EOF
+Destroy command: Destroys or more alerts.
+
+The syntax is
+
+  destroy <alert list>
+
+ * The alert list is a comma separated list.
+
+e.g.
+  destroy 1,2,3  -- destroys alerts 1, 2, and 3.
+EOF
+
             else
-              "I am Mauve #{Mauve::VERSION}.  I understand \"help\", \"show\" and \"acknowledge\" commands.  Try \"help show\"."
+              "I am Mauve #{Mauve::VERSION}.  I understand \"help\", \"show\", \"acknowledge\", and \"destroy\" commands.  Try \"help show\"."
           end       
         end
 
@@ -632,6 +648,39 @@ EOF
             note = Alert.remove_html(note)
             h = History.new(:alerts => succeeded, :type => "note", :event => username+" noted "+note.to_s)
             logger.debug h.errors unless h.save
+          end
+
+          return msg.join("\n")
+        end
+
+        def do_parse_destroy(msg)
+          return "Sorry -- I don't understand your destroy command." unless
+             msg.body =~ /destroy\s+([\d\D]+)$/i
+
+          alerts = $1.split(/\D+/)
+          
+          username = get_username_for(msg.from)
+
+          if is_muc?(Configuration.current.people[username].xmpp)
+            return "I'm sorry -- if you want to destroy alerts, please do it from a private chat"
+          end
+
+          msg = []
+          msg << "Results of your destruction:" if alerts.length > 1
+
+          alerts.each do |alert_id|
+            alert = Alert.get(alert_id)
+
+            if alert.nil?
+              msg << "#{alert_id}: alert not found"
+              next
+            end
+
+            if alert.destroy!
+              msg << "#{alert_id}: destroyed"
+            else
+              msg << "#{alert_id}: destruction failed."
+            end
           end
 
           return msg.join("\n")
