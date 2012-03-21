@@ -19,7 +19,7 @@ module Mauve
   #
   class SourceList 
 
-    attr_reader :label, :list
+    attr_reader :label, :list, :last_resolved_at
 
     ## Default contructor.
     def initialize (label)
@@ -153,15 +153,15 @@ module Mauve
         end
       end
 
-      return false unless @resolved_list.any?{|l| l.is_a?(IPAddr)}
-
-      ips = MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
-
-      return false if ips.empty?
-
-      return @resolved_list.select{|i| i.is_a?(IPAddr)}.any? do |list_ip| 
-        ips.any?{|ip| list_ip.include?(ip)}
-      end
+#      return false unless @resolved_list.any?{|l| l.is_a?(IPAddr)}
+#
+#      ips = MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
+#
+#      return false if ips.empty?
+#
+#      return @resolved_list.select{|i| i.is_a?(IPAddr)}.any? do |list_ip| 
+#        ips.any?{|ip| list_ip.include?(ip)}
+#      end
       
       return false
     end

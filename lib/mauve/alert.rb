@@ -94,6 +94,9 @@ module Mauve
     property :will_clear_at, EpochTime
     property :will_raise_at, EpochTime
     property :will_unacknowledge_at, EpochTime
+
+    property :cached_alert_group, String
+
     has n, :changes, :model => AlertChanged
     has n, :histories, :through => :alerthistory
 
@@ -102,6 +105,8 @@ module Mauve
     before :valid?, :do_set_timestamps
     before :save, :do_sanitize_html
     before :save, :take_copy_of_changes
+    before :save, :update_alert_group_cache
+
     after  :save, :notify_if_needed
     after  :destroy, :destroy_associations
 
@@ -136,17 +141,50 @@ module Mauve
       end
     end
 
+    def update_alert_group_cache
+      if @alert_group.nil? or self.updated_at < @alert_group.last_resolved_at
+        #
+        # Find the alert group
+        #
+        alert_group = AlertGroup.matches(self).first
+      else
+        alert_group = @alert_group
+      end
+
+      #
+      # Cache the name
+      #
+      if alert_group.is_a?(AlertGroup)
+        attribute_set("cached_alert_group", alert_group.name) 
+      else
+        attribute_set("cached_alert_group", nil)
+      end
+
+      true 
+    end
+
     #
     # @return [Mauve::AlertGroup] The first matching AlertGroup for this alert
     def alert_group
-      @alert_group ||= AlertGroup.matches(self).first
+      # 
+      # Find the AlertGroup by name if we've got a cached value
+      #
+      @alert_group = AlertGroup.all.find{|a| self.cached_alert_group == a.name} if @alert_group.nil? and self.cached_alert_group
+
+      #
+      # If we've not found the alert group by name, or the object hasn't been
+      # saved since the alert group was last resolved, look for it again.
+      #
+      @alert_group = AlertGroup.matches(self).first if @alert_group.nil? or self.updated_at < (Time.now - 1800)
+      
+      @alert_group 
     end
 
     # Pick out the source lists that match this alert by subject.
     #
     # @return [Array] All the SourceList matches
     def source_lists
-      Mauve::Configuration.current.source_lists.select{|label, list| list.includes?(self.subject)}.collect{|sl| sl.first}
+      Mauve::Configuration.current.source_lists.collect{|label, list| self.in_source_list?(label) ? label : nil}.compact
     end
 
     # Checks to see if included in a named source list
@@ -156,7 +194,30 @@ module Mauve
     def in_source_list?(listname)
       list = Mauve::Configuration.current.source_lists[listname]
       return false unless list.is_a?(SourceList)
-      list.includes?(self.subject)
+      self.subject_hosts_and_ips.any?{|host| list.includes?(host) }
+    end
+
+    def subject_hosts_and_ips
+      if @subject_hosts_and_ips.nil? or @subject_hosts_and_ips_last_resolved_at.nil? or (Time.now - 1800) > @subject_hosts_and_ips_last_resolved_at
+        host = self.subject
+        #
+        # Pick out hostnames from URIs.
+        #
+        if host =~ /^[a-z][a-z0-9+-]+:\/\//
+          begin
+            uri = URI.parse(host)
+            host = uri.host unless uri.host.nil?
+          rescue URI::InvalidURIError => ex
+            # ugh
+            logger.warn "Did not recognise URI #{host}"
+          end
+        end
+
+        @subject_hosts_and_ips = ([host] + MauveResolv.get_ips_for(host)).flatten
+        @subject_hosts_and_ips_last_resolved_at = Time.now
+      end
+
+      @subject_hosts_and_ips
     end
 
     # Returns the alert level 

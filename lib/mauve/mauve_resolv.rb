@@ -15,21 +15,24 @@ module Mauve
       # @return [Array] Array of IP addresses, as Strings.
       #
       def get_ips_for(host)
-        record_types = %w(A AAAA)
+        pp host
         ips = []
-
-        %w(A AAAA).each do |type|
-          begin
-            Resolv::DNS.open do |dns|
-              dns.getresources(host, Resolv::DNS::Resource::IN.const_get(type)).each do |a|
-                 ips << a.address.to_s
-              end
+        @count ||= 0 
+        Resolv::DNS.open do |dns|
+          %w(A AAAA).each do |type|
+            @count += 1
+            begin
+              ips += dns.getresources(host, Resolv::DNS::Resource::IN.const_get(type)).collect{|a| a.address.to_s}
+            rescue Resolv::ResolvError, Resolv::ResolvTimeout => e
+              logger.warn("#{host} could not be resolved because #{e.message}.")
             end
-          rescue Resolv::ResolvError, Resolv::ResolvTimeout => e
-            logger.warn("#{host} could not be resolved because #{e.message}.")
           end
         end
         ips
+      end
+
+      def count
+        @count ||= 0
       end
 
       # @return [Log4r::Logger]
