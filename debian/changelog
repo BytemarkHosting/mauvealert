@@ -1,3 +1,11 @@
+mauvealert (3.7.5) stable; urgency=low
+
+  * Added tests for web interface.
+  * Tidied up HTTP auth codes when auth fails.
+  * Further tweaks to alert_group caching, and source_list searches.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 22 Mar 2012 17:44:58 +0000
+
 mauvealert (3.7.4) stable; urgency=low
 
   * Possible improvements in alert group caching, in an attempt to fix
