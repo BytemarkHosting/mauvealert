@@ -24,6 +24,7 @@ tc_mauve_people_list.rb
 tc_mauve_person.rb
 tc_mauve_source_list.rb
 tc_mauve_time.rb
+tc_mauve_web_interface.rb
 ).each do |s|
   require s
 end

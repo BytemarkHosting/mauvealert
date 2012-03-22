@@ -139,7 +139,7 @@ module Mauve
         client.login(login, response)
         return true
       rescue XMLRPC::FaultException => fault
-        logger.warn "Authentication for #{login} failed: #{fault.faultCode}: #{fault.faultString}"
+        logger.warn "#{self.class} for #{login} failed: #{fault.faultCode}: #{fault.faultString}"
         return false
       rescue IOError => ex
         logger.warn "#{ex.class} during auth for #{login} (#{ex.to_s})"
@@ -164,7 +164,12 @@ module Mauve
     # @return [Boolean]
     def authenticate(login,password)
       super
-      Digest::SHA1.hexdigest(password) == Mauve::Configuration.current.people[login].password
+      if ( Digest::SHA1.hexdigest(password) == Mauve::Configuration.current.people[login].password )
+        return true
+      else
+        logger.warn "#{self.class} for #{login} failed"
+        return false
+      end
     end
   
   end

@@ -146,15 +146,18 @@ module Mauve
       # 
       # Find the AlertGroup by name if we've got a cached value
       #
-      @alert_group = AlertGroup.all.find{|a| self.cached_alert_group == a.name} if @alert_group.nil? and self.cached_alert_group
+      alert_group = AlertGroup.all.find{|a| self.cached_alert_group == a.name} if self.cached_alert_group
 
-      #
-      # If we've not found the alert group by name, or the object hasn't been
-      # saved since the alert group was last resolved, look for it again.
-      #
-      @alert_group = AlertGroup.matches(self).first if @alert_group.nil?
+      if alert_group.nil?
+        #
+        # If we've not found the alert group by name look for it again, the
+        # proper way.
+        #
+        alert_group = AlertGroup.matches(self).first 
+        self.cached_alert_group = alert_group.name unless alert_group.nil?
+      end
       
-      @alert_group 
+      alert_group 
     end
 
     # Pick out the source lists that match this alert by subject.
@@ -169,32 +172,53 @@ module Mauve
     # @param [String] listname
     # @return [Boolean]
     def in_source_list?(listname)
-      list = Mauve::Configuration.current.source_lists[listname]
-      return false unless list.is_a?(SourceList)
-      self.subject_hosts_and_ips.any?{|host| list.includes?(host) }
-    end
+      source_list = Mauve::Configuration.current.source_lists[listname]
+      return false unless source_list.is_a?(SourceList)
 
-    def subject_hosts_and_ips
-      if @subject_hosts_and_ips.nil? or @subject_hosts_and_ips_last_resolved_at.nil? or (Time.now - 1800) > @subject_hosts_and_ips_last_resolved_at
-        host = self.subject
-        #
-        # Pick out hostnames from URIs.
-        #
-        if host =~ /^[a-z][a-z0-9+-]+:\/\//
-          begin
-            uri = URI.parse(host)
-            host = uri.host unless uri.host.nil?
-          rescue URI::InvalidURIError => ex
-            # ugh
-            logger.warn "Did not recognise URI #{host}"
-          end
+      host = self.subject
+
+      #
+      # Pick out hostnames from URIs.
+      #
+      if host =~ /^[a-z][a-z0-9+-]+:\/\//
+        begin      
+          uri = URI.parse(host)
+          host = uri.host unless uri.host.nil?
+        rescue URI::InvalidURIError => ex
+          # ugh
+          logger.warn "Did not recognise URI #{host}"
         end
-
-        @subject_hosts_and_ips = ([host] + MauveResolv.get_ips_for(host)).flatten
-        @subject_hosts_and_ips_last_resolved_at = Time.now
       end
 
-      @subject_hosts_and_ips
+      return true if source_list.list.any? do |l|
+        case l
+          when String
+            host == l
+          when Regexp
+            host =~ l
+          when IPAddr 
+            begin
+              l.include?(IPAddr.new(host))
+            rescue ArgumentError => err
+              # rescue random IPAddr argument errors
+              false
+            end
+          else
+            false
+        end
+      end
+
+      return false unless source_list.list.any?{|l| l.is_a?(IPAddr)}
+
+      @subject_ips ||= MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
+
+      return false if @subject_ips.nil? or @subject_ips.empty?
+
+      return source_list.list.select{|i| i.is_a?(IPAddr)}.any? do |list_ip| 
+        @subject_ips.any?{|ip| list_ip.include?(ip)}
+      end
+      
+      return false
     end
 
     # Returns the alert level 
@@ -229,6 +253,39 @@ module Mauve
     # 
     # @return [String]
     def detail;  attribute_get(:detail)  || "_No detail set._" ; end
+
+    #
+    # Set the subject -- this clears the cached_alert_group.
+    #
+    def subject=(s)
+      self.cached_alert_group = nil
+      @subject_ips = nil
+      attribute_set(:subject, s)
+    end 
+
+    #
+    # Set the detail -- this clears the cached_alert_group.
+    #
+    def detail=(s)
+      self.cached_alert_group = nil
+      attribute_set(:detail, s)
+    end
+
+    # 
+    # Set the source -- this clears the cached_alert_group.
+    #
+    def source=(s)
+      self.cached_alert_group = nil
+      attribute_set(:source, s)
+    end 
+    
+    #
+    # Set the summary -- this clears the cached_alert_group.
+    #
+    def summary=(s)
+      self.cached_alert_group = nil
+      attribute_set(:summary, s)
+    end
  
     protected
 
@@ -326,6 +383,10 @@ module Mauve
       true
     end
 
+    #
+    # 
+    #
+
     # Remove all history for an alert, when an alert is destroyed.
     #
     #
@@ -372,9 +433,8 @@ module Mauve
       #
       # Re-cache the alert group.
       #
-      @alert_group = nil
       self.cached_alert_group = nil
-      self.cached_alert_group = self.alert_group.name 
+      self.alert_group
 
       unless save
         logger.error("Couldn't save #{self}") 
@@ -428,9 +488,8 @@ module Mauve
         #
         # Re-cache the alert group.
         #
-        @alert_group = nil
         self.cached_alert_group = nil
-        self.cached_alert_group = self.alert_group.name
+        self.alert_group
 
         logger.info("Postponing raise of #{self} until #{postpone_until} as it was last updated in a prior run of Mauve.")
       else
@@ -446,7 +505,7 @@ module Mauve
         #
         # Cache the alert group, but only if not already set.
         #
-        self.cached_alert_group = self.alert_group.name if self.cached_alert_group.nil?
+        self.alert_group
       end
 
       unless save

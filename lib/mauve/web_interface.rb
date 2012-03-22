@@ -4,6 +4,7 @@ require 'redcloth'
 require 'json'
 
 require 'mauve/authentication'
+require 'mauve/http_server'
 
 tilt_lib = "tilt"
 begin
@@ -120,7 +121,6 @@ EOF
 
         unless ok_urls.include?(request.path_info) 
           flash['error'] = "You must be logged in to access that page."
-          status 403
           redirect "/login?next_page=#{request.path_info}" unless no_redirect_urls.any?{|u| /^#{u}/ =~ request.path_info }
         end
       end      
@@ -146,7 +146,9 @@ EOF
       if @person
         redirect '/'
       else
+        @username = nil
         @next_page = params[:next_page] || '/'
+        status 403 if flash['error']
         haml :login
       end
     end
@@ -154,7 +156,7 @@ EOF
     post '/login' do
       usr = params['username'].to_s
       pwd = params['password'].to_s
-      next_page = params['next_page'].to_s
+      next_page = params['next_page'] || "/"
       
       #
       # Make sure we don't magically logout automatically :)
@@ -165,14 +167,19 @@ EOF
         session['username'] = usr
         redirect next_page
       else
-        flash['error'] = "You must be logged in to access that page."
-        redirect "/login?next_page=#{next_page}"
+        flash['error'] = "Authentication failed."
+        status 401
+#        redirect "/login?next_page=#{next_page}"
+        @title += " Login"
+        @username = usr
+        @next_page = next_page
+        haml :login
       end
     end
     
     get '/logout' do
       session.delete('username')
-      flash['error'] = "You have logged out!"
+      flash['info'] = "You have logged out!"
       redirect '/login'
     end
  
