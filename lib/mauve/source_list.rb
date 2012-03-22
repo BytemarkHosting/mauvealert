@@ -19,7 +19,7 @@ module Mauve
   #
   class SourceList 
 
-    attr_reader :label, :list, :last_resolved_at
+    attr_reader :label, :last_resolved_at
 
     ## Default contructor.
     def initialize (label)
@@ -101,6 +101,15 @@ module Mauve
       @logger ||= Log4r::Logger.new self.class.to_s
     end
 
+    def list
+      #
+      # Redo resolution every thirty minutes
+      #
+      resolve if @resolved_list.empty? or @last_resolved_at.nil? or (Time.now - 1800) > @last_resolved_at
+
+      @resolved_list
+    end
+
     # 
     # Return whether or not a list contains a source.
     #
@@ -118,11 +127,6 @@ module Mauve
     # @return [Boolean]
     def includes?(host)
       #
-      # Redo resolution every thirty minutes
-      #
-      resolve if @resolved_list.empty? or @last_resolved_at.nil? or (Time.now - 1800) > @last_resolved_at
-
-      #
       # Pick out hostnames from URIs.
       #
       if host =~ /^[a-z][a-z0-9+-]+:\/\//
@@ -135,7 +139,7 @@ module Mauve
         end
       end
 
-      return true if @resolved_list.any? do |l|
+      return true if self.list.any? do |l|
         case l
           when String
             host == l
@@ -153,15 +157,15 @@ module Mauve
         end
       end
 
-#      return false unless @resolved_list.any?{|l| l.is_a?(IPAddr)}
-#
-#      ips = MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
-#
-#      return false if ips.empty?
-#
-#      return @resolved_list.select{|i| i.is_a?(IPAddr)}.any? do |list_ip| 
-#        ips.any?{|ip| list_ip.include?(ip)}
-#      end
+      return false unless self.list.any?{|l| l.is_a?(IPAddr)}
+
+      ips = MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
+
+      return false if ips.empty?
+
+      return self.list.select{|i| i.is_a?(IPAddr)}.any? do |list_ip| 
+        ips.any?{|ip| list_ip.include?(ip)}
+      end
       
       return false
     end
@@ -181,6 +185,7 @@ module Mauve
           host
         end
       end
+
       @resolved_list = new_list.flatten
     end
   end

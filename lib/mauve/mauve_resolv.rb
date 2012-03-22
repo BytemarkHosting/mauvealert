@@ -15,12 +15,10 @@ module Mauve
       # @return [Array] Array of IP addresses, as Strings.
       #
       def get_ips_for(host)
-        pp host
         ips = []
-        @count ||= 0 
         Resolv::DNS.open do |dns|
           %w(A AAAA).each do |type|
-            @count += 1
+            self.count += 1 if $debug
             begin
               ips += dns.getresources(host, Resolv::DNS::Resource::IN.const_get(type)).collect{|a| a.address.to_s}
             rescue Resolv::ResolvError, Resolv::ResolvTimeout => e
@@ -33,6 +31,10 @@ module Mauve
 
       def count
         @count ||= 0
+      end
+
+      def count=(c)
+        @count = c
       end
 
       # @return [Log4r::Logger]
