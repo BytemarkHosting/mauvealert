@@ -105,7 +105,6 @@ module Mauve
     before :valid?, :do_set_timestamps
     before :save, :do_sanitize_html
     before :save, :take_copy_of_changes
-    before :save, :update_alert_group_cache
 
     after  :save, :notify_if_needed
     after  :destroy, :destroy_associations
@@ -141,28 +140,6 @@ module Mauve
       end
     end
 
-    def update_alert_group_cache
-      if @alert_group.nil? or self.updated_at < @alert_group.last_resolved_at
-        #
-        # Find the alert group
-        #
-        alert_group = AlertGroup.matches(self).first
-      else
-        alert_group = @alert_group
-      end
-
-      #
-      # Cache the name
-      #
-      if alert_group.is_a?(AlertGroup)
-        attribute_set("cached_alert_group", alert_group.name) 
-      else
-        attribute_set("cached_alert_group", nil)
-      end
-
-      true 
-    end
-
     #
     # @return [Mauve::AlertGroup] The first matching AlertGroup for this alert
     def alert_group
@@ -175,7 +152,7 @@ module Mauve
       # If we've not found the alert group by name, or the object hasn't been
       # saved since the alert group was last resolved, look for it again.
       #
-      @alert_group = AlertGroup.matches(self).first if @alert_group.nil? or self.updated_at < (Time.now - 1800)
+      @alert_group = AlertGroup.matches(self).first if @alert_group.nil?
       
       @alert_group 
     end
@@ -392,6 +369,13 @@ module Mauve
       self.will_unacknowledge_at = ack_until
       self.update_type = "acknowledged"
 
+      #
+      # Re-cache the alert group.
+      #
+      @alert_group = nil
+      self.cached_alert_group = nil
+      self.cached_alert_group = self.alert_group.name 
+
       unless save
         logger.error("Couldn't save #{self}") 
         false
@@ -440,6 +424,13 @@ module Mauve
         if self.will_unacknowledge_at and self.will_unacknowledge_at <= Time.now
           self.will_unacknowledge_at = postpone_until
         end
+        
+        #
+        # Re-cache the alert group.
+        #
+        @alert_group = nil
+        self.cached_alert_group = nil
+        self.cached_alert_group = self.alert_group.name
 
         logger.info("Postponing raise of #{self} until #{postpone_until} as it was last updated in a prior run of Mauve.")
       else
@@ -451,6 +442,11 @@ module Mauve
         self.cleared_at = nil
         # Don't clear will_clear_at
         self.update_type = "raised" if self.update_type.nil? or self.update_type != "changed" or self.original_attributes[Alert.properties[:update_type]] == "cleared"
+
+        #
+        # Cache the alert group, but only if not already set.
+        #
+        self.cached_alert_group = self.alert_group.name if self.cached_alert_group.nil?
       end
 
       unless save
@@ -487,6 +483,10 @@ module Mauve
         self.cleared_at = at if self.cleared_at.nil?
         self.will_clear_at = nil
         self.update_type = "cleared"
+        #
+        # Un-cache the alert group
+        #
+        self.cached_alert_group = nil
       end
 
       if save
