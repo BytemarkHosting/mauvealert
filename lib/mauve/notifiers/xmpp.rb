@@ -516,13 +516,13 @@ e.g.
 EOF
             when /^destroy/
               <<EOF
-Destroy command: Destroys or more alerts.
+Destroy command: Destroys one or more alerts.
 
 The syntax is
 
   destroy <alert list>
 
- * The alert list is a comma separated list.
+where <alert list> is a comma separated list of alert IDs.
 
 e.g.
   destroy 1,2,3  -- destroys alerts 1, 2, and 3.
@@ -677,9 +677,9 @@ EOF
             end
 
             if alert.destroy!
-              msg << "#{alert_id}: destroyed"
+              msg << "#{alert.to_s} destroyed"
             else
-              msg << "#{alert_id}: destruction failed."
+              msg << "#{alert.to_s}: destruction failed."
             end
           end
 
