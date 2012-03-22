@@ -1,3 +1,10 @@
+mauvealert (3.7.6) stable; urgency=low
+
+  * Tweaked alert display to show the alert_group properly.
+  * Bumped Mauve::Version correctly.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 22 Mar 2012 17:55:51 +0000
+
 mauvealert (3.7.5) stable; urgency=low
 
   * Added tests for web interface.

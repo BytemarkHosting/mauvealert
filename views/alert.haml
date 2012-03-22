@@ -18,8 +18,8 @@
     %th{:title => "ID set by the source of the alert."} Alert ID
     %td= @alert.alert_id
   %tr
-    %th{:title => "The group in the Mauve server configuration that match this alert"} Alert groups
-    %td= @alert.alert_group
+    %th{:title => "The group in the Mauve server configuration that matches this alert"} Alert group
+    %td= @alert.alert_group.name
   %tr
     %th{:title => "The level of the first group in the Mauve server configuration that matched this alert"} Alert level
     %td= @alert.level.to_s.upcase
