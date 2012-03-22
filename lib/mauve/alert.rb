@@ -199,7 +199,7 @@ module Mauve
           when IPAddr 
             begin
               l.include?(IPAddr.new(host))
-            rescue ArgumentError
+            rescue ArgumentError => err
               # rescue random IPAddr argument errors
               false
             end
@@ -258,32 +258,33 @@ module Mauve
     # Set the subject -- this clears the cached_alert_group.
     #
     def subject=(s)
-      attribute_set(:subject, s)
       self.cached_alert_group = nil
+      @subject_ips = nil
+      attribute_set(:subject, s)
     end 
 
     #
     # Set the detail -- this clears the cached_alert_group.
     #
     def detail=(s)
-      attribute_set(:detail, s)
       self.cached_alert_group = nil
+      attribute_set(:detail, s)
     end
 
     # 
     # Set the source -- this clears the cached_alert_group.
     #
     def source=(s)
-      attribute_set(:source, s)
       self.cached_alert_group = nil
+      attribute_set(:source, s)
     end 
     
     #
     # Set the summary -- this clears the cached_alert_group.
     #
     def summary=(s)
-      attribute_set(:summary, s)
       self.cached_alert_group = nil
+      attribute_set(:summary, s)
     end
  
     protected
