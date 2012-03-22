@@ -38,7 +38,7 @@ Depends: mauvealert-common (>= 3.4.0),
  libsinatra-ruby1.8 (>= 1.0),
  lsb-base (>= 3.2-14),
  ruby1.8 (>= 1.8.7),
- thin1.8 (>= 1.2.11) | thin (>= 1.2.11),
+ thin1.8 | thin,
  libxmpp4r-ruby1.8,
  ${misc:Depends}
 Suggests: mauvealert-client
