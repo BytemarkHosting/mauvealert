@@ -146,14 +146,15 @@ module Mauve
       # 
       # Find the AlertGroup by name if we've got a cached value
       #
-      alert_group = AlertGroup.all.find{|a| self.cached_alert_group == a.name} if self.cached_alert_group
+      alert_group = AlertGroup.find{|a| self.cached_alert_group == a.name} if self.cached_alert_group
 
       if alert_group.nil?
         #
         # If we've not found the alert group by name look for it again, the
         # proper way.
         #
-        alert_group = AlertGroup.matches(self).first 
+        alert_group = AlertGroup.find{|a| a.includes?(self)}
+        alert_group = AlertGroup.all.last if alert_group.nil?
         self.cached_alert_group = alert_group.name unless alert_group.nil?
       end
       
@@ -485,12 +486,6 @@ module Mauve
           self.will_unacknowledge_at = postpone_until
         end
         
-        #
-        # Re-cache the alert group.
-        #
-        self.cached_alert_group = nil
-        self.alert_group
-
         logger.info("Postponing raise of #{self} until #{postpone_until} as it was last updated in a prior run of Mauve.")
       else
         self.acknowledged_by = nil
@@ -503,8 +498,9 @@ module Mauve
         self.update_type = "raised" if self.update_type.nil? or self.update_type != "changed" or self.original_attributes[Alert.properties[:update_type]] == "cleared"
 
         #
-        # Cache the alert group, but only if not already set.
+        # Find the alert group to allow it to be cached.
         #
+        self.cached_alert_group = nil
         self.alert_group
       end
 
