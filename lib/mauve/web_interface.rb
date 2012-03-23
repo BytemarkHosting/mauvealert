@@ -165,6 +165,8 @@ EOF
 
       if Authentication.authenticate(usr, pwd)
         session['username'] = usr
+        # Clear the flash.
+        flash['error'] = nil 
         redirect next_page
       else
         flash['error'] = "Authentication failed."
