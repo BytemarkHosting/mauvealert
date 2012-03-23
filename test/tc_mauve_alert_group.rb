@@ -5,7 +5,7 @@ require 'mauve/alert_group'
 require 'th_mauve_resolv'
 require 'pp' 
 
-class TcMauveAlert < Mauve::UnitTest 
+class TcMauveAlertGroup < Mauve::UnitTest 
 
   def test_matches_alert
 
