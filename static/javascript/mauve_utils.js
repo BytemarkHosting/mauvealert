@@ -152,7 +152,7 @@ function updateAlertsTable(alert_type, group_by) {
         //
         // Schedule next update.
         //
-        setTimeout("updateAlertsTable('"+alert_type+"','"+group_by+"');", 30000);
+        setTimeout("updateAlertsTable('"+alert_type+"','"+group_by+"');", 120000);
       }
     },
     error:   function( a,b,c ) { 
@@ -164,7 +164,7 @@ function updateAlertsTable(alert_type, group_by) {
       //
       // Schedule next update.
       //
-      setTimeout("updateAlertsTable('"+alert_type+"','"+group_by+"');", 30000);
+      setTimeout("updateAlertsTable('"+alert_type+"','"+group_by+"');", 120000);
     },
   });
 
