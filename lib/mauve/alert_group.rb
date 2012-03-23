@@ -26,7 +26,7 @@ module Mauve
       #
       # @return [Array] AlertGroups that match
       def matches(alert)
-        grps = all.select { |alert_group| alert_group.includes?(alert) }
+        grps = find_all { |alert_group| alert_group.includes?(alert) }
 
         #
         # Make sure we always match the last (and therefore default) group.
@@ -34,6 +34,28 @@ module Mauve
         grps << all.last unless grps.include?(all.last)
 
         grps
+      end
+
+      # 
+      #
+      #
+      def find_all(&block)
+        return all unless block_given?
+
+        all.find_all do |alert_group|
+          yield(alert_group)
+        end
+      end
+
+      #
+      # 
+      #
+      def find(&block)
+        return nil unless block_given?
+
+        all.find do |alert_group|
+          yield(alert_group)
+        end
       end
 
       # @return [Log4r::Logger]
