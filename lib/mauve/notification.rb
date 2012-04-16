@@ -195,7 +195,7 @@ module Mauve
     # @param [Array] already_sent_to A list of people that have already received this alert.
     #
     # @return [Array] The list of people that have received this alert.
-    def notify(alert, already_sent_to = [])
+    def notify(alert, already_sent_to = [], at=Time.now)
 
       if people.nil? or people.empty?
         logger.warn "No people found in for notification #{list}"
@@ -203,7 +203,7 @@ module Mauve
       end
 
       # Should we notify at all?
-      return already_sent_to unless DuringRunner.new(Time.now, alert, &during).now?
+      return already_sent_to unless DuringRunner.new(at, alert, &during).now?
 
       people.collect do |person|
         case person
@@ -236,13 +236,15 @@ module Mauve
     # @param [Mauve::Alert] alert The alert in question
     # @return [Time or nil] The time a reminder should get sent, or nil if it
     #   should never get sent again.
-    def remind_at_next(alert)
+    def remind_at_next(alert, at = Time.now)
       return nil unless alert.raised?
 
-      if DuringRunner.new(Time.now, alert, &during).now?
-        return DuringRunner.new(Time.now, alert, &during).find_next(every)
+      dr = DuringRunner.new(at, alert, &during)
+
+      if dr.now?
+        return dr.find_next(every)
       else
-        return DuringRunner.new(Time.now, alert, &during).find_next()
+        return dr.find_next()
       end
 
     end

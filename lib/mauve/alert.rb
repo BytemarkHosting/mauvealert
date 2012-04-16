@@ -400,12 +400,12 @@ module Mauve
     # Send a notification for this alert.
     #
     # @return [Boolean] Showing if an alert has been sent.
-    def notify
+    def notify(at = Time.now)
       if self.alert_group.nil?
         logger.warn "Could not notify for #{self} since there are no matching alert groups"
         false
       else
-        self.alert_group.notify(self)
+        self.alert_group.notify(self, at)
       end
     end
 

@@ -135,13 +135,16 @@ module Mauve
     # @return [Log4r::Logger]
     def logger ; self.class.logger ; end
 
-    # Signals that a given alert (which is assumed to belong in this group)
-    # has undergone a significant change.  We resend this to every notify list.
+    # Signals that a given alert (which is assumed to belong in this group) has
+    # undergone a significant change.  We resend this to every notify list.
+    # The time is used to determine the time to be used when evaluating
+    # "during" blocks in the notifier clauses.
     # 
     # @param [Mauve::Alert] alert 
+    # @param [Time] at
     #
     # @return [Boolean] indicates success or failure of alert.
-    def notify(alert)
+    def notify(alert, at=Time.now)
       #
       # If there are no notifications defined. 
       #
@@ -154,7 +157,7 @@ module Mauve
       # This is where we set the reminder -- i.e. on a per-alert-group basis.
       #
       remind_at = notifications.inject(nil) do |reminder_time, notification|
-        this_time = notification.remind_at_next(alert)
+        this_time = notification.remind_at_next(alert, at)
         if reminder_time.nil? or (!this_time.nil? and  reminder_time > this_time)
           this_time
         else
@@ -170,7 +173,7 @@ module Mauve
           :level => level.to_s,
           :alert_id => alert.id,
           :person => self.name,
-          :at => Time.now,
+          :at => at,
           :update_type => alert.update_type,
           :remind_at => remind_at,
           :was_relevant => true)
@@ -183,7 +186,7 @@ module Mauve
       #
       sent_to = []
       notifications.each do |notification|
-        sent_to << notification.notify(alert, sent_to)
+        sent_to << notification.notify(alert, sent_to, at)
       end
 
       return (sent_to.length > 0)

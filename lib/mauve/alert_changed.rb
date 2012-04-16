@@ -98,7 +98,7 @@ module Mauve
         return save
       end
 
-      alert_group.notify(alert)
+      alert_group.notify(alert, Time.now)
       #
       # Need to make sure this reminder is cleared.
       #
