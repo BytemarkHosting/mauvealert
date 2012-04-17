@@ -98,7 +98,11 @@ module Mauve
         return save
       end
 
-      alert_group.notify(alert, Time.now)
+      #
+      # Push this notifitcation onto the queue.
+      #
+      Server.notification_push([alert, Time.now])
+
       #
       # Need to make sure this reminder is cleared.
       #

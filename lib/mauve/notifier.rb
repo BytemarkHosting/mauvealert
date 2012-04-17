@@ -86,14 +86,12 @@ module Mauve
       # Empty the buffer, one notification at a time.
       #
       sz.times do
-        person, *args = Server.notification_pop
-        
-        #
-        # Nil person.. that's craaazy too!
-        #
-        next if person.nil?
-
-        person.send_alert(*args) 
+        alert, at = Server.notification_pop
+        if alert.alert_group.nil?
+          logger.warn "Could not notify for #{alert} since there are no matching alert groups"
+        else
+          alert.alert_group.notify(alert, at)
+        end
       end
     end
 

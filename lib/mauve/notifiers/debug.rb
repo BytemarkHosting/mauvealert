@@ -53,27 +53,21 @@ module Mauve
       end
       
       def send_alert_to_debug_channels(destination, alert, all_alerts, conditions = nil)
-        message = if respond_to?(:prepare_message)
+        message = if self.respond_to?(:prepare_message)
           prepare_message(destination, alert, all_alerts, conditions)
         else
           [destination, alert, all_alerts].inspect
         end
         
         if deliver_to_file
-          #lock_file = "#{deliver_to_file}.lock"
-          #while File.exists?(lock_file)
-          #  sleep 0.1
-          #end
-          #FileUtils.touch(lock_file)
           File.open("#{deliver_to_file}", "a+") do |fh|
             fh.flock(File::LOCK_EX)
-            fh.print("#{Time.now} from #{self.class}: " + message + "\n")
+            fh.print YAML.dump([Time.now, self.class, destination, message])
             fh.flush()
           end
-          #FileUtils.rm(lock_file)
         end
         
-        deliver_to_queue << [destination, alert, all_alerts, conditions] if deliver_to_queue
+        deliver_to_queue << [Time.now, self.class, destination, message] if deliver_to_queue
         
         if  @disable_normal_delivery
           true # pretend it happened OK if we're just testing

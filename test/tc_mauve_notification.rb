@@ -185,16 +185,25 @@ class TcMauveNotification < Mauve::UnitTest
     t = Time.now
 
     config=<<EOF
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
 person ("test1") {
-  all { true }
+  email "test1@example.com"
+  all { email }
 }
 
 person ("test2") {
-  all { true }
+  email "test2@example.com"
+  all { email }
 }
 
 person ("test3") {
-  all { true }
+  email "test3@example.com"
+  all { email }
 }
 
 people_list "testers", %w(
@@ -227,6 +236,8 @@ alert_group("default") {
 EOF
 
     Configuration.current = ConfigurationBuilder.parse(config) 
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
+
     Server.instance.setup
     alert = Alert.new(
       :alert_id  => "test", 
@@ -240,7 +251,8 @@ EOF
     #
     # Also make sure that only 2 notifications has been sent..
     #
-    assert_equal(2, Server.instance.notification_buffer.size, "Wrong number of notifications sent")
+    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
+    assert_equal(2, notification_buffer.size, "Wrong number of notifications sent")
 
     #
     # Although there are four clauses above for notifications, test1 should be
@@ -303,8 +315,9 @@ EOF
     )
     alert.raise!
 
-    assert_equal(1, Alert.count, "Wrong number of alerts saved")
+    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
 
+    assert_equal(1, Alert.count, "Wrong number of alerts saved")
     assert_equal(1, AlertChanged.count, "Wrong number of reminders inserted")
 
     a = AlertChanged.first
@@ -322,19 +335,27 @@ EOF
   def test_no_race_conditions_in_during
 
     config=<<EOF
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
 person ("test1") {
-  all { true }
+  email "test1@example.com"
+  all { email }
 }
 
 person ("test2") {
-  all { true }
+  email "test1@example.com"
+  all { email }
 }
 
 alert_group("default") {
   level URGENT
   notify("test1") {
     every 0
-    during { sleep 1 ; hours_in_day 1..7 }
+    during { sleep 2 ; hours_in_day 1..7 }
   } 
 
   notify("test2") {
@@ -348,21 +369,23 @@ EOF
     #
     # Wind forward until 7:59:59am
     #
-    Timecop.travel(Time.now + 7.hours + 59.minutes + 59.seconds)
     Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
+
     Server.instance.setup
+    
     alert = Alert.new(
       :alert_id  => "test",
       :source    => "test",
       :subject   => "test"
     )
+
+    Timecop.travel(Time.now + 7.hours + 59.minutes + 59.seconds)
     alert.raise!
 
-    a = AlertChanged.first
-    assert_equal("urgent", a.level, "Level is wrong for #{a.person}")
-    assert_equal("raised", a.update_type, "Update type is wrong for #{a.person}")
+    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
 
-    assert_equal(1, Server.instance.notification_buffer.size, "Wrong number of notifications sent")
+    assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
   end
 
 

@@ -6,6 +6,7 @@ require 'mauve/alert_changed'
 require 'mauve/configuration'
 require 'mauve/configuration_builder'
 require 'mauve/configuration_builders'
+require 'mauve/notifiers'
 
 class TcMauveAlertChanged < Mauve::UnitTest
   include Mauve
@@ -23,8 +24,15 @@ class TcMauveAlertChanged < Mauve::UnitTest
   def test_reminder
 
     config=<<EOF
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
 person("test_person") {
-  all { true }
+  email "test_person@example.com"
+  all { email }
 }
 
 alert_group("test_group") {
@@ -37,20 +45,27 @@ alert_group("test_group") {
 EOF
 
     Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
 
     Server.instance.setup
 
     alert = Alert.new(:source => "test", :alert_id => "test_alert", :summary => "test alert")
     alert.raise!
 
-    reminders     = 1
+    reminders     = 1 
     notifications = 1
 
     mins = 0
     11.times do
       mins += 1
 
-      assert_equal(notifications, Server.instance.notification_buffer.length)
+      #
+      # In order to send the notification and stick in the reminder, we need to
+      # process the buffer.
+      #
+      assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
+
+      assert_equal(notifications, notification_buffer.length)
       assert_equal(reminders, AlertChanged.count)
 
       Timecop.freeze(Time.now+1.minute)
@@ -67,7 +82,12 @@ EOF
     alert.clear!
     notifications += 1
 
-    assert_equal(notifications, Server.instance.notification_buffer.length)
+    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
+    assert_equal(notifications, notification_buffer.length)
+    #
+    # Process the buffer again
+    #
+    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
     assert_equal(reminders,     AlertChanged.count)
 
     Timecop.freeze(Time.now + 10.minutes)
@@ -75,15 +95,23 @@ EOF
     #
     # Send NO MORE notifications.
     #
-    assert_equal(notifications, Server.instance.notification_buffer.length)
+    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
+    assert_equal(notifications, notification_buffer.length)
     assert_equal(reminders,   AlertChanged.count)
 
   end
 
   def test_only_send_one_alert_on_unacknowledge
     config=<<EOF
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
 person("test_person") {
-  all { true }
+  email "test@example.com"
+  all { email }
 }
 
 alert_group("test_group") {
@@ -96,21 +124,29 @@ alert_group("test_group") {
 EOF
 
     Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
 
     Server.instance.setup
 
     alert = Alert.new(:source => "test", :alert_id => "test_alert", :summary => "test alert")
     alert.raise!
-    assert_equal(1,Server.instance.notification_buffer.length, "Wrong no of notifications sent after raise.")
-    assert_equal(1,AlertChanged.count, "Wrong no of AlertChangeds created after raise.")
+
+    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
+    assert_equal(1, notification_buffer.length, "Wrong no of notifications sent after raise.")
+    assert_equal(1, AlertChanged.count, "Wrong no of AlertChangeds created after raise.")
 
     alert.acknowledge!(Configuration.current.people["test_person"], Time.now + 10.minutes)
-    assert_equal(2,Server.instance.notification_buffer.length, "Wrong no of notifications sent after acknowledge.")
-    assert_equal(2,AlertChanged.count, "Wrong no of AlertChangeds created after acknowledge.")
+    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
+    assert_equal(2, notification_buffer.length, "Wrong no of notifications sent after raise.")
+    assert_equal(2, AlertChanged.count, "Wrong no of AlertChangeds created after acknowledge.")
 
+    #
+    # The alert has been acknowledged so send no more reminders.
+    #
     Timecop.freeze(Time.now + 10.minutes)
     AlertChanged.all.each{|ac| ac.poll}
-    assert_equal(2,Server.instance.notification_buffer.length, "Extra notifications sent when alertchangeds are polled.")
+    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
+    assert_equal(2, notification_buffer.length, "Extra notifications sent when alertchangeds are polled.")
   
     #
     # OK if we poll the alert now it should be re-raised.
@@ -118,19 +154,28 @@ EOF
     alert.poll
     assert(!alert.acknowledged?,"Alert not unacknowledged")
     assert(alert.raised?,"Alert not raised following unacknowledgment")
-    assert_equal(3,Server.instance.notification_buffer.length, "No re-raise notification sent.")
+    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
+    assert_equal(3, notification_buffer.length, "No re-raise notification sent.")
+
     #
     # If we poll the AlertChangeds again, no further notification should be sent.
     #
     AlertChanged.all.each{|ac| ac.poll}
-    assert_equal(3,Server.instance.notification_buffer.length, "Extra notifications sent when alertchangeds are polled.")
-   
+    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
+    assert_equal(3, notification_buffer.length, "Extra notifications sent when alertchangeds are polled.")
   end
 
   def test_only_set_one_alert_changed_on_a_reminder_after_multiple_raises_and_clears
     config=<<EOF
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
 person("office_chat") {
-  all { true }
+  email "test@example.com"
+  all { email }
 }
 
 alert_group("test_group") {
@@ -147,6 +192,7 @@ EOF
 
 
     Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
 
     Server.instance.setup
 
@@ -165,7 +211,8 @@ EOF
     #
     # No notification should have been sent, since it is the middle of the night
     #
-    assert_equal(0,Server.instance.notification_buffer.length, "No notifications should have been sent.")
+    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
+    assert_equal(0, notification_buffer.length, "No notifications should have been sent.")
     assert(alert.cleared?)
 
     #
@@ -175,14 +222,14 @@ EOF
     #
     # Still no alerts should be sent.
     #
-    assert_equal(0,Server.instance.notification_buffer.length, "No notifications should have been sent.")
+    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
+    assert_equal(0, notification_buffer.length, "No notifications should have been sent.")
     assert(alert.raised?)
 
     #
     # Only one AlertChanged should be set now, with a reminder time of 8.30.
     #
     assert_equal(1, AlertChanged.all(:remind_at.not => nil).length, "Too many reminders are due to be sent.")
-
   end
 
 end
