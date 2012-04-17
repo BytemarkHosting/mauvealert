@@ -42,6 +42,7 @@ module Mauve
       @alert = alert
       @during = during || Proc.new { true }
       @logger = Log4r::Logger.new "Mauve::DuringRunner"
+      @now_cache = Hash.new
     end
     
     # This evaluates the +during+ block, returning the result.
@@ -49,8 +50,21 @@ module Mauve
     # @param [Time] t Set the time at which to evaluate the +during+ block.
     # @return [Boolean]
     def now?(t=@time)
+      #
+      # Use the cache if we've already worked out what happens at time t.
+      #
+      return @now_cache[t] if @now_cache.has_key?(t)
+     
+      #
+      # Store the test time in an instance variable so the test knows what time
+      # we're testing against.
+      #
       @test_time = t
-      instance_eval(&@during) ? true : false
+
+      #
+      # Store the answer in our cache and return.
+      #
+      @now_cache[t] = (instance_eval(&@during) ? true : false)
     end
 
     # This finds the next occurance of the +during+ block evaluating to true.
@@ -195,15 +209,18 @@ module Mauve
     # @param [Array] already_sent_to A list of people that have already received this alert.
     #
     # @return [Array] The list of people that have received this alert.
-    def notify(alert, already_sent_to = [], at=Time.now)
+    def notify(alert, already_sent_to = [], during_runner = nil)
 
       if people.nil? or people.empty?
         logger.warn "No people found in for notification #{list}"
         return
       end
 
+      # Set up a during_runner
+      during_runner ||= DuringRunner.new(Time.now, self.alert, &self.during)
+
       # Should we notify at all?
-      return already_sent_to unless DuringRunner.new(at, alert, &during).now?
+      return already_sent_to unless during_runner.now?
 
       people.collect do |person|
         case person
@@ -236,15 +253,16 @@ module Mauve
     # @param [Mauve::Alert] alert The alert in question
     # @return [Time or nil] The time a reminder should get sent, or nil if it
     #   should never get sent again.
-    def remind_at_next(alert, at = Time.now)
+    def remind_at_next(alert, during_runner = nil)
       return nil unless alert.raised?
 
-      dr = DuringRunner.new(at, alert, &during)
+      # Set up a during_runner
+      during_runner ||= DuringRunner.new(Time.now, self.alert, &self.during)
 
-      if dr.now?
-        return dr.find_next(every)
+      if during_runner.now?
+        return during_runner.find_next(every)
       else
-        return dr.find_next()
+        return during_runner.find_next()
       end
 
     end

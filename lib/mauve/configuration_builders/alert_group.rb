@@ -20,15 +20,15 @@ module Mauve
       # @return [Mauve::Notification] New notification instance.
       def builder_setup(*who)
         who = who.map do |username|
-          #raise BuildException.new("You haven't declared who #{username} is") unless
-          #  @context.people[username]
-          #@context.people[username]
           if @context.people[username]
             @context.people[username]
+
           elsif @context.people_lists[username]
             @context.people_lists[username]
+
           else
             raise ArgumentError.new("You have not declared who #{username} is")
+
           end
         end
         @result = Mauve::Notification.new(who, @context.last_alert_group.level)

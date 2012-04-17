@@ -315,4 +315,55 @@ EOF
   end
 
 
+  #
+  # Test to make sure that if a bondary is crossed, then the during clauses all
+  # work. 
+  #  
+  def test_no_race_conditions_in_during
+
+    config=<<EOF
+person ("test1") {
+  all { true }
+}
+
+person ("test2") {
+  all { true }
+}
+
+alert_group("default") {
+  level URGENT
+  notify("test1") {
+    every 0
+    during { sleep 1 ; hours_in_day 1..7 }
+  } 
+
+  notify("test2") {
+    every 0 
+    during { hours_in_day 8..10 }
+  }
+
+}
+EOF
+
+    #
+    # Wind forward until 7:59:59am
+    #
+    Timecop.travel(Time.now + 7.hours + 59.minutes + 59.seconds)
+    Configuration.current = ConfigurationBuilder.parse(config)
+    Server.instance.setup
+    alert = Alert.new(
+      :alert_id  => "test",
+      :source    => "test",
+      :subject   => "test"
+    )
+    alert.raise!
+
+    a = AlertChanged.first
+    assert_equal("urgent", a.level, "Level is wrong for #{a.person}")
+    assert_equal("raised", a.update_type, "Update type is wrong for #{a.person}")
+
+    assert_equal(1, Server.instance.notification_buffer.size, "Wrong number of notifications sent")
+  end
+
+
 end

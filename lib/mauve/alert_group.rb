@@ -153,16 +153,39 @@ module Mauve
         return false
       end
 
+      during_runners = [] 
+
       #
       # This is where we set the reminder -- i.e. on a per-alert-group basis.
-      #
-      remind_at = notifications.inject(nil) do |reminder_time, notification|
-        this_time = notification.remind_at_next(alert, at)
-        if reminder_time.nil? or (!this_time.nil? and  reminder_time > this_time)
-          this_time
-        else
-          reminder_time 
-        end
+      
+      remind_at = nil
+      notifications.each do |notification|
+        #
+        # Create a new during_runner for this notification clause, and keep it
+        # handy.
+        #
+        during_runner = DuringRunner.new(at, alert, &notification.during)
+        during_runners << during_runner
+
+        #
+        # Work out the next reminder time
+        #
+        this_remind_at = notification.remind_at_next(alert, during_runner)
+
+        #
+        # Skip this one if no reminder time can be found
+        #
+        next if this_remind_at.nil?
+
+        #
+        # Set the next reminder time if we've not had one already.
+        #
+        remind_at = this_remind_at if remind_at.nil?
+
+        #
+        # We need the next soonest reminder time.
+        #
+        remind_at = this_remind_at if remind_at > this_remind_at
       end
 
       #
@@ -186,7 +209,7 @@ module Mauve
       #
       sent_to = []
       notifications.each do |notification|
-        sent_to << notification.notify(alert, sent_to, at)
+        sent_to << notification.notify(alert, sent_to, during_runners.shift)
       end
 
       return (sent_to.length > 0)
