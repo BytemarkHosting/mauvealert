@@ -97,7 +97,6 @@ module Mauve
 
           m.to_s
         end
-        include Debug
       end
     end
   end

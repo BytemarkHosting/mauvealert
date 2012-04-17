@@ -35,6 +35,10 @@ module Mauve
       def result
         @result ||= @provider_class.new(@name)
       end
+
+      def debug!
+        result.extend(Mauve::Notifiers::Debug)
+      end
      
       # This catches all methods available for a provider, as needed.
       #
