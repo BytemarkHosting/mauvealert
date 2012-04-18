@@ -136,13 +136,13 @@
 #
 # To raise an alert:
 #
-#   mauvesend -s smtp-out-1.example.com -i mailqueue \\
+#   mauvesend -i mailqueue -s smtp-out-1.example.com \\
 #     -d "Mail queue has <b>54232</b> messages in it. That's <em>LOADS</em>" \\
 #     -u "Mail queue too big on outgoing SMTP server" -r
 #
 # To clear an alert:
 #
-#   mauvesend -s smtp-out-1.example.com  -i mailqueue -c
+#   mauvesend -i mailqueue -s smtp-out-1.example.com -c
 #
 # To create a "heartbeat" alert, i.e. one that says "Currently OK, but raise in the future if nothing more is heard":
 #
