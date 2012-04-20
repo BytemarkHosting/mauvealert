@@ -163,6 +163,13 @@ module Mauve
       # The period of sleep during which no heartbeats are raised.
       #
       is_attribute "initial_sleep"
+      
+      #
+      # The next two attributes determine if packet/notitication bufferes are
+      # used.  These both default to "true"
+      #
+      is_attribute "use_packet_buffer"
+      is_attribute "use_notification_buffer"
    
       def builder_setup
         @result = Mauve::Server.instance

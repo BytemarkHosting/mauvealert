@@ -40,7 +40,7 @@ module Mauve
       
       @started_at = Time.now
       @initial_sleep = 300
-
+      
       #
       # Keep these queues here to prevent a crash in a subthread losing all the
       # subsquent things in the queue.
@@ -69,7 +69,38 @@ module Mauve
       raise ArgumentError, "database must be a string" unless d.is_a?(String)
       @database = d
     end
-    
+
+    #
+    # Sets up the packet buffer (or not).  The argument can be "false" or "no"
+    # or a FalseClass object for no.  Anything else makes no change.
+    #
+    # @param [String] arg
+    # @return [Array or nil]
+    def use_packet_buffer=(arg)
+      logger.debug(arg)
+      if arg.is_a?(FalseClass) or arg =~ /^(n(o)?|f(alse)?)$/i
+        @packet_buffer = nil
+      end
+
+      @packet_buffer
+    end
+ 
+    #
+    # Sets up the notification buffer (or not).  The argument can be "false" or
+    # "no" or a FalseClass object for no.  Anything else makes no change.
+    #
+    # @param [String] arg
+    # @return [Array or nil]
+    def use_notification_buffer=(arg)
+      logger.debug(arg)
+      if arg.is_a?(FalseClass) or arg =~ /^(n(o)?|f(alse)?)$/i
+        @notification_buffer = nil
+      end
+
+      @notification_buffer
+    end
+
+
     # Set the sleep period during which notifications about old alerts are
     # suppressed.
     #
@@ -97,11 +128,8 @@ module Mauve
     # @return [NilClass]
     def setup
       #
+      # Set up the database
       #
-      #
-      @packet_buffer       = []
-      @notification_buffer = []
-
       DataMapper.setup(:default, @database)
       # DataMapper.logger = Log4r::Logger.new("Mauve::DataMapper") 
 
@@ -261,6 +289,8 @@ module Mauve
       # @param [String] a Packet from the UDP server
       def packet_enq(a)
         instance.packet_buffer.push(a)
+      rescue NoMethodError
+        Processor.instance.process_packet(*a)
       end
 
       # Shift a packet off the front of the +packet buffer+
@@ -275,6 +305,8 @@ module Mauve
       # @return [Integer}
       def packet_buffer_size
         instance.packet_buffer.size
+      rescue NoMethodError
+        0
       end
 
       alias packet_push packet_enq
@@ -285,6 +317,8 @@ module Mauve
       # @param [Array] a Notification array, consisting of a Person and the args to Mauve::Person#send_alert
       def notification_enq(a)
         instance.notification_buffer.push(a)
+      rescue NoMethodError
+        Notifier.instance.notify(*a)
       end
 
       # Shift a notification off the front of the +notification_buffer+
@@ -299,8 +333,10 @@ module Mauve
       # @return [Integer]
       def notification_buffer_size
         instance.notification_buffer.size
+      rescue NoMethodError
+        0
       end
-
+      
       alias notification_push notification_enq
       alias notification_pop  notification_deq
 
