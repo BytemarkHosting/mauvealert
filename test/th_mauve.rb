@@ -77,6 +77,10 @@ module Mauve
     def logger_pop
       @outputter.pop
     end
+
+    def logger_shift
+      @outputter.shift
+    end
     
     def teardown_logger
       logger = Log4r::Logger['Mauve']
