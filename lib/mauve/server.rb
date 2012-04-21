@@ -27,6 +27,7 @@ module Mauve
 
     attr_reader   :hostname, :database, :initial_sleep
     attr_reader   :packet_buffer, :notification_buffer, :started_at
+    attr_reader   :bytemark_auth_url, :bytemark_calendar_url, :remote_http_timeout, :remote_https_verify_mode, :failed_login_delay
 
     include Singleton
 
@@ -40,13 +41,30 @@ module Mauve
       
       @started_at = Time.now
       @initial_sleep = 300
-
+      
       #
       # Keep these queues here to prevent a crash in a subthread losing all the
       # subsquent things in the queue.
       #
       @packet_buffer       = []
       @notification_buffer = []
+
+      #
+      # Set the auth/calendar URLs
+      #
+      @bytemark_auth_url     = nil
+      @bytemark_calendar_url = nil
+
+      #
+      # Set a couple of params for remote HTTP requests.
+      #
+      @remote_http_timeout = 5
+      @remote_https_verify_mode = OpenSSL::SSL::VERIFY_PEER
+
+      #
+      # Rate limit login attempts to limit the success of brute-forcing.
+      #
+      @failed_login_delay = 1
 
       #
       # Set up a blank config.
@@ -69,7 +87,110 @@ module Mauve
       raise ArgumentError, "database must be a string" unless d.is_a?(String)
       @database = d
     end
-    
+
+    # Sets up the packet buffer (or not).  The argument can be "false" or "no"
+    # or a FalseClass object for no.  Anything else makes no change.
+    #
+    # @param [String] arg
+    # @return [Array or nil]
+    def use_packet_buffer=(arg)
+      if arg.is_a?(FalseClass) or arg =~ /^(n(o)?|f(alse)?)$/i
+        @packet_buffer = nil
+      end
+
+      @packet_buffer
+    end
+ 
+    # Sets up the notification buffer (or not).  The argument can be "false" or
+    # "no" or a FalseClass object for no.  Anything else makes no change.
+    #
+    # @param [String] arg
+    # @return [Array or nil]
+    def use_notification_buffer=(arg)
+      if arg.is_a?(FalseClass) or arg =~ /^(n(o)?|f(alse)?)$/i
+        @notification_buffer = nil
+      end
+
+      @notification_buffer
+    end
+
+    # Set the calendar URL.
+    #
+    # @param [String] arg 
+    # @return [URI]
+    def bytemark_calendar_url=(arg)
+      raise ArgumentError, "bytemark_calendar_url must be a string" unless arg.is_a?(String)
+
+      @bytemark_calendar_url = URI.parse(arg)
+
+      #
+      # Make sure we get an HTTP URL.
+      #
+      raise ArgumentError, "bytemark_calendar_url must be an HTTP(S) URL." unless %w(http https).include?(@bytemark_calendar_url.scheme)
+
+      #
+      # Set a default request path, if none was given
+      #
+      @bytemark_calendar_url.path="/" if @bytemark_calendar_url.path.empty?
+
+      @bytemark_calendar_url
+    end
+
+    # Set the Bytemark Authentication URL
+    #
+    # @param [String] arg 
+    # @return [URI]
+    def bytemark_auth_url=(arg)
+      raise ArgumentError, "bytemark_auth_url must be a string" unless arg.is_a?(String)
+
+      @bytemark_auth_url = URI.parse(arg)
+      #
+      # Make sure we get an HTTP URL.
+      #
+      raise ArgumentError, "bytemark_auth_url must be an HTTP(S) URL." unless %w(http https).include?(@bytemark_auth_url.scheme)
+
+      #
+      # Set a default request path, if none was given
+      #
+      @bytemark_auth_url.path="/" if @bytemark_auth_url.path.empty?
+
+      @bytemark_auth_url 
+    end
+
+    # Sets the timeout when making remote HTTP requests
+    #
+    # @param [Integer] arg
+    # @return [Integer]
+    def remote_http_timeout=(arg)
+      raise ArgumentError, "initial_sleep must be an integer" unless s.is_a?(Integer)
+      @remote_http_timeout = arg
+    end
+
+    # Sets the SSL verification mode when makeing remote HTTPS requests
+    #
+    # @param [String] arg must be one of "none" or "peer"
+    # @return [Constant]
+    def remote_https_verify_mode=(arg)
+      @remote_https_verify_mode = case arg
+      when "peer" 
+        OpenSSL::SSL::VERIFY_PEER
+      when "none" 
+        OpenSSL::SSL::VERIFY_NONE
+      else
+        raise ArgumentError, "remote_https_verify_mode must be either 'peer' or 'none'"
+      end
+    end
+
+    # Set the delay added following a failed login attempt.
+    #
+    # @param [Numeric] arg Number of seconds to delay following a failed login attempt
+    # @return [Numeric]
+    #
+    def failed_login_delay=(arg)
+      raise ArgumentError, "initial_sleep must be numeric" unless arg.is_a?(Numeric)
+      @failed_login_delay = arg
+    end
+
     # Set the sleep period during which notifications about old alerts are
     # suppressed.
     #
@@ -97,11 +218,8 @@ module Mauve
     # @return [NilClass]
     def setup
       #
+      # Set up the database
       #
-      #
-      @packet_buffer       = []
-      @notification_buffer = []
-
       DataMapper.setup(:default, @database)
       # DataMapper.logger = Log4r::Logger.new("Mauve::DataMapper") 
 
@@ -261,6 +379,8 @@ module Mauve
       # @param [String] a Packet from the UDP server
       def packet_enq(a)
         instance.packet_buffer.push(a)
+      rescue NoMethodError
+        Processor.instance.process_packet(*a)
       end
 
       # Shift a packet off the front of the +packet buffer+
@@ -275,6 +395,8 @@ module Mauve
       # @return [Integer}
       def packet_buffer_size
         instance.packet_buffer.size
+      rescue NoMethodError
+        0
       end
 
       alias packet_push packet_enq
@@ -285,6 +407,8 @@ module Mauve
       # @param [Array] a Notification array, consisting of a Person and the args to Mauve::Person#send_alert
       def notification_enq(a)
         instance.notification_buffer.push(a)
+      rescue NoMethodError
+        Notifier.instance.notify(*a)
       end
 
       # Shift a notification off the front of the +notification_buffer+
@@ -299,8 +423,10 @@ module Mauve
       # @return [Integer]
       def notification_buffer_size
         instance.notification_buffer.size
+      rescue NoMethodError
+        0
       end
-
+      
       alias notification_push notification_enq
       alias notification_pop  notification_deq
 

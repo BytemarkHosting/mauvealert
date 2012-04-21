@@ -31,6 +31,18 @@ module Mauve
       end
 
     end
+    
+    #
+    # This sends the notification for an alert
+    #
+    def notify(alert, at)
+      if alert.alert_group.nil?
+        logger.warn "Could not notify for #{alert} since there are no matching alert groups"
+      else
+        alert.alert_group.notify(alert, at)
+      end
+    end
+
 
     private
 
@@ -86,12 +98,7 @@ module Mauve
       # Empty the buffer, one notification at a time.
       #
       sz.times do
-        alert, at = Server.notification_pop
-        if alert.alert_group.nil?
-          logger.warn "Could not notify for #{alert} since there are no matching alert groups"
-        else
-          alert.alert_group.notify(alert, at)
-        end
+        notify(*Server.notification_pop)
       end
     end
 

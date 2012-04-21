@@ -297,6 +297,7 @@ module Mauve
 
       attributes.each do |key, val|
         next if html_permitted_in.include?(key)
+        next unless attribute_dirty?(key)
         next unless val.is_a?(String)
 
         attribute_set(key, Alert.remove_html(val))
@@ -304,6 +305,7 @@ module Mauve
 
       attributes.each do |key, val|
         next unless html_permitted_in.include?(key)
+        next unless attribute_dirty?(key)
         next unless val.is_a?(String)
 
         attribute_set(key, Alert.clean_html(val))
@@ -607,29 +609,31 @@ module Mauve
     end
  
     class << self
-    
-      # Removes HTML from a string
+
+      # Removes or cleans HTML from a string
       #
-      # @param [String] txt String to clean
+      #
+      # @param  [String] str   String to clean
+      # @param  [Hash]   conf  Sanitize::Config thingy
       # @return [String]
-      def remove_html(txt)
-        Sanitize.clean(
-          txt.to_s,
-          Sanitize::Config::DEFAULT
-        )
+      def remove_html(str, conf = Sanitize::Config::DEFAULT)
+        raise ArgumentError, "Expected a string, got a #{str.class}" unless str.is_a?(String)
+
+        if str =~ /<[^0-9 <&.-]/
+          Sanitize.clean( str, conf )
+        else
+          str
+        end
       end
 
       # Cleans HTML in a string, removing dangerous elements/contents.
       #
-      # @param [String] txt String to clean
+      # @param  [String] str String to clean
       # @return [String]
-      def clean_html(txt)
-        Sanitize.clean(
-          txt.to_s,
-         Sanitize::Config::RELAXED.merge({:remove_contents => true})
-        )
+      def clean_html(str)
+        remove_html(str, Sanitize::Config::RELAXED.merge({:remove_contents => true}))
       end
-    
+
       # All alerts currently raised
       #
       # @return [Array]
@@ -725,7 +729,7 @@ module Mauve
         # Make sure there is no HTML in the update source.  Need to do this
         # here because we use the html-free version in the database save hook. 
         #
-        update.source = Alert.remove_html(update.source)
+        update.source = Alert.remove_html(update.source.to_s)
 
         # Update each alert supplied
         #
@@ -749,7 +753,7 @@ module Mauve
           # because of the database save hook will clear it out, causing this
           # search to fail.
           #
-          alert.id = Alert.remove_html(alert.id)
+          alert.id = Alert.remove_html(alert.id.to_s)
  
           alert_db = first(:alert_id => alert.id, :source => update.source) ||
             new(:alert_id => alert.id, :source => update.source)

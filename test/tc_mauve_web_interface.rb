@@ -53,12 +53,6 @@ class WebInterfaceTest < Mauve::UnitTest
     super
     setup_database
 
-    # 
-    # BytemarkAuth test users are:
-    #
-    #   test1: ummVRu7qF
-    #   test2: POKvBqLT7
-    #
     config =<<EOF
 server {
   hostname "localhost"
@@ -70,13 +64,8 @@ server {
   }
 }
 
-person ("test0") {
-  password "#{Digest::SHA1.new.hexdigest("password")}"
-  all { true }
-}
-
 person ("test1") {
-  password "#{Digest::SHA1.new.hexdigest("ummVRu7qF")}"
+  password "#{Digest::SHA1.new.hexdigest("goodpassword")}"
   all { true }
 }
 
@@ -150,9 +139,16 @@ EOF
     assert(last_response.body.include?("Mauve: Login"))
     assert(session['__FLASH__'].has_key?(:error),"The flash error wasn't set")
 
-    post '/login', :username => 'test1', :password => 'ummVRu7qF'
+    #
+    # This last login attempt produces two warning messages (one for each auth
+    # type), so pop them both off the logger.
+    #
+    logger_pop ; logger_pop
+
+    post '/login', :username => 'test1', :password => 'goodpassword'
     follow_redirect!  while last_response.redirect?
     assert last_response.body.include?('Mauve: ')
+    assert last_response.ok?
 
     get '/logout'
     follow_redirect!  while last_response.redirect?
@@ -160,7 +156,7 @@ EOF
   end
 
   def test_alerts_show_subject
-    post '/login', :username => 'test1', :password => 'ummVRu7qF'
+    post '/login', :username => 'test1', :password => 'goodpassword'
     follow_redirect!  while last_response.redirect?
     assert last_response.body.include?('Mauve: ')
 

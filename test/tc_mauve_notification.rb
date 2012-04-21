@@ -185,6 +185,10 @@ class TcMauveNotification < Mauve::UnitTest
     t = Time.now
 
     config=<<EOF
+server {
+  use_notification_buffer false
+}
+
 notification_method("email") {
   debug!
   deliver_to_queue []
@@ -251,7 +255,6 @@ EOF
     #
     # Also make sure that only 2 notifications has been sent..
     #
-    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
     assert_equal(2, notification_buffer.size, "Wrong number of notifications sent")
 
     #
@@ -277,14 +280,25 @@ EOF
   # Makes sure a reminder is set at the start of the notify clause.
   #  
   def test_reminder_is_set_at_start_of_during
-
     config=<<EOF
+server {
+  use_notification_buffer false
+}
+
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
 person ("test1") {
-  all { true }
+  email "test1@example.com"
+  all { email }
 }
 
 person ("test2") {
-  all { true }
+  email "test2@example.com"
+  all { email }
 }
 
 alert_group("default") {
@@ -315,7 +329,6 @@ EOF
     )
     alert.raise!
 
-    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
 
     assert_equal(1, Alert.count, "Wrong number of alerts saved")
     assert_equal(1, AlertChanged.count, "Wrong number of reminders inserted")
@@ -324,7 +337,6 @@ EOF
     assert_equal("urgent", a.level, "Level is wrong for #{a.person}")
     assert_equal("raised", a.update_type, "Update type is wrong for #{a.person}")
     assert_equal(Time.now + 5.minutes, a.remind_at,"reminder time is wrong for #{a.person}")
-
   end
 
 
@@ -335,6 +347,10 @@ EOF
   def test_no_race_conditions_in_during
 
     config=<<EOF
+server {
+  use_notification_buffer false
+}
+
 notification_method("email") {
   debug!
   deliver_to_queue []
@@ -382,8 +398,6 @@ EOF
 
     Timecop.travel(Time.now + 7.hours + 59.minutes + 59.seconds)
     alert.raise!
-
-    assert_nothing_raised{ Notifier.instance.__send__(:main_loop) }
 
     assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
   end

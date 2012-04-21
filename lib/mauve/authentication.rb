@@ -1,7 +1,11 @@
 # encoding: UTF-8
 require 'sha1'
 require 'xmlrpc/client'
-require 'timeout'
+
+#
+# This allows poking of the SSL attributes of the http client.
+#
+module XMLRPC ; class Client ; attr_reader :http ; end ; end
 
 module Mauve
 
@@ -22,8 +26,6 @@ module Mauve
       raise ArgumentError.new("Login must be a string, not a #{login.class}") if String != login.class
       raise ArgumentError.new("Password must be a string, not a #{password.class}") if String != password.class
       raise ArgumentError.new("Login or/and password is/are empty.") if login.empty? || password.empty?
-
-      return false unless Mauve::Configuration.current.people.has_key?(login)
 
       false
     end
@@ -68,7 +70,7 @@ module Mauve
       unless true == result
         logger.info "Authentication for #{login} failed"
         # Rate limit
-        sleep 5
+        sleep Server.instance.failed_login_delay
       end
 
       result
@@ -83,45 +85,6 @@ module Mauve
 
     Mauve::Authentication::ORDER << self
 
-    # Set up the Bytemark authenticator
-    #
-    # @todo allow configuration of where the server is.
-    #
-    # @param [String] srv Authentication server name
-    # @param [String] port Port overwhich authentication should take place
-    #
-    # @return [Mauve::AuthBytemark]
-    #
-    def initialize (srv='auth.bytemark.co.uk', port=443)
-      raise ArgumentError.new("Server must be a String, not a #{srv.class}") if String != srv.class
-      raise ArgumentError.new("Port must be a Fixnum, not a #{port.class}") if Fixnum != port.class
-      @srv = srv
-      @port = port
-      @timeout = 7
-
-      self
-    end
-
-    # Tests to see if a server is alive, alive-o.
-    #
-    # @deprecated Not really needed.
-    #
-    # @return [Boolean]
-    def ping
-      begin
-        Timeout.timeout(@timeout) do
-          s = TCPSocket.open(@srv, @port)
-          s.close()
-          return true
-        end
-      rescue Timeout::Error => ex
-        return false
-      rescue => ex 
-        return false
-      end
-      return false
-    end
-
     # Authenticate against the Bytemark server
     #
     # @param [String] login
@@ -131,15 +94,38 @@ module Mauve
     def authenticate(login, password)
       super
 
-      client = XMLRPC::Client.new(@srv,"/",@port,nil,nil,nil,nil,true,@timeout).proxy("bytemark.auth")
+      #
+      # Don't bother checking if no auth_url has been set.
+      #
+      return false unless Server.instance.bytemark_auth_url.is_a?(URI)
+
+      #
+      # Don't bother checking if the person doesn't exist.
+      #
+      return false unless Mauve::Configuration.current.people.has_key?(login)
+
+      uri     = Server.instance.bytemark_auth_url
+      timeout = Server.instance.remote_http_timeout
+      # host=nil, path=nil, port=nil, proxy_host=nil, proxy_port=nil, user=nil, password=nil, use_ssl=nil, timeout=nil)
+      client  = XMLRPC::Client.new(uri.host, uri.path, uri.port, nil, nil, uri.user, uri.password, uri.scheme == "https", timeout)
+
+      #
+      # Make sure we verify our peer before attempting login.
+      #
+      if client.http.use_ssl?
+        client.http.ca_path     = "/etc/ssl/certs/"
+        client.http.verify_mode = Server.instance.remote_https_verify_mode
+      end
 
       begin
-        challenge = client.getChallengeForUser(login)
+        proxy = client.proxy("bytemark.auth")
+        challenge = proxy.getChallengeForUser(login)
         response = Digest::SHA1.new.update(challenge).update(password).hexdigest
-        client.login(login, response)
+        proxy.login(login, response)
         return true
       rescue XMLRPC::FaultException => fault
-        logger.warn "#{self.class} for #{login} failed: #{fault.faultCode}: #{fault.faultString}"
+        logger.warn "#{self.class} for #{login} failed"
+        logger.debug "#{fault.faultCode}: #{fault.faultString}"
         return false
       rescue IOError => ex
         logger.warn "#{ex.class} during auth for #{login} (#{ex.to_s})"
@@ -164,6 +150,16 @@ module Mauve
     # @return [Boolean]
     def authenticate(login,password)
       super
+      #
+      # Don't bother checking if the person doesn't exist.
+      #
+      return false unless Mauve::Configuration.current.people.has_key?(login)
+
+      #
+      # Don't bother checking if no password has been set.
+      #
+      return false if Mauve::Configuration.current.people[login].password.nil?
+
       if ( Digest::SHA1.hexdigest(password) == Mauve::Configuration.current.people[login].password )
         return true
       else
