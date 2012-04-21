@@ -3,6 +3,11 @@ require 'sha1'
 require 'xmlrpc/client'
 require 'timeout'
 
+#
+# This allows poking of the SSL attributes of the http client.
+#
+module XMLRPC ; class Client ; attr_reader :http ; end ; end
+
 module Mauve
 
   #
@@ -131,15 +136,25 @@ module Mauve
     def authenticate(login, password)
       super
 
-      client = XMLRPC::Client.new(@srv,"/",@port,nil,nil,nil,nil,true,@timeout).proxy("bytemark.auth")
+      client = XMLRPC::Client.new(@srv,"/",@port,nil,nil,nil,nil,true,@timeout)
+
+      #
+      # Make sure we verify our peer before attempting login.
+      #
+      if client.http.use_ssl?
+        client.http.ca_path     = "/etc/ssl/certs/"
+        client.http.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      end
 
       begin
-        challenge = client.getChallengeForUser(login)
+        proxy = client.proxy("bytemark.auth")
+        challenge = proxy.getChallengeForUser(login)
         response = Digest::SHA1.new.update(challenge).update(password).hexdigest
-        client.login(login, response)
+        proxy.login(login, response)
         return true
       rescue XMLRPC::FaultException => fault
-        logger.warn "#{self.class} for #{login} failed: #{fault.faultCode}: #{fault.faultString}"
+        logger.warn "#{self.class} for #{login} failed"
+        logger.debug "#{fault.faultCode}: #{fault.faultString}"
         return false
       rescue IOError => ex
         logger.warn "#{ex.class} during auth for #{login} (#{ex.to_s})"

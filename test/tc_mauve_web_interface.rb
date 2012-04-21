@@ -150,6 +150,12 @@ EOF
     assert(last_response.body.include?("Mauve: Login"))
     assert(session['__FLASH__'].has_key?(:error),"The flash error wasn't set")
 
+    #
+    # This last login attempt produces two warning messages (one for each auth
+    # type), so pop them both off the logger.
+    #
+    logger_pop ; logger_pop
+
     post '/login', :username => 'test1', :password => 'ummVRu7qF'
     follow_redirect!  while last_response.redirect?
     assert last_response.body.include?('Mauve: ')
