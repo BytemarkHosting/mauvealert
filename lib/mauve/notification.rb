@@ -182,17 +182,19 @@ module Mauve
   # at a particular alert level, on a periodic basis, and optionally under
   # certain conditions specified by a block of code.
   #
-  class Notification < Struct.new(:person, :level)
+  class Notification
+
+    attr_reader :during, :every, :level, :person
 
     # Set up a new notification
     #
     # @param [Array] person List of Mauve::Person to notify
     # @param [Symbol] level Level at which to notify
-    def initialize(person, level)
-      self.level = level
-      self.every = nil
-      self.during = nil
-      self.person = person
+    def initialize(person)
+      @person = person
+      @during = nil
+      @every = nil
+      @level = nil
     end
 
     # @return [String]
@@ -203,32 +205,20 @@ module Mauve
     # @return Log4r::Logger 
     def logger ;  Log4r::Logger.new self.class.to_s ; end
 
-    #
-    #
-    #
-    def during
-      @during ||= person.during
-    end
-
-    #
-    #
-    #
     def during=(arg)
       @during = arg
     end
 
-    #
-    #
-    #
-    def every
-      @every ||= person.during
-    end
-
-    #
-    #
-    #
     def every=(arg)
       @every = arg
+    end
+
+    def level=(arg)
+      @level = arg
+    end
+
+    def person=(arg)
+      @person = arg
     end
 
     # Push a notification on to the queue for this alert.  The Mauve::Notifier

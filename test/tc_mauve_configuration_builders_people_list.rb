@@ -16,13 +16,13 @@ class TcMauveConfigurationBuildersPeopleList < Mauve::UnitTest
 
   def test_people_list
     config =<<EOF
-people_list "team sky", %w(
+people_list("team sky", %w(
   geraint
   edvald
   bradley
   rigoberto
   ben
-)
+))
 
 people_list("garmin-cervelo", %w(
   thor
@@ -30,8 +30,10 @@ people_list("garmin-cervelo", %w(
   tyler
   julian
 )) {
-  every 20.minutes
-  during { working_hours?  }
+  notify {
+    every 20.minutes
+    during { working_hours?  }
+  }
 }
 
 EOF
@@ -40,7 +42,6 @@ EOF
     assert_equal(2, x.people_lists.keys.length)
     assert_equal(["team sky","garmin-cervelo"].sort,x.people_lists.keys.sort)
     assert_equal(%w(geraint edvald bradley rigoberto ben), x.people_lists["team sky"].list)
-
   end
 
   def test_duplicate_people_list

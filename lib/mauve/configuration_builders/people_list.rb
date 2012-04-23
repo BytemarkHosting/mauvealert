@@ -2,19 +2,32 @@
 require 'object_builder'
 require 'mauve/people_list'
 require 'mauve/configuration_builder'
+require 'mauve/configuration_builders/alert_group'
 
 module Mauve
   module ConfigurationBuilders
 
     class PeopleList < ObjectBuilder
 
+     is_builder "notification", Notification
+
       def builder_setup(label, list)
         @result = Mauve::PeopleList.new(label)
         @result += list
+        @result
       end
 
-      is_block_attribute "during"
-      is_attribute "every"
+      #
+      # Notify is a shortcut for "notification"
+      #
+      def notify(&block)
+        notification(@result, &block)
+      end
+
+      def created_notification(notification)
+        @result.notifications ||= []
+        @result.notifications << notification
+      end
 
     end
   end

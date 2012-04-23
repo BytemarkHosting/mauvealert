@@ -5,7 +5,7 @@ require 'log4r'
 module Mauve
   class Person < Struct.new(:username, :password, :urgent, :normal, :low, :email, :xmpp, :sms)
   
-    attr_reader :notification_thresholds, :last_pop3_login, :suppressed, :every, :during
+    attr_reader :notification_thresholds, :last_pop3_login, :suppressed, :notifications
  
     # Set up a new Person
     #
@@ -26,9 +26,7 @@ module Mauve
       # TODO fix up web login so pop3 can be used as a proxy.
       #
       @last_pop3_login = {:from => nil, :at => nil}
-
-      @every = nil
-      @during = nil
+      @notifications = []
 
       super(*args)
     end
@@ -40,22 +38,6 @@ module Mauve
     #
     # @return [Boolean]
     def suppressed? ; @suppressed ; end
-
-    #
-    # 
-    #
-    def during=(arg)
-      raise "during must be a block" unless arg.is_a?(Proc)
-      @during = arg
-   end
-
-    #
-    # 
-    #
-    def every=(arg)
-      raise ArgumentError, "every must be numeric" unless arg.is_a?(Numeric)
-      @every = arg
-    end
 
     def holiday_url ; nil ; end
  

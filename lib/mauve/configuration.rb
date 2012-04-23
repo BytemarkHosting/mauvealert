@@ -20,10 +20,6 @@ module Mauve
     # @return [Mauve::Server]
     attr_accessor :server
 
-    # The last AlertGroup to be configured
-    # @return [Mauve::AlertGroup]
-    attr_accessor :last_alert_group
-
     # Notification methods
     # @return [Hash]
     attr_reader   :notification_methods
@@ -49,10 +45,9 @@ module Mauve
     #
     def initialize
       @server = nil
-      @last_alert_group = nil
       @notification_methods = {}
       @people = {}
-      @people_lists = Hash.new{|h,k| h[k] = Mauve::PeopleList.new(k)}
+      @people_lists = {}
       @source_lists = Hash.new{|h,k| h[k] = Mauve::SourceList.new(k)}
       @alert_groups = []
     end

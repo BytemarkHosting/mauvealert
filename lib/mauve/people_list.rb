@@ -9,7 +9,7 @@ module Mauve
   #
   class PeopleList 
 
-    attr_reader :label, :list, :during, :every
+    attr_reader :label, :list, :notifications
 
     # Create a new list
     #
@@ -17,30 +17,13 @@ module Mauve
     # @raise [ArgumentError] if the label is not a string
     #
     def initialize(label)
-      raise ArgumentError, "people_list label must be a string" unless label.is_a?(String)
+      raise ArgumentError, "people_list label must be a string #{label.inspect}" unless label.is_a?(String)
       @label = label
       @list  = []
-      @during = nil
-      @every  = nil
+      @notifications = []
     end
 
     alias username label
-
-    #
-    # 
-    #
-    def during=(arg)
-      raise "during must be a block" unless arg.is_a?(Proc)
-      @during = arg
-   end
-
-    #
-    # 
-    #
-    def every=(arg)
-      raise ArgumentError, "every must be numeric" unless arg.is_a?(Numeric)
-      @every = arg
-    end
 
     # Append an Array or String to a list
     #

@@ -2,6 +2,7 @@
 require 'object_builder'
 require 'mauve/person'
 require 'mauve/configuration_builder'
+require 'mauve/configuration_builders/alert_group'
 
 module Mauve
   module ConfigurationBuilders
@@ -12,11 +13,11 @@ module Mauve
         @result = Mauve::Person.new(username)
       end
 
+      is_builder "notification", Notification
+
       is_block_attribute "urgent"
       is_block_attribute "normal"
       is_block_attribute "low"
-      is_block_attribute "during"
-      is_attribute "every"
       is_attribute "password"
       is_attribute "sms"
       is_attribute "holiday_url"
@@ -28,6 +29,18 @@ module Mauve
       #
       # @param [Block] block 
       def all(&block); urgent(&block); normal(&block); low(&block); end
+
+      #
+      # Notify is a shortcut for "notification"
+      #
+      def notify(&block)
+        notification(@result, &block)
+      end
+
+      def created_notification(notification)
+        @result.notifications ||= []
+        @result.notifications << notification
+      end
 
       # Notification suppression hash
       #
@@ -41,6 +54,7 @@ module Mauve
           @result.notification_thresholds[v] = Array.new(k)
         end
       end
+
     end
   end
 

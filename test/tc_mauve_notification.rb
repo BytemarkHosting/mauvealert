@@ -403,4 +403,80 @@ EOF
   end
 
 
+  def test_individual_notification_preferences
+    config=<<EOF
+server {
+  use_notification_buffer false
+}
+
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
+person ("test1") {
+  email "test1@example.com"
+  all { email }
+  notify {
+    every 300
+    during { !working_hours? }
+  }
+}
+
+person ("test2") {
+  email "test2@example.com"
+  all { email }
+  notify {
+    every 300
+    during { working_hours? }
+  }
+}
+
+alert_group("test") {
+  level URGENT
+  notify("test1") 
+  notify("test2")
+}
+
+EOF
+
+    Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
+
+    Server.instance.setup
+    
+    alert = Alert.new(
+      :alert_id  => "test",
+      :source    => "test",
+      :subject   => "test"
+    )
+    
+    #
+    # This should only alert test1
+    #
+    alert.raise!
+    assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
+    assert_equal("test1@example.com", notification_buffer.pop[2])
+
+    alert.clear!
+    assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
+    assert_equal("test1@example.com", notification_buffer.pop[2])
+    
+    #
+    # Wind forward to 9am (working hours)
+    #
+    Timecop.freeze(Time.now+9.hours)
+    assert(Time.now.working_hours?)
+    alert.raise!
+    assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
+    assert_equal("test2@example.com", notification_buffer.pop[2])
+  
+    alert.clear!
+    assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
+    assert_equal("test2@example.com", notification_buffer.pop[2])
+ 
+
+  end
+
 end
