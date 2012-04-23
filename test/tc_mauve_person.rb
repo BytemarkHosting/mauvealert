@@ -25,11 +25,18 @@ class TcMauvePerson < Mauve::UnitTest
     #
     # Allows us to pick up notifications sent.
     #
-    $sent_notifications = []
+    notification_buffer = []
 
     config =<<EOF
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
 person ("test") {
-  all { $sent_notifications << Time.now ; true }
+  email "test@example.com"
+  all { email }
   suppress_notifications_after( 6 => 60.seconds )
 }
 
@@ -43,6 +50,8 @@ alert_group("default") {
 EOF
   
     Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
+
     Server.instance.setup
     person = Configuration.current.people["test"]
 
@@ -80,19 +89,19 @@ EOF
       # Advance in to the future!
       #
       Timecop.freeze(start_time + offset)
-
       person.send_alert(alert.level, alert)
 
       if notification_sent 
-        assert_equal(1, $sent_notifications.length, "Notification not sent when it should have been at #{Time.now}.")
+        assert_equal(1, notification_buffer.length, "Notification not sent when it should have been at #{Time.now}.")
         #
         # Pop the notification off the buffer.
         #
-        last_notification_sent_at = $sent_notifications.pop
+        notification_buffer.pop
         assert_equal(Time.now, person.notification_thresholds[60][-1], "Notification thresholds not updated at #{Time.now}.")
       else
-        assert_equal(0, $sent_notifications.length, "Notification sent when it should not have been at #{Time.now}.")
+        assert_equal(0, notification_buffer.length, "Notification sent when it should not have been at #{Time.now}.")
       end
+
 
       logger_pop
     end
@@ -101,17 +110,19 @@ EOF
 
   def test_send_alert_when_only_one_blargh
     #
-    # Allows us to pick up notifications sent.
-    #
-    $sent_notifications = []
-
-    #
     # This configuration is a bit different.  We only want one alert per
     # minute.
     #
     config =<<EOF
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
 person ("test") {
-  all { $sent_notifications << Time.now ; true }
+  email "test@example.com"
+  all { email }
   suppress_notifications_after( 1 => 1.minute )
 }
 
@@ -125,6 +136,7 @@ alert_group("default") {
 EOF
   
     Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
     Server.instance.setup
 
     person = Configuration.current.people["test"]
@@ -159,14 +171,14 @@ EOF
       person.send_alert(alert.level, alert)
 
       if notification_sent 
-        assert_equal(1, $sent_notifications.length, "Notification not sent when it should have been at #{Time.now}.")
+        assert_equal(1, notification_buffer.length, "Notification not sent when it should have been at #{Time.now}.")
         #
         # Pop the notification off the buffer.
         #
-        last_notification_sent_at = $sent_notifications.pop
+        notification_buffer.pop
         assert_equal(Time.now, person.notification_thresholds[60][-1], "Notification thresholds not updated at #{Time.now}.")
       else
-        assert_equal(0, $sent_notifications.length, "Notification sent when it should not have been at #{Time.now}.")
+        assert_equal(0, notification_buffer.length, "Notification sent when it should not have been at #{Time.now}.")
       end
 
       logger_pop
