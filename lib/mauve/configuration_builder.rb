@@ -35,10 +35,11 @@ module Mauve
     # @param [Array]  list
     #
     # @return [Array] the whole people list for label
-    def people_list(label, *list)
-      _logger.warn("Duplicate people_list '#{label}'") if @result.people_lists.has_key?(label)
-      @result.people_lists[label] += list
-    end
+    # ef people_list(label, *list)
+    #  _logger.warn("Duplicate people_list '#{label}'") if @result.people_lists.has_key?(label)
+    #  @result.people_lists[label] += list
+    # end
+
 
     # Have to use the method _logger here, cos logger is defined as a builder elsewhere.
     #

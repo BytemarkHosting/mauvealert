@@ -178,29 +178,58 @@ module Mauve
 
   end
   
-  # A Notification is an instruction to notify a list of people, at a
-  # particular alert level, on a periodic basis, and optionally under
+  # A Notification is an instruction to notify a person, or a list of people,
+  # at a particular alert level, on a periodic basis, and optionally under
   # certain conditions specified by a block of code.
   #
-  class Notification < Struct.new(:people, :level, :every, :during, :list)
+  class Notification < Struct.new(:person, :level)
 
     # Set up a new notification
     #
-    # @param [Array] people List of Mauve::Person to notify
+    # @param [Array] person List of Mauve::Person to notify
     # @param [Symbol] level Level at which to notify
-    def initialize(people, level)
+    def initialize(person, level)
       self.level = level
-      self.every = 300
-      self.people = people
+      self.every = nil
+      self.during = nil
+      self.person = person
     end
 
     # @return [String]
     def to_s
-      "#<Notification:of #{people.map { |p| p.username }.join(',')} at level #{level} every #{every}>"
+      "#<Notification:of #{person} at level #{level} every #{every}>"
     end
 
     # @return Log4r::Logger 
     def logger ;  Log4r::Logger.new self.class.to_s ; end
+
+    #
+    #
+    #
+    def during
+      @during ||= person.during
+    end
+
+    #
+    #
+    #
+    def during=(arg)
+      @during = arg
+    end
+
+    #
+    #
+    #
+    def every
+      @every ||= person.during
+    end
+
+    #
+    #
+    #
+    def every=(arg)
+      @every = arg
+    end
 
     # Push a notification on to the queue for this alert.  The Mauve::Notifier
     # will then pop it off and do the notification in a separate thread.
@@ -211,8 +240,8 @@ module Mauve
     # @return [Array] The list of people that have received this alert.
     def notify(alert, already_sent_to = [], during_runner = nil)
 
-      if people.nil? or people.empty?
-        logger.warn "No people found in for notification #{list}"
+      if person.nil? 
+        logger.warn "No person found in for notification #{list}"
         return
       end
 
@@ -222,16 +251,14 @@ module Mauve
       # Should we notify at all?
       return already_sent_to unless during_runner.now?
 
-      people.collect do |person|
-        case person
-          when Person
-            person
-          when PeopleList
-            person.people
-          else
-            logger.warn "Unable to notify #{person} (unrecognised class #{person.class})"
-            []
-        end
+      case person
+        when Person
+          [person]
+        when PeopleList
+          person.people
+        else
+          logger.warn "Unable to notify #{person} (unrecognised class #{person.class})"
+          []
       end.flatten.uniq.each do |person|
         #
         # A bit of alert de-bouncing.

@@ -15,6 +15,8 @@ module Mauve
       is_block_attribute "urgent"
       is_block_attribute "normal"
       is_block_attribute "low"
+      is_block_attribute "during"
+      is_attribute "every"
       is_attribute "password"
       is_attribute "sms"
       is_attribute "holiday_url"

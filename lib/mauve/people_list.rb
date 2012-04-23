@@ -9,7 +9,7 @@ module Mauve
   #
   class PeopleList 
 
-    attr_reader :label, :list
+    attr_reader :label, :list, :during, :every
 
     # Create a new list
     #
@@ -20,9 +20,27 @@ module Mauve
       raise ArgumentError, "people_list label must be a string" unless label.is_a?(String)
       @label = label
       @list  = []
+      @during = nil
+      @every  = nil
     end
 
     alias username label
+
+    #
+    # 
+    #
+    def during=(arg)
+      raise "during must be a block" unless arg.is_a?(Proc)
+      @during = arg
+   end
+
+    #
+    # 
+    #
+    def every=(arg)
+      raise ArgumentError, "every must be numeric" unless arg.is_a?(Numeric)
+      @every = arg
+    end
 
     # Append an Array or String to a list
     #

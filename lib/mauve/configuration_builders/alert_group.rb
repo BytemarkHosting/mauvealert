@@ -14,22 +14,20 @@ module Mauve
 
       # Sets up the notification
       # 
-      # @param [Array] who List of usernames or people_lists to notify
+      # @param [String] who Username or people_list to notify
       # @raise [ArgumentError] if a username doesn't exist.
       #
       # @return [Mauve::Notification] New notification instance.
-      def builder_setup(*who)
-        who = who.map do |username|
-          if @context.people[username]
-            @context.people[username]
+      def builder_setup(who)
+        who = if @context.people[who]
+          @context.people[who]
 
-          elsif @context.people_lists[username]
-            @context.people_lists[username]
+        elsif @context.people_lists[who]
+          @context.people_lists[who]
 
-          else
-            raise ArgumentError.new("You have not declared who #{username} is")
+        else
+          raise ArgumentError.new("You have not declared who #{who} is")
 
-          end
         end
         @result = Mauve::Notification.new(who, @context.last_alert_group.level)
       end
