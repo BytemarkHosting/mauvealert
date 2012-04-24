@@ -420,7 +420,7 @@ person ("test1") {
   all { email }
   notify {
     every 300
-    during { !working_hours? }
+    during { hours_in_day(0) }
   }
 }
 
@@ -429,7 +429,14 @@ person ("test2") {
   all { email }
   notify {
     every 300
-    during { working_hours? }
+    during { hours_in_day(1) }
+  }
+}
+
+people_list("testers", %w(test1 test2)) {
+  notify {
+    every 150
+    during { hours_in_day(2) }
   }
 }
 
@@ -437,6 +444,7 @@ alert_group("test") {
   level URGENT
   notify("test1") 
   notify("test2")
+  notify("testers")
 }
 
 EOF
@@ -455,6 +463,7 @@ EOF
     #
     # This should only alert test1
     #
+    assert_equal(0, Time.now.hour)
     alert.raise!
     assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
     assert_equal("test1@example.com", notification_buffer.pop[2])
@@ -464,10 +473,11 @@ EOF
     assert_equal("test1@example.com", notification_buffer.pop[2])
     
     #
-    # Wind forward to 9am (working hours)
+    # Wind forward to 1am when test2 should get alerted
     #
-    Timecop.freeze(Time.now+9.hours)
-    assert(Time.now.working_hours?)
+    Timecop.freeze(Time.now+1.hours)
+
+    assert_equal(1, Time.now.hour)
     alert.raise!
     assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
     assert_equal("test2@example.com", notification_buffer.pop[2])
@@ -475,7 +485,22 @@ EOF
     alert.clear!
     assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
     assert_equal("test2@example.com", notification_buffer.pop[2])
- 
+
+    #
+    # Wind forward to 2am when the testers group should get alerted
+    #
+    Timecop.freeze(Time.now+1.hours)
+
+    assert_equal(2, Time.now.hour)
+    alert.raise!
+    assert_equal(2, notification_buffer.size, "Wrong number of notifications sent")
+    assert_equal("test2@example.com", notification_buffer.pop[2])
+    assert_equal("test1@example.com", notification_buffer.pop[2])
+
+    alert.clear!
+    assert_equal(2, notification_buffer.size, "Wrong number of notifications sent")
+    assert_equal("test2@example.com", notification_buffer.pop[2])
+    assert_equal("test1@example.com", notification_buffer.pop[2])
 
   end
 
