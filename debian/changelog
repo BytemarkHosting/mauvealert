@@ -1,3 +1,25 @@
+mauvealert (3.8.0) stable; urgency=low
+
+  * HTML sanitizing only takes place if the text looks like HTML.
+  * Tests improved to couple processor and notifier buffers.
+  * Added authentication tests
+  * Removed remote auth tests in from the web interface tests.
+  * If no bytemark_auth_url is set, then no remote auth takes place.
+  * SSL peer cert validation now takes place by default.
+  * People/PeopleLists can now specify individualy notification times/frequencies
+  * Notification now uses #during/#every from the Person/PeopleList if nothing was specified
+  * Max acknowledgement time is now specified in the config
+  * Calendar interface improved.
+  * holiday_url no longer used -- replaced by notify_when_on_holiday!
+  * added notify_when_off_sick!
+  * Added ability for the calendar to be queried for a list of bank holdays.
+  * Added ability for Time to be given a list of bank holidays to check
+    against.
+  * PeopleLists can now be a Proc, allowing downloading of lists.
+  * Testing is much improved.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 25 Apr 2012 17:16:56 +0100
+
 mauvealert (3.7.8) stable; urgency=low
 
   * Reduced the liklihood of race conditions during evaluation of during {}
