@@ -420,7 +420,7 @@ module Mauve
       #
       # Limit acknowledgment time.
       #
-      limit = Time.now + 15.days
+      limit = Time.now + Configuration.current.max_acknowledgement_time
       ack_until = limit if ack_until > limit
  
       self.acknowledged_by = person.username

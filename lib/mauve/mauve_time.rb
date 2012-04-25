@@ -98,12 +98,37 @@ class Time
     t
   end
 
+  # Returns the bank_holidays array, or an empty array if bank_holidays hasn't
+  # been set.
+  #
+  #
+  def bank_holidays
+    @bank_holidays ||= []
+  end
+
+  # This sets the bank holiday dates for the bank_holiday? check.
+  #
+  # @param [Array] arg An array of Date of bank holidays
+  # @returns [Array]
+  #
+  def bank_holidays=(arg)
+    raise ArgumentError unless arg.is_a?(Array) and arg.all?{|a| a.is_a?(Date)}
+    @bank_holidays = arg
+  end
+
+  # This relies on bank_holidays being set.
+  #
+  def bank_holiday?
+    today = Date.new(self.year, self.month, self.day)
+    self.bank_holidays.any?{|bh| bh == today}
+  end
+
   # Test to see if we're in working hours. The working day is from 8.30am until
   # 17:00
   #
   # @return [Boolean]
   def working_hours?
-    (1..5).include?(self.wday) and ((9..16).include?(self.hour) or  (self.hour == 8 && self.min >= 30))
+    !bank_holiday? and (1..5).include?(self.wday) and ((9..16).include?(self.hour) or  (self.hour == 8 && self.min >= 30))
   end
 
   # Test to see if it is currently daytime.  The daytime day is 14 hours long
@@ -112,7 +137,6 @@ class Time
   def daytime_hours?
     (8..21).include?(self.hour)
   end
-  
   
   # We're always in wallclock hours
   #

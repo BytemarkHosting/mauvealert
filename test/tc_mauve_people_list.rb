@@ -117,4 +117,29 @@ EOF
     end
 
   end
+  
+  def test_dynamic_people_list
+    #
+    # Allows us to pick up notifications sent.
+    #
+    $sent_notifications = []
+
+    config =<<EOF
+
+person "test1"
+
+person "test2"
+
+#
+# This should oscillate between test1 and test2.
+#
+people_list "testers", lambda { $ans = ($ans == "test1" ? "test2" : "test1") }
+
+EOF
+    Configuration.current = ConfigurationBuilder.parse(config)
+    people_list = Configuration.current.people_lists["testers"]
+    assert_equal([Configuration.current.people["test1"]], people_list.people)
+    assert_equal([Configuration.current.people["test2"]], people_list.people)
+  end
+
 end

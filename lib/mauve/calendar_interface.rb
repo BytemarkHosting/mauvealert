@@ -17,52 +17,58 @@ module Mauve
         @logger ||= Log4r::Logger.new(self.to_s)
       end
 
-      # Gets a list of ssologin on support.
-      #
-      # @param [String] url A Calendar API url.
-      #
-      # @return [Array] A list of all the usernames on support.
-      def get_users_on_support(url)
-        result = do_get_with_cache(url)
+      def get_attendees(klass, at=Time.now)
+        #
+        # Returns nil if no calendar_url has been set.
+        #
+        return [] unless Configuration.current.bytemark_calendar_url
+  
+        url = Configuration.current.bytemark_calendar_url.dup
 
-        if result.is_a?(String)
-          result = result.split("\n")
-        else
-          result = []
-        end
+        url.merge!(File.join(url.path, "/api/attendees/#{klass}/#{at.strftime("%Y-%m-%dT%H:%M:00")}"))
+        ans = do_get(url)
 
-        return result
+        return [] unless ans.is_a?(Array)
+
+        ans.select{|x| x.is_a?(String)}
       end
 
-      # Check to see if the user is on support.
       #
-      # @param [String] url A Calendar API url.
-      # @param [String] usr User single sign on.
+      # This should return a list of dates of forthcoming bank holidays
       #
-      # @return [Boolean] True if on support, false otherwise.
-      def is_user_on_support?(url, usr)
-        return get_users_on_support(url).include?(usr)
+      def get_bank_holiday_list(at = Time.now)
+        return [] unless Configuration.current.bytemark_calendar_url
+
+        url = Configuration.current.bytemark_calendar_url.dup
+        url.merge!(File.join(url.path, "/api/bank_holidays/#{at.strftime("%Y-%m-%d")}"))
+        ans = do_get(url)
+
+        return [] unless ans.is_a?(Array)
+        ans.select{|x| x.is_a?(Date)}
       end
 
       # Check to see if the user is on holiday.
       #
       # Class method.
       #
-      # @param [String] url A Calendar API url.
       # @param [String] usr User single sign on.
       # 
       # @return [Boolean] True if on holiday, false otherwise.
-      def is_user_on_holiday?(url)
-        result = do_get_with_cache(url)
-
-        if result.is_a?(String) and result =~ /^\d{4}(-\d\d){2}[ T](\d\d:){2}\d\d/
-          return true
-        else
-          return false
-        end
+      def is_user_on_holiday?(usr, at=Time.now)
+        get_attendees("staff_holiday").include?(usr)
       end
 
-    
+      # Check to see if the user is on holiday.
+      #
+      # Class method.
+      #
+      # @param [String] usr User single sign on.
+      # 
+      # @return [Boolean] True if on holiday, false otherwise.
+      def is_user_off_sick?(usr, at=Time.now)
+        get_attendees("sick_period", at).include?(usr)
+      end
+
       private
 
       # Grab a URL from the wide web.
@@ -74,7 +80,7 @@ module Mauve
       #
       def do_get (uri, limit = 11)
 
-        if 0 == limit
+        if 0 > limit
           logger.warn("HTTP redirect too deep for #{uri}.")
           return nil
         end
@@ -99,8 +105,22 @@ module Mauve
           response = http.start { http.get(uri.request_uri()) }
 
           if response.is_a?(Net::HTTPOK)
-            return response.body
+            #
+            # Parse the string as YAML.
+            #
+            result = if response.body.is_a?(String)
+              begin
+                YAML.load(response.body)
+              rescue YAML::Error => err
+                logger.error "Caught #{ex.class.to_s} (#{ex.to_s}) whilst querying #{url.to_s}."
+                logger.debug err.backtrace.join("\n")
+                nil
+              end
+            else
+              nil
+            end
 
+            return result
           elsif response.is_a?(Net::HTTPRedirection) and response.key?('Location')
             location = response['Location']
             
@@ -123,6 +143,7 @@ module Mauve
           logger.error("Timeout caught during fetch of #{uri.to_s}.")
 
         rescue StandardError => ex
+          pp ex.backtrace
           logger.error("#{ex.class} caught during fetch of #{uri.to_s}: #{ex.to_s}.")
           logger.debug(ex.backtrace.join("\n"))
 
@@ -140,16 +161,29 @@ module Mauve
       def do_get_with_cache(url, cache_until = Time.now + 5.minutes)
         @cache ||= {}
 
-        if @cache.has_key?(url.to_s)
-          result, cache_until = @cache[url.to_s]
+        if @cache.has_key?(url)
+          result, cached_until = @cache[url]
 
-          return result if cache_until >= Time.now and not result.nil?
+          return result if cached_until > Time.now and not result.nil?
         end
 
         result = do_get(url)
         @cache[url] = [result, cache_until] unless result.nil?
 
         return result
+      end
+
+      #
+      # This should get called periodically.
+      #
+      def clean_cache
+
+        @cache.keys.select do |url|
+          result, cached_until = @cache[url]
+          @cache.delete(url) if !cached_until.is_a?(Time) or cached_until <= Time.now
+        end
+
+        @cache 
       end
 
     end

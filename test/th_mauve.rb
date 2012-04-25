@@ -55,6 +55,7 @@ module Mauve
 
     def setup
       reset_all_singletons
+      reset_mauve_configuration
       setup_logger
       setup_time
     end
@@ -106,6 +107,10 @@ module Mauve
 
     def teardown_time
       Timecop.return
+    end
+
+    def reset_mauve_configuration
+      Mauve::Configuration.current = Mauve::Configuration.new
     end
 
     def reset_all_singletons

@@ -29,18 +29,6 @@ module Mauve
       @result.source_lists[label] += list
     end
 
-    # Adds a people list
-    #
-    # @param [String] label
-    # @param [Array]  list
-    #
-    # @return [Array] the whole people list for label
-    # ef people_list(label, *list)
-    #  _logger.warn("Duplicate people_list '#{label}'") if @result.people_lists.has_key?(label)
-    #  @result.people_lists[label] += list
-    # end
-
-
     # Have to use the method _logger here, cos logger is defined as a builder elsewhere.
     #
     # @return [Log4r::Logger]

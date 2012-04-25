@@ -18,12 +18,14 @@ module Mauve
       is_block_attribute "urgent"
       is_block_attribute "normal"
       is_block_attribute "low"
+
       is_attribute "password"
       is_attribute "sms"
-      is_attribute "holiday_url"
       is_attribute "email"
       is_attribute "xmpp"
-      is_attribute "sms"
+
+      is_flag_attribute "notify_when_on_holiday!"
+      is_flag_attribute "notify_when_off_sick!"
      
       # Sets the block for all levels of alert
       #

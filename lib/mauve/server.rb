@@ -50,21 +50,10 @@ module Mauve
       @notification_buffer = []
 
       #
-      # Set the auth/calendar URLs
+      # Bank Holidays -- this list is kept here, because I can't think of
+      # anywhere else to put it.
       #
-      @bytemark_auth_url     = nil
-      @bytemark_calendar_url = nil
-
-      #
-      # Set a couple of params for remote HTTP requests.
-      #
-      @remote_http_timeout = 5
-      @remote_https_verify_mode = OpenSSL::SSL::VERIFY_PEER
-
-      #
-      # Rate limit login attempts to limit the success of brute-forcing.
-      #
-      @failed_login_delay = 1
+      @bank_holidays = nil 
 
       #
       # Set up a blank config.
@@ -114,83 +103,6 @@ module Mauve
       @notification_buffer
     end
 
-    # Set the calendar URL.
-    #
-    # @param [String] arg 
-    # @return [URI]
-    def bytemark_calendar_url=(arg)
-      raise ArgumentError, "bytemark_calendar_url must be a string" unless arg.is_a?(String)
-
-      @bytemark_calendar_url = URI.parse(arg)
-
-      #
-      # Make sure we get an HTTP URL.
-      #
-      raise ArgumentError, "bytemark_calendar_url must be an HTTP(S) URL." unless %w(http https).include?(@bytemark_calendar_url.scheme)
-
-      #
-      # Set a default request path, if none was given
-      #
-      @bytemark_calendar_url.path="/" if @bytemark_calendar_url.path.empty?
-
-      @bytemark_calendar_url
-    end
-
-    # Set the Bytemark Authentication URL
-    #
-    # @param [String] arg 
-    # @return [URI]
-    def bytemark_auth_url=(arg)
-      raise ArgumentError, "bytemark_auth_url must be a string" unless arg.is_a?(String)
-
-      @bytemark_auth_url = URI.parse(arg)
-      #
-      # Make sure we get an HTTP URL.
-      #
-      raise ArgumentError, "bytemark_auth_url must be an HTTP(S) URL." unless %w(http https).include?(@bytemark_auth_url.scheme)
-
-      #
-      # Set a default request path, if none was given
-      #
-      @bytemark_auth_url.path="/" if @bytemark_auth_url.path.empty?
-
-      @bytemark_auth_url 
-    end
-
-    # Sets the timeout when making remote HTTP requests
-    #
-    # @param [Integer] arg
-    # @return [Integer]
-    def remote_http_timeout=(arg)
-      raise ArgumentError, "initial_sleep must be an integer" unless s.is_a?(Integer)
-      @remote_http_timeout = arg
-    end
-
-    # Sets the SSL verification mode when makeing remote HTTPS requests
-    #
-    # @param [String] arg must be one of "none" or "peer"
-    # @return [Constant]
-    def remote_https_verify_mode=(arg)
-      @remote_https_verify_mode = case arg
-      when "peer" 
-        OpenSSL::SSL::VERIFY_PEER
-      when "none" 
-        OpenSSL::SSL::VERIFY_NONE
-      else
-        raise ArgumentError, "remote_https_verify_mode must be either 'peer' or 'none'"
-      end
-    end
-
-    # Set the delay added following a failed login attempt.
-    #
-    # @param [Numeric] arg Number of seconds to delay following a failed login attempt
-    # @return [Numeric]
-    #
-    def failed_login_delay=(arg)
-      raise ArgumentError, "initial_sleep must be numeric" unless arg.is_a?(Numeric)
-      @failed_login_delay = arg
-    end
-
     # Set the sleep period during which notifications about old alerts are
     # suppressed.
     #
@@ -205,6 +117,24 @@ module Mauve
     # @return [Boolean]
     def in_initial_sleep?
       Time.now < self.started_at + self.initial_sleep
+    end
+
+    # Check with the calendar for the list of bank holidays
+    #
+    #
+    def bank_holidays
+      #
+      # Update the bank holidays list hourly.
+      #
+      if @bank_holidays.nil? or
+         @bank_holidays_last_checked_at.nil? or
+         @bank_holidays_last_checked_at < (Time.now - 1.hour)
+
+        @bank_holidays = CalendarInterface.get_bank_holiday_list(Time.now)
+        @bank_holidays_last_checked_at = Time.now
+      end
+
+      @bank_holidays
     end
 
     # return [Log4r::Logger]

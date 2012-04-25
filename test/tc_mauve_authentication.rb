@@ -26,9 +26,7 @@ class TcMauveAuthentication < Mauve::UnitTest
 
   def test_default_auth_always_fails
     config=<<EOF
-server {
-  failed_login_delay 0
-}
+failed_login_delay 0
 EOF
 
     Configuration.current = ConfigurationBuilder.parse(config)
@@ -43,9 +41,7 @@ EOF
 
   def test_local_auth
     config=<<EOF
-server {
-  failed_login_delay 0
-}
+failed_login_delay 0
 
 person ("test") {
   password "#{Digest::SHA1.new.hexdigest("password")}"
@@ -70,9 +66,7 @@ EOF
 
   def test_local_auth
     config=<<EOF
-server {
-  failed_login_delay 0
-}
+failed_login_delay 0
 
 person ("nopass") { }
 
@@ -97,10 +91,8 @@ EOF
     #   test2: POKvBqLT7
     #
     config=<<EOF
-server {
-  failed_login_delay 0
-  bytemark_auth_url "https://auth.bytemark.co.uk/"
-}
+failed_login_delay 0
+bytemark_auth_url "https://auth.bytemark.co.uk/"
 
 person ("test1") { }
 

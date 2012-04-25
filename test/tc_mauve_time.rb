@@ -35,8 +35,15 @@ class TestMauveTime < Mauve::UnitTest
 
     assert_equal(hour_1, t.in_x_hours(1,"working"))
     assert_equal(hour_0, t.in_x_hours(0,"working"))
+  end
+
+  def test_bank_holiday?
+    x = Time.now
+    assert(!x.bank_holiday?)
 
 
+    x.bank_holidays << Date.new(x.year, x.month, x.day)
+    assert(x.bank_holiday?)
   end
 
 

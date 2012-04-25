@@ -3,23 +3,15 @@ require 'timeout'
 require 'log4r'
 
 module Mauve
-  class Person < Struct.new(:username, :password, :urgent, :normal, :low, :email, :xmpp, :sms)
+  class Person 
   
+    attr_reader :username, :password, :urgent, :normal, :low, :email, :xmpp, :sms
     attr_reader :notification_thresholds, :last_pop3_login, :suppressed, :notifications
- 
+    attr_reader :notify_when_off_sick, :notify_when_on_holiday
+
     # Set up a new Person
     #
-    # @param [Hash] args The options for setting up the person
-    #   @option args [String] :username The person's username
-    #   @option args [String] :password The SHA1 sum of the person's password
-    #   @option args [String] :holiday_url The URL that can be checked by Mauve::CalendarInterface#is_user_on_holiday?
-    #   @option args [Proc] :urgent The block to execute when an urgent-level notification is issued
-    #   @option args [Proc] :normal The block to execute when an normal-level notification is issued
-    #   @option args [Proc] :low The block to execute when an low-level notification is issued
-    #   @option args [String] :email The person's email address
-    #   @option args [String] :sms The person's mobile number
-    # 
-    def initialize(*args)
+    def initialize(username)
       @notification_thresholds = nil
       @suppressed = false
       #
@@ -28,9 +20,85 @@ module Mauve
       @last_pop3_login = {:from => nil, :at => nil}
       @notifications = []
 
-      super(*args)
-    end
+      @username = username
+      @password = nil
+      @urgent   = lambda { false }
+      @normal   = lambda { false }
+      @low      = lambda { false }
+      @email    = @sms = @xmpp = nil
    
+      @notify_when_on_holiday = @notify_when_off_sick = false 
+    end
+  
+    # Determines if a user should be notified if they're ill.
+    #
+    # @return [Boolean]
+    #
+    def notify_when_off_sick!
+      @notify_when_off_sick = true
+    end
+
+    # Determines if a user should be notified if they're on their holdiays.
+    #
+    # @return [Boolean]
+    #
+    def notify_when_on_holiday!
+      @notify_when_on_holiday = true
+    end
+
+    # Sets the Proc to call for urgent notifications
+    #
+    def urgent=(block)
+      raise ArgumentError unless block.is_a?(Proc)
+      @urgent = block
+    end
+ 
+    # Sets the Proc to call for normal notifications
+    #
+    def normal=(block)
+      raise ArgumentError unless block.is_a?(Proc)
+      @normal = block
+    end
+    
+    # Sets the Proc to call for low notifications
+    #
+    def low=(block)
+      raise ArgumentError unless block.is_a?(Proc)
+      @low = block
+    end
+
+    # Sets the email parameter
+    #
+    #
+    def email=(arg)
+      raise ArgumentError unless arg.is_a?(String)
+      @email = arg
+    end
+
+    # Sets the sms parameter
+    #
+    #
+    def sms=(arg)
+      raise ArgumentError unless arg.is_a?(String)
+      @sms = arg
+    end
+
+    # Sets the xmpp parameter
+    #
+    #
+    def xmpp=(arg)
+      raise ArgumentError unless arg.is_a?(String)
+      @xmpp = arg
+    end
+
+    # Sets the password parameter
+    #
+    #
+    def password=(arg)
+      raise ArgumentError unless arg.is_a?(String)
+      @password=arg
+    end
+
     # @return Log4r::Logger
     def logger ; @logger ||= Log4r::Logger.new self.class.to_s ; end
 
@@ -39,8 +107,6 @@ module Mauve
     # @return [Boolean]
     def suppressed? ; @suppressed ; end
 
-    def holiday_url ; nil ; end
- 
     # Works out if a notification should be suppressed.  If no parameters are supplied, it will 
     #
     # @param [Time] Theoretical time of notification
@@ -155,8 +221,7 @@ module Mauve
     # @param [Mauve::Alert] alert Alert we're notifiying about
     #
     # @return [Boolean] if the notification was successful
-    def send_alert(level, alert)
-      now = Time.now
+    def send_alert(level, alert, now=Time.now)
 
       was_suppressed = @suppressed
       @suppressed    = self.should_suppress?
@@ -168,7 +233,7 @@ module Mauve
       # We only suppress notifications if we were suppressed before we started,
       # and are still suppressed.
       #
-      if @suppressed or self.is_on_holiday?
+      if @suppressed or self.is_on_holiday?(now) or self.is_off_sick?(now)
         note =  "#{alert.update_type.capitalize} notification to #{self.username} suppressed"
         logger.info note + " about #{alert}."
         History.create(:alerts => [alert], :type => "notification", :event => note)
@@ -217,20 +282,19 @@ module Mauve
       end
     end
 
-    #
-    # 
-    #
-    def alert_during
-
-    end    
-
     # Whether the person is on holiday or not.
     #
     # @return [Boolean] True if person on holiday, false otherwise.
-    def is_on_holiday? ()
-      return false if holiday_url.nil? or holiday_url.empty?
+    def is_on_holiday?(at=Time.now)
+      return false if self.notify_when_on_holiday
 
-      return CalendarInterface.is_user_on_holiday?(holiday_url)
+      return CalendarInterface.is_user_on_holiday?(self.username, at)
+    end
+
+    def is_off_sick?(at=Time.now)
+      return false if self.notify_when_off_sick
+
+      return CalendarInterface.is_user_off_sick?(self.username, at)
     end
 
   end

@@ -163,8 +163,9 @@ module Mauve
     # Test to see if we're in working hours.  See Time#working_hours?
     #
     # @return [Boolean]
-    def working_hours? 
+    def working_hours?
       @test_time = @time if @test_time.nil?
+      @test_time.bank_holidays = Server.instance.bank_holidays
       @test_time.working_hours?
     end
 

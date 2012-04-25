@@ -57,14 +57,11 @@ module Mauve
 
       to_delete = []
 
-      @transmission_id_cache.each do |tid, received_at|
-        to_delete << tid if (now - received_at) > @transmission_cache_expire_time
+      @transmission_id_cache = @transmission_id_cache.delete_if do |cache_data|
+        tid, received_at = cache_data
+        (now - received_at) > @transmission_cache_expire_time
       end
 
-      to_delete.each do |tid|
-        @transmission_id_cache.delete(tid)
-      end
-      
       @transmission_cache_checked_at = now
     end
 
@@ -197,6 +194,11 @@ module Mauve
       sz.times do
         process_packet(*Server.packet_pop)
       end
+
+      #
+      # Now expire the cache.  This will only get processed at most once every minute.
+      #
+      expire_transmission_id_cache
     end
 
     def timer_should_stop?

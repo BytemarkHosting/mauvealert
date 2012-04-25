@@ -171,31 +171,6 @@ module Mauve
       is_attribute "use_packet_buffer"
       is_attribute "use_notification_buffer"
   
-      #
-      # This is where the calendar is located.  The request paths are hard-coded.
-      #
-      is_attribute "bytemark_calendar_url" 
-
-      #
-      # This is where the Bytemark authentication server is located.
-      #
-      is_attribute "bytemark_auth_url"
-
-      #
-      # This is the level of SSL verification used when making external HTTPS connections.
-      #
-      is_attribute "remote_https_verify_mode"
-      
-      #
-      # This is the default timeout when making remote HTTP requests
-      #
-      is_attribute "remote_http_timeout"
-
-      #
-      # This is the default sleep time after an authentication attempt has failed. 
-      #
-      is_attribute "failed_login_delay"
-
       def builder_setup
         @result = Mauve::Server.instance
       end

@@ -218,9 +218,13 @@ EOF
       note       = params[:note]       || nil
 
       n_hours = (n_hours.to_f > 188 ? 188 : n_hours.to_f)
+      type_hours = "daytime" unless %w(daytime working wallclock).include?(type_hours)
 
       if ack_until.to_s.empty?
-        ack_until = Time.now.in_x_hours(n_hours, type_hours.to_s)
+        now = Time.now
+        now.bank_holidays = Server.instance.bank_holidays
+
+        ack_until = now.in_x_hours(n_hours, type_hours.to_s)
       else
         ack_until = Time.at(ack_until.to_i)
       end
@@ -275,12 +279,14 @@ EOF
       #
       n_hours    = ( n_hours > 300 ? 300 : n_hours )
       type_hours = "daytime" unless %w(daytime working wallclock).include?(type_hours)
-      ack_until = Time.now.in_x_hours(n_hours, type_hours)
+      now = Time.now
+      now.bank_holidays = Server.instance.bank_holidays
+      ack_until = now.in_x_hours(n_hours, type_hours)
       
       #
       # Make sure we can't ack longer than a week.
       #
-      max_ack   = (Time.now + 86400*8)
+      max_ack   = (Time.now + Configuration.current.max_acknowledgement_time) 
       ack_until = max_ack if ack_until > max_ack
 
       #
@@ -359,8 +365,13 @@ EOF
       type_hours = params[:type_hours].to_s
       note       = params[:note]       || nil
       
+      type_hours = "daytime" unless %w(daytime working wallclock).include?(type_hours)
+
       if ack_until == 0
-        ack_until = Time.now.in_x_hours(n_hours, type_hours)
+        now = Time.now
+        now.bank_holidays = Server.instance.bank_holidays
+
+        ack_until = now.in_x_hours(n_hours, type_hours)
       else
         ack_until = Time.at(ack_until)
       end

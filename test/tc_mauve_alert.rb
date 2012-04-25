@@ -95,8 +95,7 @@ EOF
   end
 
   def test_acknowledge!
-    person = Mauve::Person.new
-    person.username = "test-user"
+    person = Mauve::Person.new("test-user")
 
     Server.instance.setup
 

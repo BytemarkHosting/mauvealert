@@ -70,7 +70,7 @@ module Mauve
       unless true == result
         logger.info "Authentication for #{login} failed"
         # Rate limit
-        sleep Server.instance.failed_login_delay
+        sleep Configuration.current.failed_login_delay
       end
 
       result
@@ -97,15 +97,15 @@ module Mauve
       #
       # Don't bother checking if no auth_url has been set.
       #
-      return false unless Server.instance.bytemark_auth_url.is_a?(URI)
+      return false unless Configuration.current.bytemark_auth_url.is_a?(URI)
 
       #
       # Don't bother checking if the person doesn't exist.
       #
       return false unless Mauve::Configuration.current.people.has_key?(login)
 
-      uri     = Server.instance.bytemark_auth_url
-      timeout = Server.instance.remote_http_timeout
+      uri     = Configuration.current.bytemark_auth_url
+      timeout = Configuration.current.remote_http_timeout
       # host=nil, path=nil, port=nil, proxy_host=nil, proxy_port=nil, user=nil, password=nil, use_ssl=nil, timeout=nil)
       client  = XMLRPC::Client.new(uri.host, uri.path, uri.port, nil, nil, uri.user, uri.password, uri.scheme == "https", timeout)
 
@@ -114,7 +114,7 @@ module Mauve
       #
       if client.http.use_ssl?
         client.http.ca_path     = "/etc/ssl/certs/"
-        client.http.verify_mode = Server.instance.remote_https_verify_mode
+        client.http.verify_mode = Configuration.current.remote_https_verify_mode
       end
 
       begin

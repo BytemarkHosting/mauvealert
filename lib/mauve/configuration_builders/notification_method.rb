@@ -40,18 +40,6 @@ module Mauve
         result.extend(Mauve::Notifiers::Debug)
       end
      
-      # This catches all methods available for a provider, as needed.
-      #
-      # Missing methods / bad arguments etc. are caught in the
-      # ObjectBuilder#parse method, via NoMethodError.
-      #
-      def method_missing(name, value=nil)
-        if value
-          result.send("#{name}=".to_sym, value)
-        else
-          result.send(name.to_sym)
-        end
-      end
     end
   end
 

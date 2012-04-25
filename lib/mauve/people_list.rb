@@ -35,6 +35,8 @@ module Mauve
           arr = arr.flatten
         when String
           arr = [arr]
+        when Proc
+          arr = [arr]
         else
           logger.warn "Not sure what to do with #{arr.inspect} -- converting to string, and continuing"
           arr = [arr.to_s]
@@ -62,10 +64,12 @@ module Mauve
     #
     # @return [Array]
     def people
-
       l = list.collect do |name|
-        Configuration.current.people.has_key?(name) ? Configuration.current.people[name] : nil
-      end.reject{|person| person.nil?}
+        name.is_a?(Proc) ? name.call : name 
+      end.flatten.compact.uniq.collect do |name|
+        Configuration.current.people[name] 
+      end.compact
+
       #
       # Hmm.. no-one in the list?!
       #

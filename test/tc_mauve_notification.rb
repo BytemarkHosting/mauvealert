@@ -442,9 +442,15 @@ people_list("testers", %w(test1 test2)) {
 
 alert_group("test") {
   level URGENT
+
   notify("test1") 
   notify("test2")
   notify("testers")
+
+  notify("testers") {
+    every 60
+    during { hours_in_day (3) }
+  }
 }
 
 EOF
