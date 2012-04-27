@@ -144,7 +144,6 @@ module Mauve
           logger.error("Timeout caught during fetch of #{uri.to_s}.")
 
         rescue StandardError => ex
-          pp ex.backtrace
           logger.error("#{ex.class} caught during fetch of #{uri.to_s}: #{ex.to_s}.")
           logger.debug(ex.backtrace.join("\n"))
 
