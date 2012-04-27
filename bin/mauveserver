@@ -34,8 +34,6 @@
 #  Patrick J Cherry <patrick@bytemark.co.uk>
 #
 
-$:.unshift File.expand_path(File.join(File.dirname(__FILE__),"..","lib"))
-
 help = manual = verbose = version = test = false
 while arg = ARGV.pop
   case arg
