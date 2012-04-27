@@ -63,9 +63,9 @@ module Mauve
     # Return the array of people
     #
     # @return [Array]
-    def people
+    def people(at = Time.now)
       l = list.collect do |name|
-        name.is_a?(Proc) ? name.call : name 
+        name.is_a?(Proc) ? name.call(at) : name 
       end.flatten.compact.uniq.collect do |name|
         Configuration.current.people[name] 
       end.compact

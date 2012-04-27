@@ -165,5 +165,9 @@ module Mauve
       @max_acknowledgement_time = arg
     end
 
+    def calendar=(x)
+      lambda{|at| CalendarInterface.get_attendees(x,at)}
+    end
+
   end
 end

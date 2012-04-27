@@ -7,17 +7,22 @@ require 'mauve/configuration'
 require 'mauve/configuration_builder'
 require 'mauve/configuration_builders'
 require 'mauve/mauve_time'
+require 'webmock'
 
 class TcMauveDuringRunner < Mauve::UnitTest 
 
   include Mauve
+  include WebMock::API
 
   def setup
     super
     setup_database
+    WebMock.disable_net_connect!
   end
 
   def teardown
+    WebMock.reset!
+    WebMock.allow_net_connect!
     teardown_database
     super
   end
@@ -185,6 +190,38 @@ EOF
     #
     logger_pop
     assert(!dr.send(:no_one_in, "not empty"))
+  end
+
+  def test_no_one_in_with_calendar
+    config=<<EOF
+bytemark_calendar_url "http://localhost"
+person "test1"
+person "test2"
+
+people_list "support", calendar("support_shift")
+EOF
+
+    Configuration.current = ConfigurationBuilder.parse(config)
+
+    stub_request(:get, "http://localhost/api/attendees/support_shift/2011-08-01T00:00:00").
+      to_return(:status => 200, :body => YAML.dump(%w(test1 test2)))
+
+    stub_request(:get, "http://localhost/api/attendees/support_shift/2011-08-01T00:05:00").
+      to_return(:status => 200, :body => YAML.dump([]))
+
+    dr = DuringRunner.new(Time.now)
+    assert(!dr.send(:no_one_in, "support"))
+
+    # advance by 5 minutes, and try again -- we should get the same answer.
+    Timecop.freeze(Time.now + 5.minutes)
+    assert(!dr.send(:no_one_in, "support"))
+   
+    # However a new runner should return true.
+    dr = DuringRunner.new(Time.now)
+    assert(dr.send(:no_one_in, "support"))
+    #
+    # We expect a warning about an empty list.
+    logger_pop
   end
 
 end

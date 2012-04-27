@@ -122,8 +122,9 @@ module Mauve
     #
     def no_one_in(people_list)
       return true unless Configuration.current.people_lists.has_key?(people_list)
+      @test_time = @time if @test_time.nil?
 
-      return Configuration.current.people_lists[people_list].people.empty?
+      return Configuration.current.people_lists[people_list].people(@test_time).empty?
     end
 
     # Returns true if the current hour is in the list of hours given.

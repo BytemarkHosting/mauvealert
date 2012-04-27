@@ -5,28 +5,28 @@ require 'mauve/people_list'
 require 'mauve/configuration'
 require 'mauve/configuration_builder'
 require 'mauve/configuration_builders'
+require 'webmock'
 require 'pp' 
 
 class TcMauvePeopleList < Mauve::UnitTest 
 
   include Mauve
+  include WebMock::API
 
   def setup
     super
     setup_database
+    WebMock.disable_net_connect!
   end
 
   def teardown
+    WebMock.reset!
+    WebMock.allow_net_connect!
     teardown_database
     super
   end
 
   def test_send_alert
-    #
-    # Allows us to pick up notifications sent.
-    #
-    $sent_notifications = []
-
     config =<<EOF
 notification_method("email") {
   debug!
@@ -119,27 +119,32 @@ EOF
   end
   
   def test_dynamic_people_list
-    #
-    # Allows us to pick up notifications sent.
-    #
-    $sent_notifications = []
-
     config =<<EOF
+bytemark_calendar_url "http://localhost"
 
 person "test1"
-
 person "test2"
 
 #
 # This should oscillate between test1 and test2.
 #
-people_list "testers", lambda { $ans = ($ans == "test1" ? "test2" : "test1") }
+people_list "testers", calendar("support_shift")
 
 EOF
     Configuration.current = ConfigurationBuilder.parse(config)
+
+    #
+    # Stub HTTP requests to return test1 now, and tes2 later.
+    #
+    stub_request(:get, "http://localhost/api/attendees/support_shift/2011-08-01T00:00:00").
+      to_return(:status => 200, :body => YAML.dump(%w(test1)))
+
+    stub_request(:get, "http://localhost/api/attendees/support_shift/2011-08-01T00:05:00").
+      to_return(:status => 200, :body => YAML.dump(%w(test2)))
+    
     people_list = Configuration.current.people_lists["testers"]
     assert_equal([Configuration.current.people["test1"]], people_list.people)
-    assert_equal([Configuration.current.people["test2"]], people_list.people)
+    assert_equal([Configuration.current.people["test2"]], people_list.people(Time.now + 5.minutes))
   end
 
 end
