@@ -10,10 +10,16 @@ class TcMauveConfigurationBuildersPerson < Mauve::UnitTest
     config=<<EOF
 person("test1") {
   all { "this should email on every level" }
+
   email "test1@example.com"
   sms "01234567890"
   xmpp "test1@chat.example.com"
+
   password "topsekrit"
+
+  notify_when_on_holday!
+  notify_when_off_sick!
+
   notify {
     during { "this is the during block" }
     every 300
@@ -25,18 +31,22 @@ EOF
     assert_nothing_raised { x = Mauve::ConfigurationBuilder.parse(config) }
     assert_equal(1, x.people.length)
     assert_equal(%w(test1), x.people.keys)
-    assert_equal("test1@example.com", x.people["test1"].email)
-    assert_equal("01234567890", x.people["test1"].sms)
-    assert_equal("test1@chat.example.com", x.people["test1"].xmpp)
-    assert_equal("topsekrit", x.people["test1"].password)
+
+    person = x.people["test1"]
+    assert_equal("test1@example.com", person.email)
+    assert_equal("01234567890", person.sms)
+    assert_equal("test1@chat.example.com", person.xmpp)
+    assert_equal("topsekrit", person.password)
 
 #   assert_equal(300, x.people["test1"].every)
 #   assert_equal("this is the during block", x.people["test1"].during.call)
 #
-    assert_equal("this should email on every level", x.people["test1"].urgent.call)
-    assert_equal("this should email on every level", x.people["test1"].normal.call)
-    assert_equal("this should email on every level", x.people["test1"].low.call)
+    assert_equal("this should email on every level", person.urgent.call)
+    assert_equal("this should email on every level", person.normal.call)
+    assert_equal("this should email on every level", person.low.call)
 
+    assert(person.notify_when_on_holiday)
+    assert(person.notify_when_off_sick)
   end
 
   def test_default_settings 
@@ -61,6 +71,9 @@ EOF
 
     assert_kind_of(Array, person.notifications)
     assert_equal(1, person.notifications.length)
+
+    assert(!person.notify_when_on_holiday)
+    assert(!person.notify_when_off_sick)
   end
 
 end

@@ -57,6 +57,16 @@ module Mauve
         end
       end
 
+      #
+      #
+      def notify_when_on_holday!
+        result.notify_when_on_holiday!
+      end
+
+      def notify_when_off_sick!
+        result.notify_when_off_sick!
+      end
+
     end
   end
 
