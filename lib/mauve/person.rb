@@ -22,10 +22,8 @@ module Mauve
 
       @username = username
       @password = nil
-      @urgent   = lambda { false }
-      @normal   = lambda { false }
-      @low      = lambda { false }
-      @email    = @sms = @xmpp = nil
+      @urgent   = @normal = @low  = nil
+      @email    = @sms    = @xmpp = nil
    
       @notify_when_on_holiday = @notify_when_off_sick = false 
     end
@@ -240,14 +238,21 @@ module Mauve
         return true 
       end
 
-      result = NotificationCaller.new(
-        self,
-        alert,
-        [],
-        # current_alerts,
-        {:will_suppress  => will_suppress,
-         :was_suppressed => was_suppressed, }
-      ).instance_eval(&__send__(level))
+      result = false
+
+      #
+      # Make sure the level we want has been defined as a Proc.
+      #
+      if __send__(level).is_a?(Proc)
+        result = NotificationCaller.new(
+          self,
+          alert,
+          [],
+          # current_alerts,
+          {:will_suppress  => will_suppress,
+           :was_suppressed => was_suppressed, }
+        ).instance_eval(&__send__(level))
+      end
 
       if [result].flatten.any?
         # 

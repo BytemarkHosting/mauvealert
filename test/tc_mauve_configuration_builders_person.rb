@@ -39,4 +39,28 @@ EOF
 
   end
 
+  def test_default_settings 
+      config=<<EOF
+person("test") 
+EOF
+    x = nil
+    assert_nothing_raised { x = Mauve::ConfigurationBuilder.parse(config) }
+    person = x.people["test"]
+
+    assert_equal(nil, person.sms)
+    assert_equal(nil, person.email)
+    assert_equal(nil, person.xmpp)
+
+    assert_kind_of(Proc, person.low)
+    assert_kind_of(Proc, person.normal)
+    assert_kind_of(Proc, person.urgent)
+
+    assert_kind_of(Hash, person.notification_thresholds)
+    assert_equal(1,person.notification_thresholds.keys.length)
+    assert(person.notification_thresholds.all?{|k,v| k.is_a?(Integer) and v.is_a?(Array)})
+
+    assert_kind_of(Array, person.notifications)
+    assert_equal(1, person.notifications.length)
+  end
+
 end

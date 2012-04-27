@@ -72,10 +72,31 @@ module Mauve
     def created_person(person)
       name = person.username
       raise ArgumentError.new("Duplicate person '#{name}'") if @result.people[name]
+
       #
       # Add a default notification threshold
       #
-      person.notification_thresholds[60] = Array.new(10) if person.notification_thresholds.empty?
+      person.notification_thresholds[600] = Array.new(5) if person.notification_thresholds.empty?
+      
+      #
+      # Add a default notify clause
+      #
+      if person.notifications.empty?
+        default_notification = Notification.new(person)
+        default_notification.every = 30.minutes
+        default_notification.during = lambda { working_hours? }
+        person.notifications << default_notification
+      end
+
+      #
+      # Set up some default notify levels.
+      #
+      if person.urgent.nil? and person.normal.nil? and person.low.nil?
+        person.urgent = lambda { sms ; xmpp ; email }
+        person.normal = lambda { xmpp ; email }
+        person.low    = lambda { email }
+      end
+      
       @result.people[person.username] = person
     end
 
