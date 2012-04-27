@@ -1,8 +1,9 @@
 mauvealert (3.8.1) stable; urgency=low
 
   * Calendar now honours http timeout + ssl verify settings.
+  * Added no_one_in test for DuringRunner
 
- -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 27 Apr 2012 09:11:17 +0100
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 27 Apr 2012 09:32:02 +0100
 
 mauvealert (3.8.0) stable; urgency=low
 

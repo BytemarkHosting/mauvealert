@@ -165,6 +165,28 @@ class TcMauveDuringRunner < Mauve::UnitTest
     assert(dr.send(:unacknowledged, 1.hour))
   end
 
+  def test_no_one_in
+    config=<<EOF
+person "test1"
+person "test2"
+
+people_list "empty", %w( )
+people_list "not empty", %w(test1 test2)
+EOF
+
+    Configuration.current = ConfigurationBuilder.parse(config)
+
+    dr = DuringRunner.new(Time.now)
+
+    assert(dr.send(:no_one_in, "non-existent list"))
+    assert(dr.send(:no_one_in, "empty"))
+    #
+    # We expect an empty list to generate a warning.
+    #
+    logger_pop
+    assert(!dr.send(:no_one_in, "not empty"))
+  end
+
 end
 
 class TcMauveNotification < Mauve::UnitTest 

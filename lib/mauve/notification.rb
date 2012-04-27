@@ -115,6 +115,17 @@ module Mauve
     
     protected
 
+    # Test to see if a people_list is empty.
+    #
+    # @param [String] people_list People list to query
+    # @return [Boolean]
+    #
+    def no_one_in(people_list)
+      return true unless Configuration.current.people_lists.has_key?(people_list)
+
+      return Configuration.current.people_lists[people_list].people.empty?
+    end
+
     # Returns true if the current hour is in the list of hours given.
     # 
     # @param [Array] hours List of hours (as Integers)
