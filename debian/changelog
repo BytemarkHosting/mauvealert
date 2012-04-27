@@ -1,9 +1,16 @@
-mauvealert (3.8.2) stable; urgency=low
+
+mauvealert (3.8.3) stable; urgency=low
 
   * Reverted bad changes to mauveserver + example.conf
   * Added default options for a person
   * Added calendar check for a people_list
   * Added a time at which to check the people in a people_list
+ 
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 27 Apr 2012 11:56:52 +0100
+
+mauvealert (3.8.2) stable; urgency=low
+
+  * Reverted a couple of duff changes.
 
  -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 27 Apr 2012 11:00:21 +0100
 
