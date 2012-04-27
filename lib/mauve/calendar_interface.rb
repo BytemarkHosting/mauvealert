@@ -95,11 +95,12 @@ module Mauve
           #
           # Five second timeouts.
           #
-          http.open_timeout = http.read_timeout = 5
+          http.open_timeout = http.read_timeout = Configuration.current.remote_http_timeout || 5
  
           if (uri.scheme == "https")
-            http.use_ssl = true
-            http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+            http.use_ssl     = true
+            http.ca_path     = "/etc/ssl/certs/" if File.directory?("/etc/ssl/certs")
+            http.verify_mode = Configuration.current.remote_https_verify_mode || OpenSSL::SSL::VERIFY_NONE
           end
 
           response = http.start { http.get(uri.request_uri()) }

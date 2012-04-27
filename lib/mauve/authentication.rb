@@ -113,7 +113,7 @@ module Mauve
       # Make sure we verify our peer before attempting login.
       #
       if client.http.use_ssl?
-        client.http.ca_path     = "/etc/ssl/certs/"
+        client.http.ca_path     = "/etc/ssl/certs/" if File.directory?("/etc/ssl/certs")
         client.http.verify_mode = Configuration.current.remote_https_verify_mode
       end
 

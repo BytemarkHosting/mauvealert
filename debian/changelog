@@ -1,3 +1,9 @@
+mauvealert (3.8.1) stable; urgency=low
+
+  * Calendar now honours http timeout + ssl verify settings.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 27 Apr 2012 09:11:17 +0100
+
 mauvealert (3.8.0) stable; urgency=low
 
   * HTML sanitizing only takes place if the text looks like HTML.
@@ -32,8 +38,9 @@ mauvealert (3.7.8) stable; urgency=low
     buffer make the disconnection betweeen the processing loop and
     notifications happen sooner.
   * Manpage typo sorted out.
+  * -
 
- -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 18 Apr 2012 12:10:07 +0100
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 27 Apr 2012 09:10:37 +0100
 
 mauvealert (3.7.7) stable; urgency=low
 
