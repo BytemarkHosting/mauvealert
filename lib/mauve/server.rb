@@ -150,8 +150,8 @@ module Mauve
       #
       # Set up the database
       #
+      DataMapper.logger = Log4r::Logger.new("Mauve::DataMapper") 
       DataMapper.setup(:default, @database)
-      # DataMapper.logger = Log4r::Logger.new("Mauve::DataMapper") 
 
       #
       # Update any tables.
