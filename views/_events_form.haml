@@ -5,7 +5,7 @@
   %label{:for => "source"}
     Source
   %input{:type => "text", :id => "subject", :name => "alert[source]", :value => (params["alert"] ? params["alert"]["source"] : "") }
-  - Mauve::History.all(:fields => [:type], :unique => true).collect{|h| h.type}.each do |history_type|
+  - Mauve::History.all(:fields => [:type], :order => nil, :unique => true).collect{|h| h.type}.each do |history_type|
     %label{:for => "history_"+history_type}
       = history_type.capitalize
     %input{:type => "checkbox", :name => "history[type][]", :value => "#{history_type}", :checked => (params["history"] && params["history"]["type"].is_a?(Array) ? params["history"]["type"].include?(history_type) : false) }
