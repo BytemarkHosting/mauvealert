@@ -57,8 +57,7 @@ module Mauve
 
       to_delete = []
 
-      @transmission_id_cache = @transmission_id_cache.delete_if do |cache_data|
-        tid, received_at = cache_data
+      @transmission_id_cache.delete_if do |tid, received_at|
         (now - received_at) > @transmission_cache_expire_time
       end
 
