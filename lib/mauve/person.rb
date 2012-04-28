@@ -47,21 +47,21 @@ module Mauve
     # Sets the Proc to call for urgent notifications
     #
     def urgent=(block)
-      raise ArgumentError unless block.is_a?(Proc)
+      raise ArgumentError, "urgent expects a block, not a #{block.class}" unless block.is_a?(Proc)
       @urgent = block
     end
  
     # Sets the Proc to call for normal notifications
     #
     def normal=(block)
-      raise ArgumentError unless block.is_a?(Proc)
+      raise ArgumentError, "normal expects a block, not a #{block.class}" unless block.is_a?(Proc)
       @normal = block
     end
     
     # Sets the Proc to call for low notifications
     #
     def low=(block)
-      raise ArgumentError unless block.is_a?(Proc)
+      raise ArgumentError, "low expects a block, not a #{block.class}" unless block.is_a?(Proc)
       @low = block
     end
 
@@ -69,7 +69,7 @@ module Mauve
     #
     #
     def email=(arg)
-      raise ArgumentError unless arg.is_a?(String)
+      raise ArgumentError, "email expects a string, not a #{arg.class}" unless arg.is_a?(String)
       @email = arg
     end
 
@@ -77,7 +77,7 @@ module Mauve
     #
     #
     def sms=(arg)
-      raise ArgumentError unless arg.is_a?(String)
+      raise ArgumentError, "sms expects a string, not a #{arg.class}" unless arg.is_a?(String)
       @sms = arg
     end
 
@@ -85,7 +85,7 @@ module Mauve
     #
     #
     def xmpp=(arg)
-      raise ArgumentError unless arg.is_a?(String)
+      # raise ArgumentError, "xmpp expected a string, not a #{arg.class}" unless arg.is_a?(String) or arg.is_a?(Jabber::JID)
       @xmpp = arg
     end
 
@@ -93,7 +93,7 @@ module Mauve
     #
     #
     def password=(arg)
-      raise ArgumentError unless arg.is_a?(String)
+      raise ArgumentError, "password expected a string, not a #{arg.class}" unless arg.is_a?(String)
       @password=arg
     end
 
