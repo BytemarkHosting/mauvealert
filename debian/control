@@ -9,8 +9,9 @@ Standards-Version: 3.9.1
 Package: mauvealert-client
 Architecture: all
 Depends: ruby1.8,
-  mauvealert-common (>= 3.4.0),
+  mauvealert-common (>= 3.8.0),
   ${misc:Depends}
+Recommends: liblocale-ruby1.8 | ruby-locale
 Description: Mauve network alert system -- client
  Mauve is a network alert system for system and network administrators.  You
  can use it to quickly set up ad-hoc monitoring for a variety of services, and
@@ -22,7 +23,7 @@ Description: Mauve network alert system -- client
 Package: mauvealert-server
 Architecture: all
 Pre-Depends: libjs-jquery
-Depends: mauvealert-common (>= 3.4.0),
+Depends: mauvealert-common (>= 3.8.0),
  adduser,
  libdm-core-ruby1.8 (>= 1.2.0),
  libdm-migrations-ruby1.8 (>= 1.2.0),
