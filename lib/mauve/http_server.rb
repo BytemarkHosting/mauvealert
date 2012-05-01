@@ -187,7 +187,7 @@ module Mauve
     #
     # @return [String]
     def base_url
-      @base_url ||= "http://"+Server.instance.hostname
+      @base_url ||= "http://"+Server.instance.hostname+(self.port == "80" ? "" : ":#{self.port}")
     end
     
     # Stop the server

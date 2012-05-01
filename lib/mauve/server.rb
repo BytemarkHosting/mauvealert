@@ -36,7 +36,7 @@ module Mauve
     #
     def initialize
       super
-      @hostname    = "localhost"
+      @hostname    = Socket.gethostname
       @database    = "sqlite3::memory:"
       
       @started_at = Time.now
