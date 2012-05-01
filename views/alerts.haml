@@ -1,11 +1,7 @@
-- if @grouped_alerts.length > 0
-  %form#alerts{:method => :post, :action => '/alerts/acknowledge'}
-    = partial('alerts_table')
-    %h2 Actions
-    %p= partial('acknowledge_input')
-- else
-  .notice#alerts_table
-    %p No alerts to display.
+%form#alerts{:method => :post, :action => '/alerts/acknowledge'}
+  = partial('alerts_table')
+  %h2 Actions
+  %p= partial('acknowledge_input')
 :javascript
   // Do the magic updates..
   setTimeout("updateAlertsTable('#{@alert_type}','#{@group_by}');", 120000)

@@ -11,7 +11,14 @@
         });
     %th#summary Summary
     %th#time    At
-  = partial("alerts_table_group", :collection => @grouped_alerts)
+  - if @grouped_alerts.length > 0
+    = partial("alerts_table_group", :collection => @grouped_alerts)
+  - else
+    %tr{:class => %w(notice)}
+      %td
+      %td{:style => "text-align: center;"}
+        = "No #{@alert_type} alerts found!"
+      %td
   %tr
     %td{ :colspan => 3}
       %address
