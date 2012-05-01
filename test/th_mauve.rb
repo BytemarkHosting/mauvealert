@@ -1,5 +1,4 @@
 require 'test/unit'
-require 'mauve/datamapper'
 require 'timecop'
 require 'log4r'
 require 'pp'
@@ -94,12 +93,12 @@ module Mauve
     end
 
     def setup_database
-      DataMapper::Model.raise_on_save_failure = true
+      DataMapper::Model.raise_on_save_failure = true if defined?(DataMapper::Model)
     end
 
     def teardown_database
-      DataObjects::Pooling.pools.each{|pool| pool.dispose}
-    end
+      DataObjects::Pooling.pools.each{|pool| pool.dispose} if defined?(DataObjects::Pooling)
+    end 
 
     def setup_time
       Timecop.freeze(Time.local(2011,8,1,0,0,0,0))
@@ -110,7 +109,7 @@ module Mauve
     end
 
     def reset_mauve_configuration
-      Mauve::Configuration.current = Mauve::Configuration.new
+      Mauve::Configuration.current = Mauve::Configuration.new if defined?(Mauve::Configuration)
     end
 
     def reset_all_singletons

@@ -169,7 +169,7 @@ module Mauve
         #
         notification_method = Configuration.current.notification_methods[name.to_s]
 
-        @logger.warn "Notification method '#{name}' not defined  (#{@person.username})" if notification_method.nil?
+        logger.warn "Notification method '#{name}' not defined  (#{@person.username})" if notification_method.nil?
 
         #
         # Work out the destination
@@ -182,7 +182,7 @@ module Mauve
           destination = nil
         end
 
-        @logger.warn "#{name} destination for #{@person.username} not set" if destination.nil?
+        logger.warn "#{name} destination for #{@person.username} not set" if destination.nil?
 
         if args.first.is_a?(Hash)
           conditions  = @base_conditions.merge(args.pop)

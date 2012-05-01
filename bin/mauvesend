@@ -318,8 +318,6 @@ begin
   error "Cannot send update -- not all libraries are available" if update.nil?
   error "No alerts specified" unless !update.alert.empty? || update.replace
 
-  update.transmission_id = rand(2**63)
-
   Mauve::Sender.new(ARGV).send(update, verbose)
 
 rescue ArgumentError => ae

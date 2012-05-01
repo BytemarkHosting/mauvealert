@@ -5,20 +5,11 @@
 require 'dm-sqlite-adapter'
 require 'monitor'
 
-ADAPTER = DataMapper::Adapters::SqliteAdapter
+class DataMapper::Adapters::SqliteAdapter
 
-# better way to alias a private method? (other than "don't"? :) )
-ADAPTER.__send__(:alias_method, :initialize_old, :initialize)
-ADAPTER.__send__(:undef_method, :initialize)
-ADAPTER.__send__(:alias_method, :with_connection_old, :with_connection)
-ADAPTER.__send__(:undef_method, :with_connection)
+  include MonitorMixin
 
-class ADAPTER
-
-  def initialize(*a)
-    extend(MonitorMixin)
-    initialize_old(*a)
-  end
+  alias_method :with_connection_old, :with_connection
 
   private
 

@@ -81,5 +81,14 @@ class TcMauveDatabaseSqlite3Peculiarities < TcMauveDatabasePeculiarities
     # @pg_conn = PGconn.open(:dbname => @temp_db) 
     @db_url = "sqlite3::memory:"
   end
+
+  #
+  # This just makes sure our mixin has been added to the SqliteAdapter.
+  #
+  def test_has_mixin
+    assert DataMapper::Adapters::SqliteAdapter.private_instance_methods.include?("with_connection_old")
+    assert DataMapper::Adapters::SqliteAdapter.public_instance_methods.include?("synchronize")
+  end
+
 end
 

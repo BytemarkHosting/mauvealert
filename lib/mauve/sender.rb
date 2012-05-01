@@ -1,8 +1,21 @@
 # encoding: UTF-8
 require 'ipaddr'
 require 'socket'
+begin
+  require 'locale'
+rescue LoadError
+  # Do nothing -- these are bonus libraries :)
+end
+
+begin
+  require 'iconv'
+rescue LoadError
+  # Do nothing -- these are bonus libraries :)
+end
+
 require 'mauve/mauve_resolv'
 require 'mauve/mauve_time'
+require 'mauve/proto'
 
 module Mauve
   #
@@ -129,6 +142,55 @@ module Mauve
 
     end
 
+    # Sanitise all fields in an update, such that when we send, they are
+    # normal.
+    # 
+    #
+    def sanitize(update)
+      #
+      # Must have a source, so default to hostname if user doesn't care 
+      update.source ||= Socket.gethostname
+
+      #
+      # Check the locale charset.  This is to maximise the amout of information
+      # mauve receives, rather than provide proper sanitised data for the server.
+      #
+      from_charset = (Locale.current.charset || Locale.charset) if defined?(Locale)
+      from_charset ||= "UTF-8"
+
+      #
+      # 
+      #
+      update.each_field do |field, value|
+        #
+        # Make sure all string fields are UTF8 -- to ensure the maximal amount of information is sent.
+        #
+        update.__send__("#{field.name}=", Iconv.conv("UTF-8//IGNORE", from_charset, value)) if value.is_a?(String) and defined?(Iconv)
+      end
+
+      update.alert.each do |alert|
+        #
+        # Make sure all alerts default to "-r now"
+        #
+        alert.raise_time = Time.now.to_i unless (alert.raise_time > 0 or alert.clear_time > 0)
+
+        alert.each_field do |field, value|
+          #
+          # Make sure all string fields are UTF8 -- to ensure the maximal amount of information is sent.
+          #
+          alert.__send__("#{field.name}=", Iconv.conv("UTF-8//IGNORE", from_charset, value)) if value.is_a?(String) and defined?(Iconv)
+        end
+      end
+
+      #
+      # Make sure we set the transmission time and ID.
+      #
+      update.transmission_time = Time.now.to_i if update.transmission_time.nil? or update.transmission_time == 0
+      update.transmission_id   = rand(2**63)   if update.transmission_id.nil? or update.transmission_id == 0
+
+      update
+    end
+
     # Send an update.
     #
     # @param [Mauve::Proto] update The update to send
@@ -136,25 +198,12 @@ module Mauve
     #
     # @return [Integer] the number of packets sent.
     def send(update, verbose=0)
+      #
+      # Clean up the update, and set any missing fields.
+      #
+      update = sanitise(update)
 
-      #
-      # Must have a source, so default to hostname if user doesn't care 
-      update.source ||= Socket.gethostname
-      
-      #
-      # Make sure all alerts default to "-r now"
-      #
-      update.alert.each do |alert|
-        next if alert.raise_time || alert.clear_time
-        alert.raise_time = Time.now.to_i
-      end
-     
-      #
-      # Make sure we set the transmission time
-      #
-      update.transmission_time = Time.now.to_i 
-
-      data = update.serialize_to_string
+      data = sanitize(update).serialize_to_string
 
       if verbose == 1
         summary = "#{update.transmission_id} from #{update.source}"
