@@ -4,7 +4,12 @@
 %p
   = history.created_at.strftime("%R")
   - history.alerts.each do |alert|
-    = alert.subject
+    %a{ :href => url_for(alert) } 
+      = alert.id
+    %strong
+      = alert.subject
     = alert.summary
+    - if alert.source != alert.subject 
+      = "-- from #{alert.source}
   = history.event
   - @today = history.created_at
