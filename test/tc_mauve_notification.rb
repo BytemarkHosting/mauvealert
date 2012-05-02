@@ -224,6 +224,16 @@ EOF
     logger_pop
   end
 
+  def test_bank_holiday
+    time = Time.now
+ 
+    dr = DuringRunner.new(time)
+    assert(!dr.send(:bank_holiday?))
+
+    time.bank_holidays << Date.new(Time.now.year, Time.now.month, Time.now.day)
+    assert(dr.send(:bank_holiday?))
+  end
+
 end
 
 class TcMauveNotification < Mauve::UnitTest 

@@ -157,6 +157,18 @@ module Mauve
         (@test_time - @alert.raised_at) >= seconds
     end
     
+    # Tests if the alert has raised for a certain time.
+    #
+    # @param [Integer] seconds Number of seconds
+    # @return [Boolean]
+    def raised_for(seconds)
+      @test_time = @time if @test_time.nil?
+      @alert &&
+        @alert.raised? &&
+        (@test_time - @alert.raised_at) >= seconds
+    end
+
+
     # Checks to see if x is contained in y
     #
     # @param [Array] y Array to search for +x+
@@ -177,8 +189,15 @@ module Mauve
     # @return [Boolean]
     def working_hours?
       @test_time = @time if @test_time.nil?
-      @test_time.bank_holidays = Server.instance.bank_holidays
       @test_time.working_hours?
+    end
+
+    #
+    # Return true if today is a bank holiday
+    #
+    def bank_holiday?
+      @test_time = @time if @test_time.nil?
+      @test_time.bank_holiday?
     end
 
     # Test to see if we're in the dead zone.  See Time#dead_zone?
@@ -189,6 +208,13 @@ module Mauve
       @test_time.dead_zone?
     end
 
+    # 
+    # Return true if we're in daytime_hours.  See Time#daytime_hours?
+    #
+    def daytime_hours?
+      @test_time = @time if @test_time.nil?
+      @test_time.daytime_hours?
+    end
   end
   
   # A Notification is an instruction to notify a person, or a list of people,
@@ -249,7 +275,7 @@ module Mauve
       end
 
       # Set up a during_runner
-      during_runner ||= DuringRunner.new(Time.now, self.alert, &self.during)
+      during_runner ||= DuringRunner.new(Time.now, alert, &self.during)
 
       # Should we notify at all?
       return already_sent_to unless during_runner.now?
@@ -287,7 +313,7 @@ module Mauve
       return nil unless alert.raised?
 
       # Set up a during_runner
-      during_runner ||= DuringRunner.new(Time.now, self.alert, &self.during)
+      during_runner ||= DuringRunner.new(Time.now, alert, &self.during)
 
       if during_runner.now?
         return during_runner.find_next(every)

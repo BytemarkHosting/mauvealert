@@ -52,27 +52,38 @@ tr.detail {
 
 /** Flash notices **/
 
-div.error {
+.error {
   background-color: #ffe;
   border: solid 2px #ffc;
   background-image: url('/images/error.png');
 }
 
-div.notice {
+.notice {
   background-color: #eef;
   border: solid 2px #ccf;
   background-image: url('/images/information.png');
 }
 
-div.flash {
+tr.error, tr.notice {
   margin: 5px 5px 0px;
   padding: 0px;
-  padding-left: 20px;
+  padding-left: 25px;
   color: black;
   font-size: large;
   background-position: 5px;
   background-repeat: no-repeat;
-  min-height: 20px;
+  min-height: 25px;
+}
+
+div.error, div.notice {
+  margin: 5px 5px 0px;
+  padding: 0px;
+  padding-left: 25px;
+  color: black;
+  font-size: large;
+  background-position: 5px;
+  background-repeat: no-repeat;
+  min-height: 25px;
 }
 
 div.flash p {

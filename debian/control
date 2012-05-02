@@ -43,6 +43,7 @@ Depends: mauvealert-common (>= 3.8.0),
  libxmpp4r-ruby1.8,
  ${misc:Depends}
 Suggests: mauvealert-client
+Recommends: liblocale-ruby1.8 | ruby-locale
 Description: Mauve network alert system -- server
  Mauve is a network alert system for system and network administrators.  You can
  use it to quickly set up ad-hoc monitoring for a variety of services, and to

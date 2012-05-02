@@ -153,7 +153,7 @@ module Mauve
 
       #
       # Check the locale charset.  This is to maximise the amout of information
-      # mauve receives, rather than provide proper sanitised data for the server.
+      # mauve receives, rather than provide proper sanitized data for the server.
       #
       from_charset = (Locale.current.charset || Locale.charset) if defined?(Locale)
       from_charset ||= "UTF-8"
@@ -201,7 +201,7 @@ module Mauve
       #
       # Clean up the update, and set any missing fields.
       #
-      update = sanitise(update)
+      update = sanitize(update)
 
       data = sanitize(update).serialize_to_string
 

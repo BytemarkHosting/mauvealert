@@ -16,8 +16,8 @@ class TestMauveTime < Mauve::UnitTest
     #
     # Working hours..
     #
-    hour_0 = Time.local(2011,6,6,8,30,0)
-    hour_1 = Time.local(2011,6,6,9,30,0)
+    hour_0 = Time.local(2011,6,6,9,0,0)
+    hour_1 = Time.local(2011,6,6,10,0,0)
 
     assert_equal(hour_1, t.in_x_hours(1,"working"))
     assert_equal(hour_0, t.in_x_hours(0,"working"))
@@ -31,7 +31,7 @@ class TestMauveTime < Mauve::UnitTest
     # Working hours..
     #
     hour_0 = Time.local(2011,6,3,16,45,32)
-    hour_1 = Time.local(2011,6,6,9,15,32)
+    hour_1 = Time.local(2011,6,6,9,45,32)
 
     assert_equal(hour_1, t.in_x_hours(1,"working"))
     assert_equal(hour_0, t.in_x_hours(0,"working"))
@@ -41,9 +41,24 @@ class TestMauveTime < Mauve::UnitTest
     x = Time.now
     assert(!x.bank_holiday?)
 
-
     x.bank_holidays << Date.new(x.year, x.month, x.day)
     assert(x.bank_holiday?)
+  end
+
+  def test_dead_zone?
+    x = Time.local(2012,5,2,4,30,0)
+    assert(x.dead_zone?)
+    
+    x = Time.local(2012,5,2,9,30,0)
+    assert(!x.dead_zone?)
+  end
+
+  def test_daytime_hours
+    x = Time.local(2012,5,2,4,30,0)
+    assert(!x.daytime_hours?)
+
+    x = Time.local(2012,5,2,9,30,0)
+    assert(x.daytime_hours?)
   end
 
 

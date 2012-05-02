@@ -103,17 +103,38 @@ class Time
   #
   #
   def bank_holidays
-    @bank_holidays ||= []
+    @bank_holidays = if defined? Server and Server.instance
+      Server.instance.bank_holidays
+    else
+      @bank_holidays || []
+    end
   end
 
-  # This sets the bank holiday dates for the bank_holiday? check.
+  # Returns an array of ranges of working hours
   #
-  # @param [Array] arg An array of Date of bank holidays
-  # @returns [Array]
   #
-  def bank_holidays=(arg)
-    raise ArgumentError unless arg.is_a?(Array) and arg.all?{|a| a.is_a?(Date)}
-    @bank_holidays = arg
+  def working_hours
+    if defined? Configuration and Configuration.current
+      Configuration.current.working_hours
+    else
+      [9.0...17.0]
+    end
+  end
+  
+  def dead_zone
+    if defined? Configuration and Configuration.current
+      Configuration.current.working_hours
+    else
+      [3.0...7.0]
+    end
+  end
+  
+  def daytime_hours
+    if defined? Configuration and Configuration.current
+      Configuration.current.working_hours
+    else
+      [8.0...20.0]
+    end
   end
 
   # This relies on bank_holidays being set.
@@ -128,14 +149,16 @@ class Time
   #
   # @return [Boolean]
   def working_hours?
-    !bank_holiday? and (1..5).include?(self.wday) and ((9..16).include?(self.hour) or  (self.hour == 8 && self.min >= 30))
+    (1..5).include?(self.wday) and
+    self.working_hours.any?{|r| r.include?(self.hour.to_f + self.min.to_f/60.0)} and
+    !self.bank_holiday?
   end
 
   # Test to see if it is currently daytime.  The daytime day is 14 hours long
   #
   # @return [Boolean]
   def daytime_hours?
-    (8..21).include?(self.hour)
+    self.daytime_hours.any?{|r| r.include?(self.hour.to_f + self.min.to_f/60.0)}
   end
   
   # We're always in wallclock hours
@@ -149,7 +172,7 @@ class Time
   #
   # @return [Boolean]
   def dead_zone?
-    (3..6).include?(self.hour)
+    self.dead_zone.any?{|r| r.include?(self.hour.to_f + self.min.to_f/60.0)}
   end
   
   # Format the time as a string, relative to +now+
