@@ -275,7 +275,7 @@ module Mauve
       end
 
       # Set up a during_runner
-      during_runner ||= DuringRunner.new(Time.now, self.alert, &self.during)
+      during_runner ||= DuringRunner.new(Time.now, alert, &self.during)
 
       # Should we notify at all?
       return already_sent_to unless during_runner.now?
