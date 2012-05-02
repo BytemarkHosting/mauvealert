@@ -605,8 +605,6 @@ EOF
 
           begin
             now = Time.now
-            now.bank_holidays = Server.instance.bank_holidays
-
             ack_until = now.in_x_hours(n_hours, type_hours)
           rescue RangeError 
             return "I'm sorry, you tried to acknowedge for far too long, and my buffers overflowed!"
