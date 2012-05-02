@@ -2,6 +2,7 @@ $:.unshift "../lib/"
 
 require 'th_mauve'
 require 'mauve/configuration_builders/logger'
+require 'tempfile'
 
 class TcMauveConfigurationBuildersLogger < Mauve::UnitTest
 
@@ -9,6 +10,8 @@ class TcMauveConfigurationBuildersLogger < Mauve::UnitTest
   end
 
   def test_load
+
+    test_log = Tempfile.new(self.class.to_s)
 
     config=<<EOF
 logger {
@@ -19,7 +22,7 @@ logger {
 
   outputter ("file") {
     trunc false
-    filename "test.conf"
+    filename "#{test_log.path}"
     level DEBUG
   }
 
@@ -46,7 +49,7 @@ EOF
     assert_equal("%d [ %l ] [ %12.12c ] %m", outputter.formatter.pattern )
     assert_equal(Log4r::DEBUG, outputter.level )
     assert_equal(false, outputter.trunc )
-    assert_equal("test.conf", outputter.filename )
+    assert_equal(test_log.path, outputter.filename )
   end
 
   def test_levels
