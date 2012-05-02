@@ -27,7 +27,7 @@ module Mauve
     # People
     # @return [Hash]
     attr_reader   :people
-    
+
     # Alert groups
     # @return [Array]
     attr_reader   :alert_groups
@@ -43,7 +43,7 @@ module Mauve
     # Various further configuration items
     #
     attr_reader   :bytemark_auth_url, :bytemark_calendar_url, :remote_http_timeout, :remote_https_verify_mode, :failed_login_delay
-    attr_reader   :max_acknowledgement_time
+    attr_reader   :max_acknowledgement_time, :working_hours, :dead_zone, :daytime_hours
 
 
     #
@@ -66,23 +66,30 @@ module Mauve
       #
       # Set a couple of params for remote HTTP requests.
       #
-      @remote_http_timeout = 5
-      @remote_https_verify_mode = OpenSSL::SSL::VERIFY_PEER
+      self.remote_http_timeout = 5
+      self.remote_https_verify_mode = "peer"
 
       #
       # Rate limit login attempts to limit the success of brute-forcing.
       #
-      @failed_login_delay = 1
+      self.failed_login_delay = 1
 
       #
       # Maximum amount of time to acknowledge for
       #
-      @max_acknowledgement_time = 15.days
+      self.max_acknowledgement_time = 15.days
+
+      #
+      # Working hours
+      #
+      self.dead_zone     = 3...6
+      self.daytime_hours = 8...20
+      self.working_hours = 9...17
     end
 
     # Set the calendar URL.
     #
-    # @param [String] arg 
+    # @param [String] arg
     # @return [URI]
     def bytemark_calendar_url=(arg)
       raise ArgumentError, "bytemark_calendar_url must be a string" unless arg.is_a?(String)
@@ -104,7 +111,7 @@ module Mauve
 
     # Set the Bytemark Authentication URL
     #
-    # @param [String] arg 
+    # @param [String] arg
     # @return [URI]
     def bytemark_auth_url=(arg)
       raise ArgumentError, "bytemark_auth_url must be a string" unless arg.is_a?(String)
@@ -128,7 +135,7 @@ module Mauve
     # @param [Integer] arg
     # @return [Integer]
     def remote_http_timeout=(arg)
-      raise ArgumentError, "remote_http_timeout must be an integer" unless s.is_a?(Integer)
+      raise ArgumentError, "remote_http_timeout must be an integer" unless arg.is_a?(Integer)
       @remote_http_timeout = arg
     end
 
@@ -156,7 +163,7 @@ module Mauve
       raise ArgumentError, "failed_login_delay must be numeric" unless arg.is_a?(Numeric)
       @failed_login_delay = arg
     end
-    
+
     # Set the maximum amount of time alerts can be ack'd for
     #
     #
@@ -169,5 +176,85 @@ module Mauve
       lambda{|at| CalendarInterface.get_attendees(x,at)}
     end
 
+    def working_hours=(arg)
+      @working_hours = do_parse_range(arg)
+    end
+
+    def daytime_hours=(arg)
+      @daytime_hours = do_parse_range(arg)
+    end
+
+    def dead_zone=(arg)
+      @dead_zone = do_parse_range(arg)
+    end
+
+    private
+
+    # This method takes a range, and wraps it within the specs defined by
+    # allowed_range.
+    # 
+    # It can take an array of Numerics, Strings, Ranges etc
+    #
+    # @param 
+    #
+    def do_parse_range(arg, allowed_range = (0...24))
+      args = [arg].flatten
+
+      #
+      # Tidy up our allowed ranges
+      #
+      min = allowed_range.first
+      max = allowed_range.last
+
+      #
+      # If we've been given a numeric range, make sure they're all floats.
+      #
+      min = min.to_f if min.is_a?(Numeric)
+      max = max.to_f if max.is_a?(Numeric)
+      
+      ranges = []
+
+      args.each do |arg|
+        case arg
+          when Range
+            from = arg.first
+            to = arg.last
+            exclude_end = arg.exclude_end?
+          else
+            from = arg
+            to = arg
+        end
+
+        from = min unless allowed_range.include?(from)
+
+        #
+        # In the case of integers, we want to match up until, but not including
+        # the next integer.
+        #
+        if to.is_a?(Integer)
+          to = (exclude_end ? to : to.succ)
+          exclude_end = true
+        end
+
+        to = max unless allowed_range.include?(to)
+
+        from = from.to_f if from.is_a?(Numeric)
+        to   = to.to_f   if to.is_a?(Numeric)
+
+        if from > to or (from >= to and exclude_end)
+          ranges << Range.new(from, max, allowed_range.exclude_end?)
+          ranges << Range.new(min, to, exclude_end)
+        else
+          ranges << Range.new(from, to, exclude_end)
+        end
+
+      end
+
+      ranges
+    end
+
+
   end
+
+
 end
