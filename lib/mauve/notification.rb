@@ -313,7 +313,7 @@ module Mauve
       return nil unless alert.raised?
 
       # Set up a during_runner
-      during_runner ||= DuringRunner.new(Time.now, self.alert, &self.during)
+      during_runner ||= DuringRunner.new(Time.now, alert, &self.during)
 
       if during_runner.now?
         return during_runner.find_next(every)
