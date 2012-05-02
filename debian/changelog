@@ -1,3 +1,19 @@
+mauvealert (3.8.5) stable; urgency=low
+
+  * Added configuration options for daytime_hours, dead_zone, and
+    working_hours.
+  * Updated views to be neater with respect to notice/errors and in the case
+    when no alerts are found in a table.
+  * Set default hostname to Socket.gethostname, and default base_url now
+    includes the port, if it is not port 80
+  * Added ruby locale dependency for server.
+  * Symlink jquery if possible in server postinst.
+  * Updated history partial to be better.
+  * Updated sender to try and get things into UTF8 where poss.
+  * Fixed warn on nil method in person.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 02 May 2012 15:24:52 +0100
+
 mauvealert (3.8.4) stable; urgency=low
 
   * Fixed notification when on holiday/off sick
