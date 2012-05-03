@@ -647,7 +647,7 @@ EOF
           #
           unless note.to_s.empty?
             note = Alert.remove_html(note)
-            h = History.new(:alerts => succeeded, :type => "note", :event => username+" noted "+note.to_s)
+            h = History.new(:alerts => succeeded, :type => "note", :event => note.to_s, :user => username)
             logger.debug h.errors unless h.save
           end
 

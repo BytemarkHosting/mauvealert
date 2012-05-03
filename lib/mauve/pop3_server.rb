@@ -399,7 +399,7 @@ module Mauve
           send_data ["+OK #{msg.length} octets", msg, "."].join(CRLF)
           note =  "#{alert_changed.update_type.capitalize} notification downloaded via POP3 by #{@user}" 
           logger.info note+" about #{alert_changed}."
-          h = History.new(:alerts => [alert_changed.alert_id], :type => "notification", :event => note)
+          h = History.new(:alerts => [alert_changed.alert_id], :type => "notification", :event => note, :user => @user)
           logger.error "Unable to save history due to #{h.errors.inspect}" if !h.save
         else
           send_data "-ERR Message not found."

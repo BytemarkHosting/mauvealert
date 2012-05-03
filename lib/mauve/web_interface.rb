@@ -252,7 +252,7 @@ EOF
       #
       unless note.to_s.empty?
         note = Alert.remove_html(note)
-        h = History.new(:alerts => succeeded, :type => "note", :event => session['username']+" noted "+note.to_s)
+        h = History.new(:alerts => succeeded, :type => "note", :event => note.to_s, :user => session['username'])
         logger.debug h.errors unless h.save
       end
 
@@ -377,7 +377,7 @@ EOF
       # Add the note
       #
       unless note.to_s.empty?
-        h = History.new(:alerts => [alert], :type => "note", :event => session['username']+" noted "+note.to_s)
+        h = History.new(:alerts => [alert], :type => "note", :event => note.to_s, :user => session['username'])
         logger.debug h.errors unless h.save
       end
       
