@@ -39,9 +39,9 @@ people_list("garmin-cervelo", %w(
 EOF
     x = nil
     assert_nothing_raised { x = Mauve::ConfigurationBuilder.parse(config) }
-    assert_equal(2, x.people_lists.keys.length)
-    assert_equal(["team sky","garmin-cervelo"].sort,x.people_lists.keys.sort)
-    assert_equal(%w(geraint edvald bradley rigoberto ben), x.people_lists["team sky"].list)
+    assert_equal(2, x.people.keys.length)
+    assert_equal(["team sky","garmin-cervelo"].sort,x.people.keys.sort)
+    assert_equal(%w(geraint edvald bradley rigoberto ben), x.people["team sky"].list)
   end
 
   def test_duplicate_people_list
@@ -61,13 +61,7 @@ EOF
     #   * duplicate list
     #   * Lars already being on a list
     #
-    assert_nothing_raised { x = Mauve::ConfigurationBuilder.parse(config) }
-
-    assert_match(/Lars/,      logger_pop())
-    assert_match(/Duplicate/, logger_pop())
-
-    assert_equal(1, x.people_lists.keys.length)
-    assert_equal(["mark c","mark r","Lars","Bernie","Danny"].sort, x.people_lists["htc-highroad"].list.sort)
+    assert_raise(ArgumentError) { x = Mauve::ConfigurationBuilder.parse(config) }
   end
 
 end

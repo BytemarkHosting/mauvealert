@@ -9,9 +9,9 @@ module Mauve
 
     class PeopleList < ObjectBuilder
 
-     is_builder "notification", Notification
+     is_builder "notification", ConfigurationBuilders::Notification
 
-      def builder_setup(label, list)
+      def builder_setup(label, *list)
         @result = Mauve::PeopleList.new(label)
         @result += list
         @result
@@ -41,14 +41,9 @@ module Mauve
     # @param [Mauve::PeopleList] people_list
     #
     def created_people_list(people_list)
-      label = people_list.label
-      if @result.people_lists.has_key?(label)
-        _logger.warn("Duplicate people_list '#{label}'") 
-        @result.people_lists[label] += people_list.list
-      else
-        @result.people_lists[label] = people_list
-      end
+      name = people_list.username
+      raise ArgumentError.new("Duplicate person '#{name}'") if @result.people[name]
+      @result.people[name] = people_list
     end
-
   end
 end

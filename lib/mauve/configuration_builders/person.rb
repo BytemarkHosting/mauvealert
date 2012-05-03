@@ -5,6 +5,7 @@ require 'mauve/configuration_builder'
 require 'mauve/configuration_builders/alert_group'
 
 module Mauve
+
   module ConfigurationBuilders
 
     class Person < ObjectBuilder

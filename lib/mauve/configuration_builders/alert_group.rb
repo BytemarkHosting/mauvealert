@@ -18,22 +18,8 @@ module Mauve
       # @raise [ArgumentError] if a username doesn't exist.
       #
       # @return [Mauve::Notification] New notification instance.
-      def builder_setup(who)
-        who = if who.is_a?(Mauve::Person) or who.is_a?(Mauve::PeopleList)
-          who
-
-        elsif @context.people[who]
-          @context.people[who]
-
-        elsif @context.people_lists[who]
-          @context.people_lists[who]
-
-        else
-          raise ArgumentError.new("You have not declared who #{who} is")
-
-        end
-
-        @result = Mauve::Notification.new(who)
+      def builder_setup(*who)
+        @result = Mauve::Notification.new(*who)
       end
       
       is_attribute "every"
@@ -65,25 +51,7 @@ module Mauve
       #
       def created_notify(notification)
         @result.notifications ||= []
-
-        if notification.during.nil? and notification.every.nil?
-          @result.notifications += notification.person.notifications.collect do |n|
-            #
-            # Set up a new notification for each one defined for this person.
-            #
-            new_notification = Mauve::Notification.new(notification.person)
-            new_notification.level  = @result.level
-            new_notification.every  = n.every
-            new_notification.during = n.during
-            new_notification
-          end
-        else
-          #
-          # Set the level for this notification
-          #
-          notification.level    = @result.level
-          @result.notifications << notification
-        end
+        @result.notifications << notification
       end
 
     end

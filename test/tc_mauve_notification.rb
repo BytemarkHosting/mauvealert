@@ -316,10 +316,12 @@ alert_group("default") {
   level URGENT 
 
   notify("test1") {
+    during { true }
     every 10.minutes
   }
   
   notify("testers") {
+    during { true }
     every 15.minutes
   }
 
@@ -563,48 +565,229 @@ EOF
       :subject   => "test"
     )
     
-    #
-    # This should only alert test1
-    #
-    assert_equal(0, Time.now.hour)
-    alert.raise!
-    assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
-    assert_equal("test1@example.com", notification_buffer.pop[2])
+    # At midnight just test1
+    # At 1am just test2
+    # At 2am, both test1 and test2 (via testers)
+    # At 3am both test1 and test2 (via testers clause with during)
+    # At 4am no-one 
 
-    alert.clear!
-    assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
-    assert_equal("test1@example.com", notification_buffer.pop[2])
+    [
+      [0, %w(test1)],
+      [1, %w(test2)],
+      [2, %w(test1 test2)],
+      [3, %w(test1 test2)],
+      [4, []]
+    ].each do |hour, people|
+
+      assert_equal(hour, Time.now.hour)
+      alert.raise!
+      assert_equal(people.length, notification_buffer.size, "Wrong number of notifications sent after a raise at #{hour} am")
+      sent = []
+      sent << notification_buffer.pop while !notification_buffer.empty?
+      assert_equal(people.collect{|u| "#{u}@example.com"}.sort, sent.collect{|n| n[2]}.sort)
+
+      alert.clear!
+      assert_equal(people.length, notification_buffer.size, "Wrong number of notifications sent after a clear at #{hour} am")
+      sent = []
+      sent << notification_buffer.pop while !notification_buffer.empty?
+      assert_equal(people.collect{|u| "#{u}@example.com"}.sort, sent.collect{|n| n[2]}.sort)
+      
+      #
+      # Wind the clock forward for the next round of tests.
+      #
+      Timecop.freeze(Time.now+1.hours)
+    end
+  end
+
+  def test_individual_notification_preferences_part_deux
+    config=<<EOF
+server {
+  use_notification_buffer false
+}
+
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
+person ("test1") {
+  email "test1@example.com"
+  all { email }
+  notify {
+    every 300
+    during { hours_in_day(0) }
+  }
+}
+
+person ("test2") {
+  email "test2@example.com"
+  all { email }
+  notify {
+    every 300
+    during { hours_in_day(1) }
+  }
+}
+
+people_list("testers", %w(test1 test2)) 
+
+alert_group("test") {
+  level URGENT
+
+  notify("testers")
+
+  notify("testers") {
+    every 60
+    during { hours_in_day (2) }
+  }
+}
+
+EOF
+
+    Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
+
+    Server.instance.setup
     
+    alert = Alert.new(
+      :alert_id  => "test",
+      :source    => "test",
+      :subject   => "test"
+    )
+ 
     #
-    # Wind forward to 1am when test2 should get alerted
-    #
-    Timecop.freeze(Time.now+1.hours)
+    # At midnight just test1 should be notified.
+    # At 1am, just test2
+    # At 2am both test1 and test2 
+ 
+    [
+      [0, %w(test1)],
+      [1, %w(test2)],
+      [2, %w(test1 test2)]
+    ].each do |hour, people|
 
-    assert_equal(1, Time.now.hour)
-    alert.raise!
-    assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
-    assert_equal("test2@example.com", notification_buffer.pop[2])
-  
-    alert.clear!
-    assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
-    assert_equal("test2@example.com", notification_buffer.pop[2])
+      assert_equal(hour, Time.now.hour)
+      alert.raise!
+      assert_equal(people.length, notification_buffer.size, "Wrong number of notifications sent after a raise at #{hour} am")
+      sent = []
+      sent << notification_buffer.pop while !notification_buffer.empty?
+      assert_equal(people.collect{|u| "#{u}@example.com"}.sort, sent.collect{|n| n[2]}.sort)
 
-    #
-    # Wind forward to 2am when the testers group should get alerted
-    #
-    Timecop.freeze(Time.now+1.hours)
-
-    assert_equal(2, Time.now.hour)
-    alert.raise!
-    assert_equal(2, notification_buffer.size, "Wrong number of notifications sent")
-    assert_equal("test2@example.com", notification_buffer.pop[2])
-    assert_equal("test1@example.com", notification_buffer.pop[2])
-
-    alert.clear!
-    assert_equal(2, notification_buffer.size, "Wrong number of notifications sent")
-    assert_equal("test2@example.com", notification_buffer.pop[2])
-    assert_equal("test1@example.com", notification_buffer.pop[2])
+      alert.clear!
+      assert_equal(people.length, notification_buffer.size, "Wrong number of notifications sent after a clear at #{hour} am")
+      sent = []
+      sent << notification_buffer.pop while !notification_buffer.empty?
+      assert_equal(people.collect{|u| "#{u}@example.com"}.sort, sent.collect{|n| n[2]}.sort)
+      
+      #
+      # Wind the clock forward for the next round of tests.
+      #
+      Timecop.freeze(Time.now+1.hours)
+    end
 
   end
 
+  def test_notify_array_of_usernames
+    config=<<EOF
+server {
+  use_notification_buffer false
+}
+
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
+person ("test1") {
+  email "test1@example.com"
+  all { email }
+  notify {
+    every 100
+    during { hours_in_day(1) }
+  }
+}
+
+person ("test2") {
+  email "test2@example.com"
+  all { email }
+  notify {
+    every 200
+    during { hours_in_day(2) }
+  }
+}
+
+person ("test3") {
+  email "test3@example.com"
+  all { email }
+  notify {
+    every 300
+    during { hours_in_day(3) }
+  }
+}
+
+people_list("testers1", %w(test1 test2)) 
+
+people_list("testers2", "testers1", "test3") {
+  notify {
+    every 500 
+    during { hours_in_day(4) }
+  }
+}
+
+alert_group("test") {
+  level URGENT
+
+  includes { source == "test" }
+
+  notify("test1", "testers1", "testers2")
+}
+EOF
+
+    Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
+
+    Server.instance.setup
+
+    alert = Alert.new(
+      :alert_id  => "test",
+      :source    => "test",
+      :subject   => "test"
+    )
+    assert_equal("test", alert.alert_group.name)
+
+    # At midnight no-one should be alerted
+    # At 1am just test1 should be alerted
+    # At 2am just test2 should be alerted (via the testers1 group)
+    # At 3am no-one should be alerted
+    # At 4am test1, test2, and test3 should all be alerted (via the testers2 group)
+ 
+    [
+      [0, []],
+      [1, %w(test1)],
+      [2, %w(test2)],
+      [3, []],
+      [4, %w(test1 test2 test3)]
+    ].each do |hour, people|
+
+      assert_equal(hour, Time.now.hour)
+      alert.raise!
+      assert_equal(people.length, notification_buffer.size, "Wrong number of notifications sent after a raise at #{hour} am")
+      sent = []
+      sent << notification_buffer.pop while !notification_buffer.empty?
+      assert_equal(people.collect{|u| "#{u}@example.com"}.sort, sent.collect{|n| n[2]}.sort)
+
+      alert.clear!
+      assert_equal(people.length, notification_buffer.size, "Wrong number of notifications sent after a clear at #{hour} am")
+      sent = []
+      sent << notification_buffer.pop while !notification_buffer.empty?
+      assert_equal(people.collect{|u| "#{u}@example.com"}.sort, sent.collect{|n| n[2]}.sort)
+      
+      #
+      # Wind the clock forward for the next round of tests.
+      #
+      Timecop.freeze(Time.now+1.hours)
+    end
+
+  end
 end

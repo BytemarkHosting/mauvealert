@@ -78,6 +78,21 @@ module Mauve
       l
     end
 
+    def resolve_notifications(default_every=nil, default_during=nil, at = nil)
+      self.people(at).collect do |person|
+        if self.notifications.empty?
+          person.resolve_notifications(default_every, default_during, at)
+        else
+          self.notifications.collect do |notification|
+            this_notification = Notification.new(person)
+            this_notification.every  = default_every  || notification.every
+            this_notification.during = default_during || notification.during
+            this_notification
+          end
+        end
+      end.flatten.compact
+    end
+
   end
 
 end

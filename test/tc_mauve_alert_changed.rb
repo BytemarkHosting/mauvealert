@@ -43,6 +43,7 @@ alert_group("test_group") {
 
   notify("test_person") {
     every 5.minutes
+    during { true }
   }
 
 }
@@ -118,6 +119,7 @@ alert_group("test_group") {
 
   notify("test_person") {
     every 5.minutes
+    during { true }
   }
 
 }

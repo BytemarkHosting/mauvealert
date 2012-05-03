@@ -157,9 +157,17 @@ module Mauve
 
       #
       # This is where we set the reminder -- i.e. on a per-alert-group basis.
-      
+      #
       remind_at = nil
-      notifications.each do |notification|
+
+      these_notifications = self.resolve_notifications(at)
+
+      these_notifications.each do |notification|
+        #
+        # Make sure the level is set.
+        #
+        notification.level = self.level
+
         #
         # Create a new during_runner for this notification clause, and keep it
         # handy.
@@ -208,7 +216,7 @@ module Mauve
       # The notifications are specified in the config file.
       #
       sent_to = []
-      notifications.each do |notification|
+      these_notifications.each do |notification|
         sent_to << notification.notify(alert, sent_to, during_runners.shift)
       end
 
@@ -240,6 +248,16 @@ module Mauve
       [LEVELS.index(self.level), self.name]  <=> [LEVELS.index(other.level), other.name]
     end
 
+    #
+    # 
+    #
+    def resolve_notifications(at = Time.now)
+      self.notifications.collect do |notification|
+        notification.people.collect do |person|
+          person.resolve_notifications(notification.every, notification.during, at)
+        end
+      end.flatten.compact
+    end
   end
 
 end

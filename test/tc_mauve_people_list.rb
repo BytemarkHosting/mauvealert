@@ -60,7 +60,7 @@ EOF
     notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
 
     Server.instance.setup
-    people_list = Configuration.current.people_lists["testers"]
+    people_list = Configuration.current.people["testers"]
 
     alert = Alert.new(
       :alert_id  => "test",
@@ -142,7 +142,7 @@ EOF
     stub_request(:get, "http://localhost/api/attendees/support_shift/2011-08-01T00:05:00").
       to_return(:status => 200, :body => YAML.dump(%w(test2)))
     
-    people_list = Configuration.current.people_lists["testers"]
+    people_list = Configuration.current.people["testers"]
     assert_equal([Configuration.current.people["test1"]], people_list.people)
     assert_equal([Configuration.current.people["test2"]], people_list.people(Time.now + 5.minutes))
   end

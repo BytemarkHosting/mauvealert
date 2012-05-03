@@ -302,6 +302,15 @@ module Mauve
       return CalendarInterface.is_user_off_sick?(self.username, at)
     end
 
+    def resolve_notifications(default_every=nil, default_during=nil, at = nil)
+      self.notifications.collect do |notification|
+        this_notification = Notification.new(self)
+        this_notification.every  = default_every  || notification.every
+        this_notification.during = default_during || notification.during
+        this_notification
+      end.flatten.compact
+    end
+
   end
 
 end

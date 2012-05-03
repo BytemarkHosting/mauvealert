@@ -121,10 +121,10 @@ module Mauve
     # @return [Boolean]
     #
     def no_one_in(people_list)
-      return true unless Configuration.current.people_lists.has_key?(people_list)
-      @test_time = @time if @test_time.nil?
+      return true unless Configuration.current.people[people_list].respond_to?(:people)
 
-      return Configuration.current.people_lists[people_list].people(@test_time).empty?
+      @test_time = @time if @test_time.nil?
+      return Configuration.current.people[people_list].people(@test_time).empty?
     end
 
     # Returns true if the current hour is in the list of hours given.
@@ -133,7 +133,7 @@ module Mauve
     # @return [Boolean]
     def hours_in_day(*hours)
       @test_time = @time if @test_time.nil?
-      x_in_list_of_y(@test_time.hour, hours.flatten)
+      x_in_list_of_y(@test_time.hour, Configuration.parse_range(hours).flatten)
     end   
  
     # Returns true if the current day is in the list of days given
@@ -142,7 +142,7 @@ module Mauve
     # @return [Boolean]
     def days_in_week(*days)
       @test_time = @time if @test_time.nil?
-      x_in_list_of_y(@test_time.wday, days.flatten)
+      x_in_list_of_y(@test_time.wday, Configuration.parse_range(days,0...7).flatten)
     end
     
     # Tests if the alert has not been acknowledged within a certain time.
@@ -223,14 +223,21 @@ module Mauve
   #
   class Notification
 
-    attr_reader :during, :every, :level, :person
+    attr_reader :during, :every, :level, :usernames
 
     # Set up a new notification
     #
-    # @param [Array] person List of Mauve::Person to notify
+    # @param [Array] usernames List of Mauve::Person to notify
     # @param [Symbol] level Level at which to notify
-    def initialize(person)
-      @person = person
+    def initialize(*usernames)
+      @usernames = usernames.flatten.collect do |u|
+        if u.respond_to?(:username)
+          u.username
+        else
+          u.to_s
+        end
+      end.flatten
+
       @during = nil
       @every = nil
       @level = nil
@@ -238,7 +245,7 @@ module Mauve
 
     # @return [String]
     def to_s
-      "#<Notification:of #{person} at level #{level} every #{every}>"
+      "#<Notification:of #{usernames} at level #{level} every #{every}>"
     end
 
     # @return Log4r::Logger 
@@ -256,8 +263,14 @@ module Mauve
       @level = arg
     end
 
-    def person=(arg)
-      @person = arg
+    def usernames=(arg)
+      @usernames = arg
+    end
+
+    def people
+      usernames.sort.collect do |username|
+        Configuration.current.people[username]
+      end.compact.uniq
     end
 
     # Push a notification on to the queue for this alert.  The Mauve::Notifier
@@ -269,8 +282,8 @@ module Mauve
     # @return [Array] The list of people that have received this alert.
     def notify(alert, already_sent_to = [], during_runner = nil)
 
-      if person.nil? 
-        logger.warn "No person found in for notification #{list}"
+      if usernames.nil? or usernames.empty?
+        logger.warn "No usernames found for notification #{list}"
         return
       end
 
@@ -280,15 +293,16 @@ module Mauve
       # Should we notify at all?
       return already_sent_to unless during_runner.now?
 
-      case person
-        when Person
-          [person]
-        when PeopleList
-          person.people
-        else
-          logger.warn "Unable to notify #{person} (unrecognised class #{person.class})"
-          []
-      end.flatten.uniq.each do |person|
+      people.collect do |person|
+        case person
+          when PeopleList
+            person.people(during_runner.time)
+          when Person
+            person
+          else
+            nil
+        end
+      end.flatten.compact.uniq.each do |person|
         #
         # A bit of alert de-bouncing.
         #
@@ -310,7 +324,15 @@ module Mauve
     # @return [Time or nil] The time a reminder should get sent, or nil if it
     #   should never get sent again.
     def remind_at_next(alert, during_runner = nil)
+      #
+      # Don't remind on acknowledgements / clears.
+      #
       return nil unless alert.raised?
+
+      #
+      # Never remind if every is not set.
+      #
+      return nil unless every
 
       # Set up a during_runner
       during_runner ||= DuringRunner.new(Time.now, alert, &self.during)
@@ -324,5 +346,7 @@ module Mauve
     end
 
   end
+
+  class NotificationDummy < Struct.new(:during, :every) ; end
 
 end
