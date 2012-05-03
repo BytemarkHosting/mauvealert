@@ -32,10 +32,6 @@ module Mauve
     # @return [Array]
     attr_reader   :alert_groups
 
-    # People lists
-    # @return [Hash]
-    attr_reader   :people_lists
-
     # The source lists
     # @return [Hash]
     attr_reader   :source_lists
@@ -53,7 +49,6 @@ module Mauve
       @server = nil
       @notification_methods = {}
       @people = {}
-      @people_lists = {}
       @source_lists = Hash.new{|h,k| h[k] = Mauve::SourceList.new(k)}
       @alert_groups = []
 
@@ -177,18 +172,16 @@ module Mauve
     end
 
     def working_hours=(arg)
-      @working_hours = do_parse_range(arg)
+      @working_hours = self.class.parse_range(arg)
     end
 
     def daytime_hours=(arg)
-      @daytime_hours = do_parse_range(arg)
+      @daytime_hours = self.class.parse_range(arg)
     end
 
     def dead_zone=(arg)
-      @dead_zone = do_parse_range(arg)
+      @dead_zone = self.class.parse_range(arg)
     end
-
-    private
 
     # This method takes a range, and wraps it within the specs defined by
     # allowed_range.
@@ -197,7 +190,7 @@ module Mauve
     #
     # @param 
     #
-    def do_parse_range(arg, allowed_range = (0...24))
+    def self.parse_range(arg, allowed_range = (0...24))
       args = [arg].flatten
 
       #

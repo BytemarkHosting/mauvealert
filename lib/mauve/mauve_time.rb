@@ -103,38 +103,44 @@ class Time
   #
   #
   def bank_holidays
-    @bank_holidays = if defined? Server and Server.instance
-      Server.instance.bank_holidays
+    if defined? Mauve::Server and Mauve::Server.instance
+      @bank_holidays = Mauve::Server.instance.bank_holidays
     else
-      @bank_holidays || []
+      @bank_holidays ||= []
     end
+
+    @bank_holidays
   end
 
   # Returns an array of ranges of working hours
   #
   #
   def working_hours
-    if defined? Configuration and Configuration.current
-      Configuration.current.working_hours
+    if defined? Mauve::Configuration and Mauve::Configuration.current
+      Mauve::Configuration.current.working_hours
     else
       [9.0...17.0]
     end
   end
   
   def dead_zone
-    if defined? Configuration and Configuration.current
-      Configuration.current.working_hours
+    if defined? Mauve::Configuration and Mauve::Configuration.current
+      Mauve::Configuration.current.dead_zone
     else
       [3.0...7.0]
     end
   end
   
   def daytime_hours
-    if defined? Configuration and Configuration.current
-      Configuration.current.working_hours
+    if defined? Mauve::Configuration and Mauve::Configuration.current
+      Mauve::Configuration.current.daytime_hours
     else
       [8.0...20.0]
     end
+  end
+
+  def fractional_hour
+    self.hour + self.min.to_f/60 + self.sec.to_f/3600
   end
 
   # This relies on bank_holidays being set.
@@ -150,7 +156,7 @@ class Time
   # @return [Boolean]
   def working_hours?
     (1..5).include?(self.wday) and
-    self.working_hours.any?{|r| r.include?(self.hour.to_f + self.min.to_f/60.0)} and
+    x_in_list_of_y(fractional_hour, self.working_hours) and
     !self.bank_holiday?
   end
 
@@ -158,7 +164,7 @@ class Time
   #
   # @return [Boolean]
   def daytime_hours?
-    self.daytime_hours.any?{|r| r.include?(self.hour.to_f + self.min.to_f/60.0)}
+    x_in_list_of_y(fractional_hour, self.daytime_hours) 
   end
   
   # We're always in wallclock hours
@@ -172,7 +178,7 @@ class Time
   #
   # @return [Boolean]
   def dead_zone?
-    self.dead_zone.any?{|r| r.include?(self.hour.to_f + self.min.to_f/60.0)}
+    x_in_list_of_y(fractional_hour, self.dead_zone) 
   end
   
   # Format the time as a string, relative to +now+
@@ -246,6 +252,21 @@ class Time
 
     end
 
+  end
+
+  # Checks to see if x is contained in y
+  #
+  # @param [Array] y Array to search for +x+
+  # @param [Object] x
+  # @return [Boolean]
+  def x_in_list_of_y(x,y)
+    y.any? do |range|
+      if range.respond_to?("include?")
+         range.include?(x)
+      else
+         range == x
+      end
+    end
   end
 
 end
