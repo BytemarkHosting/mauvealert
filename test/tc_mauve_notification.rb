@@ -1,12 +1,13 @@
 $:.unshift "../lib"
 
 require 'th_mauve'
+require 'mauve/mauve_time'
 require 'mauve/alert'
 require 'mauve/notification'
+require 'mauve/server'
 require 'mauve/configuration'
 require 'mauve/configuration_builder'
 require 'mauve/configuration_builders'
-require 'mauve/mauve_time'
 require 'webmock'
 
 class TcMauveDuringRunner < Mauve::UnitTest 
@@ -129,6 +130,7 @@ class TcMauveDuringRunner < Mauve::UnitTest
       [[0..1,3..6], true],
       [[0..2, 4,5], false],
       [[0,1..3], true],
+      [3..3.5, true],
       [[4..12], false]
     ].each do |hours, result|
       assert_equal(result, dr.send(:hours_in_day, hours))
@@ -168,6 +170,15 @@ class TcMauveDuringRunner < Mauve::UnitTest
 
     assert(!dr.send(:unacknowledged, 2.hours))
     assert(dr.send(:unacknowledged, 1.hour))
+  end
+
+  def test_working_hours
+    config=<<EOF
+working_hours 0..2.5
+EOF
+
+    Configuration.current = ConfigurationBuilder.parse(config)
+
   end
 
   def test_no_one_in
@@ -225,12 +236,29 @@ EOF
   end
 
   def test_bank_holiday
-    time = Time.now
- 
-    dr = DuringRunner.new(time)
+config=<<EOF
+bytemark_calendar_url "http://localhost"
+EOF
+
+    Configuration.current = ConfigurationBuilder.parse(config)
+    Server.instance.setup
+
+    stub_request(:get, "http://localhost/api/bank_holidays/2011-08-01").
+      to_return(:status => 200, :body => YAML.dump([]))
+
+    dr = DuringRunner.new(Time.now)
     assert(!dr.send(:bank_holiday?))
 
-    time.bank_holidays << Date.new(Time.now.year, Time.now.month, Time.now.day)
+    #
+    # Add today as a bank hol.
+    #
+    # time.bank_holidays << Date.new(Time.now.year, Time.now.month, Time.now.day)
+   
+    Timecop.freeze(Time.now + 24.hours)
+    stub_request(:get, "http://localhost/api/bank_holidays/2011-08-02").
+      to_return(:status => 200, :body => YAML.dump([Date.new(2011,8,2)]))
+
+    dr = DuringRunner.new(Time.now)
     assert(dr.send(:bank_holiday?))
   end
 
