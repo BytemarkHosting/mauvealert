@@ -622,6 +622,35 @@ module Mauve
       !raised?
     end
  
+    # Work out an array of extra people to notify.
+    #
+    # @return [Array] array of persons
+    def extra_people_to_notify
+      last_raised_at = self.raised_at
+
+      if last_raised_at.nil?
+        last_raise = self.histories(:event => "RAISED", :limit => 1, :order => :created_at.desc).first
+        last_raised_at = last_raise.created_at unless last_raise.nil?
+      end
+
+
+      return [] if last_raised_at.nil?
+
+      notifications = []
+
+      #
+      # Find all the people who've been involved with this alert since it was
+      # last raised.
+      #
+      users = histories.all(:created_at.gte => last_raised_at).collect do |h|
+        h.user
+      end + [self.acknowledged_by]
+
+      users.compact.sort.uniq.collect do |user|
+        person = Configuration.current.people[user]
+      end.compact
+    end
+
     class << self
 
       # Removes or cleans HTML from a string

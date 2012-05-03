@@ -212,6 +212,21 @@ module Mauve
         sent_to << notification.notify(alert, sent_to, during_runners.shift)
       end
 
+      #
+      # If the alert is ack'd or cleared, notify anyone who has contributed to
+      # its history since it was raised.
+      #
+      alert.extra_people_to_notify.each do |person|
+        person.notifications.each do |n|
+          notification = Mauve::Notification.new(person)
+          notification.level  = self.level
+          notification.every  = n.every
+          notification.during = n.during
+          notification
+          sent_to << notification.notify(alert, sent_to, DuringRunner.new(at, alert, &notification.during))
+        end
+      end if alert.acknowledged? or alert.cleared?
+
       return (sent_to.length > 0)
     end
 
