@@ -1,3 +1,22 @@
+mauvealert (3.9.0) stable; urgency=low
+
+  * Notify anyone who has contributed to an alert's history since its last
+    raise, either by acknowledging, or by being notified about it.
+  * Username is now recorded in the History wherever possible.  
+  * Update Time.bank_holiday? etc. to work correctly.
+  * Mauve::Configuration#do_parse_time now a class method, and used elsewhere
+    to standardise ranges in the configuration file.
+  * Updated notification tests to test bank_holiday changes etc.
+  * Person and people lists have now become interchangeable, with
+    notifications only recording the username, rather than the
+    Person/PeopleList.  This means that notifications in alert groups can use
+    default #during clauses and #every values from people lists and persons.
+  * Notify clauses can now take an array of persons/people_lists, and
+    people_lists can refer to other people lists.
+  * PeopleList names are now in the same namespace as usernames.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 04 May 2012 16:52:39 +0100
+
 mauvealert (3.8.5) stable; urgency=low
 
   * Added configuration options for daytime_hours, dead_zone, and
