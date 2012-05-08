@@ -147,4 +147,39 @@ EOF
     assert_equal([Configuration.current.people["test2"]], people_list.people(Time.now + 5.minutes))
   end
 
+  def test_recursive_people_list
+
+    config=<<EOF
+person "test1"
+person "test2"
+
+#
+#
+people_list "10 goto 20", ["20 goto 10", "30 break"]
+
+people_list("20 goto 10", ["10 goto 20", "30 break"]) {
+  notify {
+    every 20
+    during { working_hours? }
+  }
+  
+  notify {
+    every 60
+    during { !working_hours? }
+  }
+}
+
+people_list "30 break", %w(test1 test2) 
+
+EOF
+
+    # This is a crazy config;  I would expect "10 goto 20" to call both lists.
+    # The "20 goto 10" list should not call "10 goto 20", but it should call
+    # "30 break".
+
+    Configuration.current = ConfigurationBuilder.parse(config)
+    notifications = Configuration.current.people["10 goto 20"].resolve_notifications
+#   assert_equal(2, notifications.length)
+  end
+
 end

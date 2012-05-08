@@ -78,16 +78,28 @@ module Mauve
       l
     end
 
-    def resolve_notifications(default_every=nil, default_during=nil, at = nil)
-      self.people(at).collect do |person|
-        if self.notifications.empty?
-          person.resolve_notifications(default_every, default_during, at)
+    def resolve_notifications(default_every=nil, default_during=nil, at = nil, lists_seen=[])
+      #
+      # Add our username to the list of lists seen.
+      #
+      lists_seen << self.username
+
+      self.people(at).collect do |person_or_people_list|
+        #
+        # Make sure we don't parse the same people list twice
+        #
+        next if lists_seen.include?(person_or_people_list.username)
+        
+        if self.notifications.empty? 
+          person_or_people_list.resolve_notifications(default_every, default_during, at, lists_seen)
         else
           self.notifications.collect do |notification|
-            this_notification = Notification.new(person)
-            this_notification.every  = default_every  || notification.every
-            this_notification.during = default_during || notification.during
-            this_notification
+            person_or_people_list.resolve_notifications(
+              default_every || notification.every, 
+              default_during || notification.during, 
+              at, 
+              lists_seen
+            )
           end
         end
       end.flatten.compact
