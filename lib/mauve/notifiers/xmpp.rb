@@ -677,7 +677,7 @@ EOF
               next
             end
 
-            if alert.destroy!
+            if alert.destroy
               msg << "#{alert.to_s} destroyed"
             else
               msg << "#{alert.to_s}: destruction failed."

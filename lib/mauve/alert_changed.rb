@@ -71,7 +71,7 @@ module Mauve
     def remind
       unless alert.is_a?(Alert)
         logger.info "#{self.inspect} lost alert #{alert_id}.  Killing self."
-        destroy!
+        destroy
         return false
       end
       
