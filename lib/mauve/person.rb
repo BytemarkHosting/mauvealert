@@ -302,7 +302,18 @@ module Mauve
       return CalendarInterface.is_user_off_sick?(self.username, at)
     end
 
-    def resolve_notifications(default_every=nil, default_during=nil, at = nil)
+    # Returns a list of notification blocks for this person, using the default
+    # "during" and "every" paramaters if given.  The "at" and "people_seen"
+    # parameters are not used, but are in place to keep the signature the same
+    # as the method in people_list.
+    # 
+    # @paran [Numeric] default_every
+    # @param [Block] default_during
+    # @param [Time] at The time at which the resolution should take place
+    # @param [Array] people_seen A list of people/people_lists already seen.
+    # @returns [Array] array of notification blocks.
+    #
+    def resolve_notifications(default_every=nil, default_during=nil, at = nil, people_seen = [])
       self.notifications.collect do |notification|
         this_notification = Notification.new(self)
         this_notification.every  = default_every  || notification.every
