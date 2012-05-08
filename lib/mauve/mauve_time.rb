@@ -119,7 +119,10 @@ class Time
     if defined? Mauve::Configuration and Mauve::Configuration.current
       Mauve::Configuration.current.working_hours
     else
-      [9.0...17.0]
+      # From our SLA:
+      #   "Working hours" means 9.30am to 5.30pm, Monday to Friday, excluding
+      #   English bank holidays.
+      [9.5..17.5]
     end
   end
   

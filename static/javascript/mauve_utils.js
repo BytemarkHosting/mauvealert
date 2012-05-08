@@ -1,20 +1,25 @@
 
 function updateDate() {
-  //
-  //  Date.getTime() returns *milliseconds*
-  //
-  var this_date = workoutDate( $( '#n_hours' ).val(), $( '#type_hours' ).val() );
-  $( '#ack_until' ).val( this_date.getTime()/1000 );
 
   // 
   // Use a asynchronous ajax convert a date to a human string.  NB Date.getTime()
   // returns *milliseconds*
   //
   $.ajax( {
-    url:     '/ajax/time_to_s_human/'+this_date.getTime()/1000, 
-    timeout: 1000,
-    success: function( data )  { $( '#ack_until_text' ).html( "( until "+data+" )" ); },
-    error:   function( a,b,c ) { $( '#ack_until_text' ).html( "( until "+this_date.toString()+" )" ); }
+    url:     '/ajax/time_in_x_hours/'+$( '#n_hours' ).val()+'/'+$( '#type_hours' ).val(),
+    timeout: 2000,
+    success: function( data )  { 
+      $( '#ack_until' ).val( data['time'] );
+      $( '#ack_until_text' ).html( "( until "+data['string']+" )" ); 
+    },
+    error:   function( a,b,c ) { 
+      //
+      //  Date.getTime() returns *milliseconds*
+      //
+      var this_date = workoutDate( $( '#n_hours' ).val(), $( '#type_hours' ).val() );
+      $( '#ack_until' ).val( this_date.getTime()/1000 );
+      $( '#ack_until_text' ).html( "( until "+this_date.toString()+" )" ); 
+    }
   } );
 
   return false;
@@ -110,13 +115,14 @@ function doTimeTest( t, type ) {
   switch ( type ) {
     case "working":
       r = ( d.getDay() > 0 && d.getDay() < 6 && 
-          ( ( d.getHours() >= 9 && d.getHours() <= 16 ) || 
-            ( d.getHours() == 8 && d.getMinutes() >= 30 ) 
+          ( ( d.getHours() >= 10 && d.getHours() <= 16 )   || 
+            ( d.getHours() == 9  && d.getMinutes() >= 30 ) ||
+            ( d.getHours() == 17 && d.getMinutes() < 30 ) 
           ) );
       break;
 
     case "daytime":
-      r = ( d.getHours() >= 8 && d.getHours() <= 21 );
+      r = ( d.getHours() >= 8 && d.getHours() < 22 );
       break;
 
     default:

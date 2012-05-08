@@ -267,29 +267,30 @@ EOF
     #
 
     get '/ajax/time_in_x_hours/:n_hours/:type_hours' do
-      content_type :text
+      content_type "application/json"
 
       n_hours = params[:n_hours].to_f
       type_hours = params[:type_hours].to_s
 
-      #
-      # Sanitise parameters
-      #
-      n_hours    = ( n_hours > 300 ? 300 : n_hours )
-      type_hours = "daytime" unless %w(daytime working wallclock).include?(type_hours)
       now = Time.now
-      ack_until = now.in_x_hours(n_hours, type_hours)
+      max_ack   = (Time.now + Configuration.current.max_acknowledgement_time) 
       
       #
-      # Make sure we can't ack longer than a week.
+      # Make sure we can't ack longer than the configuration allows. 
       #
-      max_ack   = (Time.now + Configuration.current.max_acknowledgement_time) 
-      ack_until = max_ack if ack_until > max_ack
-
+      if (n_hours * 3600.0).to_i > Configuration.current.max_acknowledgement_time
+        ack_until = max_ack
+      else      
+        type_hours = "daytime" unless %w(daytime working wallclock).include?(type_hours)
+        ack_until = now.in_x_hours(n_hours, type_hours)
+        pp ack_until
+        ack_until = max_ack if ack_until > max_ack
+      end
+      
       #
       # Return answer as unix seconds.
       #
-      ack_until.to_f.round.to_s
+      "{ \"time\" : #{ack_until.to_f.round}, \"string\" : \"#{ack_until.to_s_human}\" }"
     end
 
     get '/ajax/time_to_s_human/:seconds' do

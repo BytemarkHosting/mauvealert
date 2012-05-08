@@ -79,7 +79,7 @@ module Mauve
       #
       self.dead_zone     = 3...6
       self.daytime_hours = 8...20
-      self.working_hours = 9...17
+      self.working_hours = 9.5..17.5
     end
 
     # Set the calendar URL.
