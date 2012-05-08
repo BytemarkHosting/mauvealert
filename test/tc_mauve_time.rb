@@ -9,15 +9,15 @@ class TestMauveTime < Mauve::UnitTest
   def test_in_x_hours
 
     #
-    # 5pm on a Friday
+    # 5:44pm on a Friday
     #
-    t = Time.local(2011,6,3,17,14,32)
+    t = Time.local(2011,6,3,17,44,32)
 
     #
     # Working hours..
     #
-    hour_0 = Time.local(2011,6,6,9,0,0)
-    hour_1 = Time.local(2011,6,6,10,0,0)
+    hour_0 = Time.local(2011,6,6,9,30,0)
+    hour_1 = Time.local(2011,6,6,10,30,0)
 
     assert_equal(hour_1, t.in_x_hours(1,"working"))
     assert_equal(hour_0, t.in_x_hours(0,"working"))
