@@ -69,7 +69,7 @@ module Mauve
           # 
           # Ignore people without XMPP stanzas.
           #
-          next unless person.xmpp 
+          next unless person.respond_to?(:xmpp) and person.xmpp 
 
           #
           # For each JID, either ensure they're on our roster, or that we're in
