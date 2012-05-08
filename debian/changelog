@@ -1,3 +1,17 @@
+mauvealert (3.9.1) stable; urgency=low
+
+  * Web interface now uses an ajax call to work out ack times, falling back to
+    javascript if that takes too long.
+  * Default working hours are now 9.30 - 5.30 as per SLA.
+  * Fixed time tests + standardised dead zone + daylight hours.
+  * Fixed up PeopleList#resolve_notifications to check for recursion, and only
+    return notify clauses that refer to people.
+  * Changed Person#resolve_notification to match the signature for the
+    people_list version.
+  * Updated notifier only to try to connect to objects that respond to xmpp.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 08 May 2012 12:05:56 +0100
+
 mauvealert (3.9.0) stable; urgency=low
 
   * Notify anyone who has contributed to an alert's history since its last
