@@ -1,22 +1,53 @@
 
 function updateDate() {
 
+  var n_hours;
+  var type_hours;
+
+  //
+  // Make sure the number of hours is sane.
+  //
+  n_hours = new Number( $( '#n_hours' ).val() );
+
+  if (isNaN(n_hours)) {
+    n_hours = new Number(2);
+  }
+
+  //
+  // Make sure the type is one of three things:
+  //
+  // type_hours = new String( $( '#type_hours' ).val() );
+
+  switch( $( '#type_hours' ).val() ) {
+    case "working":
+      type_hours = "working"
+      break;
+
+    case "daytime":
+      type_hours = "daytime"
+      break;
+
+    default:
+      type_hours = "wallclock";
+      break;
+  }
+
   // 
   // Use a asynchronous ajax convert a date to a human string.  NB Date.getTime()
   // returns *milliseconds*
   //
   $.ajax( {
-    url:     '/ajax/time_in_x_hours/'+$( '#n_hours' ).val()+'/'+$( '#type_hours' ).val(),
+    url:     '/ajax/time_in_x_hours/'+n_hours.toString()+'/'+type_hours,
     timeout: 2000,
     success: function( data )  { 
-      $( '#ack_until' ).val( data['time'] );
-      $( '#ack_until_text' ).html( "( until "+data['string']+" )" ); 
+      $( '#ack_until' ).val( data['time'].toString() );
+      $( '#ack_until_text' ).html( "( until "+data['string'].toString()+" )" );
     },
     error:   function( a,b,c ) { 
       //
       //  Date.getTime() returns *milliseconds*
       //
-      var this_date = workoutDate( $( '#n_hours' ).val(), $( '#type_hours' ).val() );
+      var this_date = workoutDate( n_hours, type_hours );
       $( '#ack_until' ).val( this_date.getTime()/1000 );
       $( '#ack_until_text' ).html( "( until "+this_date.toString()+" )" ); 
     }
@@ -40,6 +71,7 @@ function workoutDate( h, type ) {
   //
   var d    = new Date();
   var t    = d.getTime();
+
   //
   // Can't ack longer than a week
   //

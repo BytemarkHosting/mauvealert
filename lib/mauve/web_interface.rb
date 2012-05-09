@@ -409,7 +409,7 @@ EOF
     
     post '/alert/:id/destroy' do
       alert = Alert.get(params[:id])
-      alert.destroy!
+      alert.destroy
       flash['notice'] = "Successfully destroyed alert #{alert.alert_id} from source #{alert.source}."
       redirect "/"
     end

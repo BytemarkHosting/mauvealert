@@ -38,10 +38,6 @@ EOF
     super
   end
 
-  def test_alert_group
-
-  end
-
 
   #
   # This is also the test for in_source_list?
@@ -289,6 +285,33 @@ EOF
       assert(alert.cleared?)
       assert(0, Server.instance.notification_buffer.length)
     end
+
+  end
+
+  def test_destroy_history_on_destroy
+    Configuration.current = ConfigurationBuilder.parse(@test_config)
+    Server.instance.setup
+
+    alert = Alert.new(
+      :alert_id  => "test_no_notification_for_old_alerts",
+      :source    => "test",
+      :subject   => "test"
+    )
+    alert.save
+    alert.raise!
+    alert.reload
+    assert_equal(1, History.all.length)
+
+
+    Timecop.freeze(Time.now + 5.minutes)
+    alert.clear!
+    assert_equal(2, History.all.length)
+    
+    #
+    # OK now we destroy the alert.  Destory the histories too.
+    #
+    alert.destroy
+    assert_equal(0, History.all.length)
 
   end
 

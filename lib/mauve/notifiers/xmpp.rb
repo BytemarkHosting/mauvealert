@@ -474,8 +474,10 @@ module Mauve
               do_parse_show(msg)
             when /ack/i
               do_parse_ack(msg)
+            when /clear/i
+              do_parse_clear(msg)
             when /destroy\s?/i
-              do_parse_destroy(msg)
+              "Sorry -- destroy has been disabled.  Try \"clear\" instead."
             else
               File.executable?('/usr/games/fortune') ? `/usr/games/fortune -s -n 60`.chomp : "I'd love to stay and chat, but I'm really quite busy"
           end          
@@ -577,7 +579,7 @@ EOF
 
         def do_parse_ack(msg)
           return "Sorry -- I don't understand your acknowledge command." unless
-             msg.body =~ /ack(?:nowledge)?\s+([\d\D]+)\s+for\s+(\d+(?:\.\d+)?)\s+(work(?:ing)?|day(?:time)?|wall(?:-?clock)?)?\s*(day|hour|min(?:ute)?|sec(?:ond))s?(?:\s+because\s+(.*))?/i
+             msg.body =~ /ack(?:nowledge)?\s+([\d\D]+)\s+for\s+(\d+(?:\.\d+)?)\s+(work(?:ing)?|day(?:time)?|wall(?:-?clock)?)?\s*(day|hour|min(?:ute)?|sec(?:ond))s?(?:\s+(?:cos|cause|as|because)?\s*(.*))?/i
           
           alerts, n_hours, type_hours, dhms, note = [$1,$2, $3, $4, $5]
 
@@ -654,34 +656,49 @@ EOF
           return msg.join("\n")
         end
 
-        def do_parse_destroy(msg)
-          return "Sorry -- I don't understand your destroy command." unless
-             msg.body =~ /destroy\s+([\d\D]+)$/i
+        def do_parse_clear(msg)
+          return "Sorry -- I don't understand your clear command." unless
+             msg.body =~ /clear\s+([\d\D]+)(?:\s+(?:coz|cause|cos|because|as)?\s*(.*))?/i
 
           alerts = $1.split(/\D+/)
+          note   = $2
           
           username = get_username_for(msg.from)
 
           if is_muc?(Configuration.current.people[username].xmpp)
-            return "I'm sorry -- if you want to destroy alerts, please do it from a private chat"
+            return "I'm sorry -- if you want to clear alerts, please do it from a private chat"
           end
 
           msg = []
-          msg << "Results of your destruction:" if alerts.length > 1
+          msg << "Clearing results:" if alerts.length > 1
 
           alerts.each do |alert_id|
             alert = Alert.get(alert_id)
 
             if alert.nil?
-              msg << "#{alert_id}: alert not found"
+              msg << "#{alert_id}: alert not found."
               next
             end
 
-            if alert.destroy!
-              msg << "#{alert.to_s} destroyed"
+            if alert.cleared?
+              msg << "#{alert_id}: alert already cleared."
+              next
+            end 
+
+            if alert.clear!
+              msg << "#{alert.to_s} cleared."
             else
-              msg << "#{alert.to_s}: destruction failed."
+              msg << "#{alert.to_s}: clearing failed."
             end
+          end
+          
+          #
+          # Add the note.
+          #
+          unless note.to_s.empty?
+            note = Alert.remove_html(note)
+            h = History.new(:alerts => succeeded, :type => "note", :event => note.to_s, :user => username)
+            logger.debug h.errors unless h.save
           end
 
           return msg.join("\n")
