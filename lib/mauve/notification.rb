@@ -115,16 +115,23 @@ module Mauve
     
     protected
 
-    # Test to see if a people_list is empty.
+    # Test to see if a people_list is empty.  NB this is just evaluated at the
+    # time that the DuringRunner is set up with.
     #
     # @param [String] people_list People list to query
     # @return [Boolean]
     #
     def no_one_in(people_list)
       return true unless Configuration.current.people[people_list].respond_to?(:people)
+      
+      #
+      # Cache the results to prevent hitting the calendar too many times.
+      #
+      @no_one_in_cache ||= Hash.new
 
-      @test_time = @time if @test_time.nil?
-      return Configuration.current.people[people_list].people(@test_time).empty?
+      return @no_one_in_cache[people_list] if @no_one_in_cache.has_key?(people_list)
+
+      @no_one_in_cache[people_list] = Configuration.current.people[people_list].people(@time).empty?
     end
 
     # Returns true if the current hour is in the list of hours given.
@@ -346,7 +353,5 @@ module Mauve
     end
 
   end
-
-  class NotificationDummy < Struct.new(:during, :every) ; end
 
 end
