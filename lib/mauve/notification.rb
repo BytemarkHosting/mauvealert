@@ -124,14 +124,20 @@ module Mauve
     def no_one_in(people_list)
       return true unless Configuration.current.people[people_list].respond_to?(:people)
       
-      #
-      # Cache the results to prevent hitting the calendar too many times.
-      #
-      @no_one_in_cache ||= Hash.new
+      @test_time = @time if @test_time.nil?
 
-      return @no_one_in_cache[people_list] if @no_one_in_cache.has_key?(people_list)
+      #
+      # This is cached by itself, since calendar calls are rounded to the
+      # nearest minute.  However this cache expires with the during runner,
+      # which isn't so insane..
+      #
+      test_time = @test_time - @test_time.sec
 
-      @no_one_in_cache[people_list] = Configuration.current.people[people_list].people(@time).empty?
+      @no_one_in_cache ||= Hash.new{|h,k| h[k] = Hash.new}
+
+      return @no_one_in_cache[people_list][test_time] if @no_one_in_cache[people_list].has_key?(test_time)
+
+      @no_one_in_cache[people_list][test_time] = Configuration.current.people[people_list].people(test_time).empty?
     end
 
     # Returns true if the current hour is in the list of hours given.
@@ -248,7 +254,7 @@ module Mauve
       @during = nil
       @every = nil
       @level = nil
-    end
+     end
 
     # @return [String]
     def to_s

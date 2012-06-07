@@ -214,25 +214,97 @@ EOF
 
     Configuration.current = ConfigurationBuilder.parse(config)
 
-    stub_request(:get, "http://localhost/api/attendees/support_shift/2011-08-01T00:00:00").
-      to_return(:status => 200, :body => YAML.dump(%w(test1 test2)))
+    #
+#
+#    5.times.each do |hr|
+#    end
 
-    stub_request(:get, "http://localhost/api/attendees/support_shift/2011-08-01T00:05:00").
-      to_return(:status => 200, :body => YAML.dump([]))
 
-    dr = DuringRunner.new(Time.now)
-    assert(!dr.send(:no_one_in, "support"))
+    dr = DuringRunner.new(Time.now, nil) {
+      no_one_in("support")
+    }
+    
+    #
+    # Stub the URL
+    #
+    url ="http://localhost/api/attendees/support_shift/#{Time.now.strftime("%Y-%m-%dT%H:%M:00")}"
+    stub_request(:get, url).to_return(:status => 200, :body => YAML.dump(%w(test1 test2)))
+    
+    assert(!dr.now?)
 
-    # advance by 5 minutes, and try again -- we should get the same answer.
+    #
+    # Advance by 5 minutes, and try again -- we should get the same answer,
+    # since the DuringRunner's time does not change.
+    #
     Timecop.freeze(Time.now + 5.minutes)
-    assert(!dr.send(:no_one_in, "support"))
-   
-    # However a new runner should return true.
-    dr = DuringRunner.new(Time.now)
-    assert(dr.send(:no_one_in, "support"))
+    assert(!dr.now?)
+    #
+    # Roll back 5 minutes.
+    #
+    Timecop.freeze(Time.now - 5.minutes)
+  
+    #
+    # That last round of requests should only have hit the midnight URL once.
+    #
+    assert_requested(:get, url, :times => 1)
+    WebMock.reset!
+
+    #
+    # Set up a new runner.
+    #
+    dr = DuringRunner.new(Time.now, nil) {
+      no_one_in("support")
+    }
+
+    #
+    # This time our URL returns an empty list.
+    #
+    stub_request(:get, url).to_return(:status => 200, :body => YAML.dump([]))
+    assert(dr.now?)
+    
     #
     # We expect a warning about an empty list.
+    #
     logger_pop
+
+    #
+    # This should make a new request to the 00:05 URL
+    #
+    assert_requested(:get, url, :times => 1)
+    WebMock.reset!
+
+    #
+    # Set up a new runner.
+    #
+    dr = DuringRunner.new(Time.now, nil) {
+      no_one_in("support")
+    }
+
+    #
+    # Set up our stubs.  The first is to catch any iterations done by find_next.
+    #
+    stub_request(:get, /http:\/\/localhost\/api\/attendees\/support_shift\/(.*)/).
+      to_return do |request| 
+        t = Time.parse(request.uri.path.split("/").last)
+        if t >= Time.now and t < Time.now + 5.minutes
+          {:status => 200, :body => YAML.dump(%w(test1 test2))}
+        else
+          {:status => 200, :body => YAML.dump([])}
+        end
+      end
+
+    assert(!dr.now?)
+    assert_equal(Time.now + 5.minutes, dr.find_next(0))
+    logger_pop
+    logger_pop
+
+    #
+    # This should make 5 requests, one in an hours time (the initial step) +
+    #
+    WebMock::RequestRegistry.instance.requested_signatures.each do |request, count|
+      assert_equal(1, count, "URI #{request.uri.to_s} requested more than once during find_next()")
+    end
+
   end
 
   def test_bank_holiday
