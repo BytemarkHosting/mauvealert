@@ -32,16 +32,16 @@ module Mauve
     #
     # @return [Boolean]
     #
-    def notify_when_off_sick!
-      @notify_when_off_sick = true
+    def notify_when_off_sick=(arg)
+      @notify_when_off_sick = (arg ? true : false)
     end
 
     # Determines if a user should be notified if they're on their holdiays.
     #
     # @return [Boolean]
     #
-    def notify_when_on_holiday!
-      @notify_when_on_holiday = true
+    def notify_when_on_holiday=(arg)
+      @notify_when_on_holiday = (arg ? true : false)
     end
 
     # Sets the Proc to call for urgent notifications

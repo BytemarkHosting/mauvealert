@@ -339,13 +339,17 @@ end
 class TcMauveNotification < Mauve::UnitTest 
 
   include Mauve
+  include WebMock::API
   
   def setup
     super
     setup_database
+    WebMock.disable_net_connect!
   end
 
   def teardown
+    WebMock.reset!
+    WebMock.allow_net_connect!
     teardown_database
     super
   end
@@ -816,6 +820,7 @@ alert_group("test") {
 }
 EOF
 
+
     Configuration.current = ConfigurationBuilder.parse(config)
     notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
 
@@ -862,4 +867,138 @@ EOF
     end
 
   end
+
+  def test_notify_when_on_holiday
+
+    attendees = %w(test1 test2)
+
+    stub_request(:get, "http://localhost/calendar/api/bank_holidays/2011-08-01").
+      to_return(:status => 200, :body => YAML.dump([]))
+    
+    stub_request(:get, "http://localhost/calendar/api/attendees/sick_period/2011-08-01T00:00:00").
+      to_return(:status => 200, :body => YAML.dump([]))
+
+    stub_request(:get, "http://localhost/calendar/api/attendees/staff_holiday/2011-08-01T00:00:00").
+      to_return(:status => 200, :body => YAML.dump(attendees))
+
+    config=<<EOF
+bytemark_calendar_url "http://localhost/calendar"
+
+server {
+  use_notification_buffer false
+}
+
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
+person ("test1") {
+  email "test1@example.com"
+  all { email }
+  notify_when_on_holiday
+}
+
+person ("test2") {
+  email "test2@example.com"
+  all { email }
+}
+
+alert_group("test") {
+  level URGENT
+
+  notify( %w(test1 test2)) {
+    every 300
+    during { true }
+  }
+}
+EOF
+    
+    Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
+
+    Server.instance.setup
+
+    alert = Alert.new(
+      :alert_id  => "test",
+      :source    => "test",
+      :subject   => "test"
+    )
+
+    assert_equal("test", alert.alert_group.name)
+
+    alert.raise!
+    assert(alert.raised?)
+    assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
+    sent = notification_buffer.pop 
+    assert_equal("test1@example.com", sent[2])
+  end
+
+  def test_notify_when_off_sick
+    attendees = %w(test1 test2)
+
+    stub_request(:get, "http://localhost/calendar/api/bank_holidays/2011-08-01").
+      to_return(:status => 200, :body => YAML.dump([]))
+    
+    stub_request(:get, "http://localhost/calendar/api/attendees/sick_period/2011-08-01T00:00:00").
+      to_return(:status => 200, :body => YAML.dump(attendees))
+
+    stub_request(:get, "http://localhost/calendar/api/attendees/staff_holiday/2011-08-01T00:00:00").
+      to_return(:status => 200, :body => YAML.dump([]))
+
+    config=<<EOF
+bytemark_calendar_url "http://localhost/calendar"
+
+server {
+  use_notification_buffer false
+}
+
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
+person ("test1") {
+  email "test1@example.com"
+  all { email }
+}
+
+person ("test2") {
+  email "test2@example.com"
+  all { email }
+  notify_when_off_sick
+}
+
+alert_group("test") {
+  level URGENT
+
+  notify( %w(test1 test2)) {
+    every 300
+    during { true }
+  }
+}
+EOF
+    
+    Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
+
+    Server.instance.setup
+
+    alert = Alert.new(
+      :alert_id  => "test",
+      :source    => "test",
+      :subject   => "test"
+    )
+
+    assert_equal("test", alert.alert_group.name)
+
+    alert.raise!
+    assert(alert.raised?)
+    assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
+    sent = notification_buffer.pop 
+    assert_equal("test2@example.com", sent[2])
+  end
+
 end

@@ -25,8 +25,8 @@ module Mauve
       is_attribute "email"
       is_attribute "xmpp"
 
-      is_flag_attribute "notify_when_on_holiday!"
-      is_flag_attribute "notify_when_off_sick!"
+      is_flag_attribute "notify_when_on_holiday"
+      is_flag_attribute "notify_when_off_sick"
      
       # Sets the block for all levels of alert
       #
@@ -61,11 +61,11 @@ module Mauve
       #
       #
       def notify_when_on_holday!
-        result.notify_when_on_holiday!
+        result.notify_when_on_holiday = true
       end
 
       def notify_when_off_sick!
-        result.notify_when_off_sick!
+        result.notify_when_off_sick = true
       end
 
     end
