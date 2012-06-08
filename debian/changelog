@@ -1,8 +1,14 @@
+mauvealert (3.9.3) stable; urgency=low
+
+  * no_one_in is now only called once per DuringRunner instance per
+    people_list to try and reduce hammering on the calendar.
+  * Fixed notify_when_on_holiday/off_sick to actually work.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 08 Jun 2012 10:32:23 +0100
+
 mauvealert (3.9.2) stable; urgency=low
 
   * Removed destroy XMPP command -- replaced with clear.
-  * no_one_in is now only called once per DuringRunner instance per
-    people_list to try and reduce hammering on the calendar.
 
  -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 09 May 2012 17:05:43 +0100
 
