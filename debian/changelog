@@ -1,3 +1,9 @@
+mauvealert (3.9.4) stable; urgency=low
+
+  * Clear cleared_at time if raised_at time is set on alert reception.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 02 Jul 2012 11:33:35 +0100
+
 mauvealert (3.9.3) stable; urgency=low
 
   * no_one_in is now only called once per DuringRunner instance per
