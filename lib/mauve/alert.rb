@@ -826,6 +826,10 @@ module Mauve
               #
               alert_db.raised_at     = raise_time if alert_db.raised_at.nil?
               alert_db.will_raise_at = nil
+              #
+              # Make sure the cleared at time is unset if we're raising this alert.
+              #
+              alert_db.cleared_at    = nil
             else
               alert_db.raised_at     = nil
               alert_db.will_raise_at = raise_time
