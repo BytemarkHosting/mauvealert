@@ -231,11 +231,11 @@ module Mauve
       # Check buffer sizes
       #
       if self.class.notification_buffer_size >= 10
-        logger.warn "Notification buffer has #{self.class.notification_buffer_size} messages in it"
+        logger.info "Notification buffer has #{self.class.notification_buffer_size} messages in it"
       end
       
       if self.class.packet_buffer_size >= 100
-        logger.warn "Packet buffer has #{self.class.packet_buffer_size} updates in it"
+        logger.info "Packet buffer has #{self.class.packet_buffer_size} updates in it"
       end
 
 
