@@ -204,6 +204,13 @@ module Mauve
       super
     end
 
+    #
+    # Since Server.start doesn't return below, we can't check when the thread was last polled.
+    #
+    def last_polled_at
+      Time.now
+    end
+
     private
 
     #

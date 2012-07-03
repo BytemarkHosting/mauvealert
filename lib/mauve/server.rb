@@ -246,10 +246,10 @@ module Mauve
         thread_list.delete(klass.instance.thread)
 
         #
-        # Make sure that if the thread is frozen, that we've not been frozen for too long.
+        # Check every couple of minutes that the thread is still running.
         #
-        if klass.instance.state != :started and klass.instance.last_state_change.is_a?(Time) and klass.instance.last_state_change < (Time.now - 2.minutes)
-          logger.warn "#{klass} has been #{klass.instance.state} since #{klass.instance.last_state_change}. Killing and restarting."
+        if klass.instance.state == :started and klass.instance.last_polled_at.is_a?(Time) and klass.instance.last_polled_at < (Time.now - 2.minutes)
+          logger.warn "#{klass} has not run its loop since #{klass.instance.last_polled_at}. Killing and restarting."
           klass.instance.stop
         end
 

@@ -76,10 +76,17 @@ module Mauve
       super
     end
 
+    #
+    # Since Server.start doesn't return below, we can't check when the thread was last polled.
+    #
+    def last_polled_at
+      Time.now
+    end
+
     private
 
     #
-    # This tarts the server, and keeps it going.
+    # This starts the server, and keeps it going.
     #
     def main_loop
       unless @server and @server.running?
