@@ -4,6 +4,7 @@ require 'ipaddr'
 require 'uri'
 require 'mauve/mauve_time'
 require 'mauve/mauve_resolv'
+require 'mauve/generic_http_api_client'
 
 module Mauve
 
@@ -22,11 +23,12 @@ module Mauve
     attr_reader :label, :last_resolved_at
 
     ## Default contructor.
-    def initialize (label)
+    def initialize (label, url = nil)
       @label            = label
       @last_resolved_at = nil
       @list = []
       @resolved_list = []
+      @url = url
     end
 
     alias username label
@@ -177,8 +179,16 @@ module Mauve
     #
     def resolve
       @last_resolved_at = Time.now
+      
+      url_list = []
+      if @url
+        url_list_s = GenericHttpApiClient.do_get(@url)
+        if url_list_s.is_a?(String)
+          url_list = url_list_s.split("\n").reject{|s| s.empty?}
+        end
+      end
 
-      new_list = @list.collect do |host| 
+      new_list = [url_list + @list].collect do |host| 
         if host.is_a?(String)
           [host] + MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
         else
@@ -186,8 +196,10 @@ module Mauve
         end
       end
 
+
       @resolved_list = new_list.flatten
     end
+
   end
 
 end
