@@ -1,3 +1,12 @@
+mauvealert (3.10.0) stable; urgency=low
+
+  * Added URLs which can be polled for source lists
+  * Removed freeze/thaw functionality from the threads which hasn't been used
+    for a while.
+  * Threads are now checked to make sure they're running, and not stuck.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 05 Jul 2012 14:00:55 +0100
+
 mauvealert (3.9.4) stable; urgency=low
 
   * Clear cleared_at time if raised_at time is set on alert reception.
