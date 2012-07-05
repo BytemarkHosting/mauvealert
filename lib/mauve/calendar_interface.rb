@@ -5,9 +5,17 @@ module Mauve
 
   # Interface to the Bytemark calendar.
   #
-  class CalendarInterface  < GenericHttpApiClient
+  class CalendarInterface  
     
     class << self
+
+      include GenericHttpApiClient
+
+      # return [Log4r::Logger]
+      def logger
+        @logger ||= Log4r::Logger.new(self.to_s)
+      end
+    
 
       def get_attendees(klass, at=Time.now)
         #
@@ -63,11 +71,11 @@ module Mauve
 
       private
 
-      def get_yaml(url)
+      def do_get_yaml(url)
         resp = do_get(url)
 
         return (resp.is_a?(String) ? YAML.load(resp) : nil)
-      rescue StandardError => err
+      rescue StandardError => ex
         logger.error "Caught #{ex.class.to_s} (#{ex.to_s}) whilst querying #{url.to_s}."
         logger.debug err.backtrace.join("\n")
         nil

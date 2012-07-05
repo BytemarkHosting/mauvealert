@@ -18,7 +18,9 @@ module Mauve
   # addresses and only one of tbhose is included in the list, a match 
   # will occur.
   #
-  class SourceList 
+  class SourceList
+
+    include GenericHttpApiClient
 
     attr_reader :label, :last_resolved_at
 
@@ -55,28 +57,8 @@ module Mauve
     #
     def +(l)
       arr = [l].flatten.collect do |h|
-        # "*"              means [^\.]+
-        # "(\d+)\.\.(\d+)" is expanded to every integer between $1 and $2
-        #                  joined by a pipe, e.g. 1..5 means 1|2|3|4|5
-        #  "."              is literal, not a single-character match
-        if h.is_a?(String) and (h =~ /[\[\]\*]/ or h =~ /(\d+)\.\.(\d+)/)
-          Regexp.new(
-              h.
-              gsub(/(\d+)\.\.(\d+)/) { |a,b|
-                ($1.to_i..$2.to_i).collect.join("|")
-              }.
-              gsub(/\./, "\\.").
-              gsub(/\*/, "[0-9a-z\\-]+") +
-              "\\.?$")
-        elsif h.is_a?(String) and h =~ /^[0-9a-f\.:]+(\/\d+)?$/i
-          IPAddr.new(h)
-        elsif h.is_a?(String) or h.is_a?(Regexp)
-          h
-        else
-          logger.warn "Cannot add #{h.inspect} to source list #{@label} as it is not a string or regular expression."
-          nil
-        end
-      end.flatten.reject{|h| h.nil?}
+        do_parse_source(h)
+      end.flatten.compact
 
       arr.each do |source|
         ##
@@ -182,13 +164,13 @@ module Mauve
       
       url_list = []
       if @url
-        url_list_s = GenericHttpApiClient.do_get(@url)
+        url_list_s = do_get(@url)
         if url_list_s.is_a?(String)
-          url_list = url_list_s.split("\n").reject{|s| s.empty?}
+          url_list = url_list_s.split("\n").collect{|s| do_parse_source(s)}.flatten.compact
         end
       end
 
-      new_list = [url_list + @list].collect do |host| 
+      new_list = (url_list + @list).collect do |host| 
         if host.is_a?(String)
           [host] + MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
         else
@@ -196,8 +178,36 @@ module Mauve
         end
       end
 
-
       @resolved_list = new_list.flatten
+    end
+
+    private
+
+    def do_parse_source(h)
+      # "*"              means [^\.]+
+      # "(\d+)\.\.(\d+)" is expanded to every integer between $1 and $2
+      #                  joined by a pipe, e.g. 1..5 means 1|2|3|4|5
+      #  "."              is literal, not a single-character match
+      if h.is_a?(String) and (h =~ /[\[\]\*]/ or h =~ /(\d+)\.\.(\d+)/)
+        Regexp.new(
+            h.
+            gsub(/(\d+)\.\.(\d+)/) { |a,b|
+              ($1.to_i..$2.to_i).collect.join("|")
+            }.
+            gsub(/\./, "\\.").
+            gsub(/\*/, "[0-9a-z\\-]+") +
+            "\\.?$")
+      elsif h.is_a?(String) and h =~ /^[0-9a-f\.:]+(\/\d+)?$/i
+        IPAddr.new(h)
+      elsif h.is_a?(String) and h =~ /^\/(.*)\/$/
+        Regexp.new($1)
+      elsif h.is_a?(String) or h.is_a?(Regexp)
+        h
+      else
+        logger.warn "Cannot parse source line #{h.inspect} for source list #{@label}."
+        nil
+      end
+
     end
 
   end
