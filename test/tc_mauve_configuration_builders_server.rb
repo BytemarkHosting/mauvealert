@@ -54,7 +54,7 @@ EOF
     assert_equal(summary, h.summary)
     assert_equal(destination, h.destination)
     assert_equal(raise_after, h.raise_after)
-    assert_equal(send_every, h.poll_every) 
+    assert_equal(send_every, h.send_every) 
   end
 
   def test_web_interface_params
@@ -107,37 +107,32 @@ EOF
   def test_listener_params
     ip = "::"
     port = 12341
-    sleep_interval = 5678
     config=<<EOF
+
 server {
   listener {
     ip "#{ip}"
     port #{port}
-    poll_every #{sleep_interval}
   }
 }
 EOF
 
     assert_nothing_raised { Mauve::ConfigurationBuilder.parse(config) }
     u = Mauve::UDPServer.instance
-    assert_equal(sleep_interval, u.poll_every)
     assert_equal(IPAddr.new(ip), u.ip)
     assert_equal(port, u.port)
   end
 
   def test_notifier_params
-    sleep_interval = 23
     config=<<EOF
 server {
   notifier {
-    poll_every #{sleep_interval}
   }
 }
 EOF
 
     assert_nothing_raised { Mauve::ConfigurationBuilder.parse(config) }
     n = Mauve::Notifier.instance
-    assert_equal(sleep_interval, n.poll_every)
   end
 
   def test_processor_params
@@ -148,7 +143,6 @@ EOF
 server {
   processor {
     transmission_cache_expire_time #{transmission_cache_expire_time}
-    poll_every #{sleep_interval}
   }
 }
 EOF
@@ -156,7 +150,6 @@ EOF
     assert_nothing_raised { Mauve::ConfigurationBuilder.parse(config) }
     pr = Mauve::Processor.instance    
     assert_equal(transmission_cache_expire_time, pr.transmission_cache_expire_time)
-    assert_equal(sleep_interval, pr.poll_every)
   end
 
 end

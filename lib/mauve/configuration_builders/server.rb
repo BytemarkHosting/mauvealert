@@ -36,8 +36,6 @@ module Mauve
       is_attribute "port"
       # This is the IP address the server listens on.  IPv6 is OK! e.g. [::] for  all addresses
       is_attribute "ip"
-      # This is the sleep interval for the UDP server.
-      is_attribute "poll_every"
     
       # Sets up a Mauve::UDPServer singleton as the result
       #
@@ -51,8 +49,6 @@ module Mauve
     # This is the thread that pulls packets from the queue for processing.
     #
     class Processor < ObjectBuilder
-      # This is the interval between polls of the packet queue.
-      is_attribute "poll_every"
       # This is the timeout for the transmission cache, which allows duplicate packets to be discarded.
       is_attribute "transmission_cache_expire_time"
 
@@ -65,12 +61,6 @@ module Mauve
     end
 
     class Notifier < ObjectBuilder
-      #
-      # This is the interval at which the notification queue is polled for new
-      # notifications to be sent.  This will not have any rate-limiting effect.
-      #
-      is_attribute "poll_every"
-
       # Sets up a Mauve::Notifier singleton as the result
       #
       # @return [Mauve::Notifier]

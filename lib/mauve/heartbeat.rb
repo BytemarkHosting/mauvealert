@@ -15,7 +15,7 @@ module Mauve
     #
     # Allow access to some basics.
     #
-    attr_reader   :raise_after, :destination, :summary, :detail
+    attr_reader   :raise_after, :destination, :summary, :detail, :send_every
 
     #
     # This sets up the Heartbeat singleton
@@ -27,7 +27,7 @@ module Mauve
       @summary        = "Mauve alert server heartbeat failed"
       @detail         = "The Mauve server at #{Server.instance.hostname} has failed to send a heartbeat."
       @raise_after    = 310
-      @poll_every     = 60
+      @send_every     = 60
     end
 
     #
@@ -38,8 +38,17 @@ module Mauve
       raise ArgumentError "raise_after must be an integer" unless i.is_a?(Integer)      
       @raise_after = i
     end
+    
+    #
+    # This is the time period after which an alert is raised by the remote Mauve instance.
+    # @param [Integer] i Seconds
+    # @return [Integer] Seconds
+    def send_every=(i)
+      raise ArgumentError "send_every must be an integer" unless i.is_a?(Integer)      
+      @send_every = i
+    end
 
-    alias send_every=  poll_every=
+    alias poll_every= send_every= 
 
     # Sets the summary of the heartbeat
     #
@@ -97,6 +106,8 @@ module Mauve
 
       Mauve::Sender.new(self.destination).send(update)
       logger.debug "Sent to #{self.destination}"
+
+      sleep @send_every
     end
 
   end

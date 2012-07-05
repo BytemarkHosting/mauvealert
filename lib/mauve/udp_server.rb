@@ -22,7 +22,6 @@ module Mauve
     # Defaults:
     #   * listening IP: 127.0.0.1
     #   * listening port: 32741
-    #   * polls every: 0 seconds
     #
     def initialize
       #
@@ -30,7 +29,6 @@ module Mauve
       #
       self.ip     = "127.0.0.1"
       self.port   = 32741
-      self.poll_every = 0
       @socket = nil
 
       super
