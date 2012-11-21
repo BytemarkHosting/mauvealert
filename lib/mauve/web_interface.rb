@@ -310,7 +310,7 @@ EOF
       Alert.all_unacknowledged.each{|a| counts[a.level] += 1}
 
       (AlertGroup::LEVELS.reverse.collect{|l| counts[l]}+
-        [Alert.all_acknowledged.length, Alert.all_cleared.length]).to_json
+        [Alert.all_acknowledged.length, 0]).to_json
     end
 
     get '/ajax/alerts_table/:alert_type/:group_by' do
@@ -349,7 +349,6 @@ EOF
     #
 
     get '/alert/:id' do
-      find_active_alerts
       @alert = Alert.get!(params['id'])
 
       haml :alert
@@ -417,7 +416,6 @@ EOF
     ########################################################################
     
     get '/preferences' do
-      find_active_alerts
       haml :preferences
     end
     
@@ -581,8 +579,6 @@ EOF
       end
 
       def alerts_table(params)
-        find_active_alerts
-
         if %w(raised cleared acknowledged).include?(params[:alert_type])
           @alert_type = params[:alert_type]
         else
@@ -597,36 +593,18 @@ EOF
 
         @title += " Alerts "
 
-
         case @alert_type
           when "raised"
-            @grouped_alerts = group_by(@alerts_raised, @group_by)
+            @alerts = Alert.all_unacknowledged
+            @grouped_alerts = group_by(@alerts, @group_by)
           when "acknowledged"
-            @grouped_alerts = group_by(@alerts_ackd, @group_by)
-            haml(:alerts)
+            @alert = Alert.all_acknowledged
+            @grouped_alerts = group_by(@alerts, @group_by)
           else
             haml(:not_implemented)
         end
       end  
  
-      def find_active_alerts
-        @alerts_raised  = Alert.all_unacknowledged
-        @alerts_cleared = Alert.all_cleared
-        @alerts_ackd    = Alert.all_acknowledged
-
-        #
-        # Tot up the levels for raised alerts.
-        #
-        counts = Hash.new{|h,k| h[k] = 0}
-        @alerts_raised.each{|a| counts[a.level] += 1}
-        @title += " [ "+AlertGroup::LEVELS.reverse.collect{|l| counts[l]}.join(" / ") + " ]"
-      end
-
-      def find_recent_alerts
-        since = params['since'] ? Time.parse(params['since']) : (Time.now-86400)
-        @alerts = Alert.all(:updated_at.gt => since, :order => [:raised_at.desc, :cleared_at.desc, :acknowledged_at.desc, :updated_at.desc, ])
-      end
-      
       def cycle(*list)
         @cycle ||= 0
         @cycle = (@cycle + 1) % list.length
