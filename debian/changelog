@@ -1,3 +1,12 @@
+mauvealert (3.11.1) stable; urgency=low
+
+  * Added a sleep to the server main loop
+  * The alert gets saved after notification to make sure that the
+    cached_alert_group gets stored.
+  * xmmp errors now crash mauve completely. (deliberately).
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 21 Nov 2012 14:32:20 +0000
+
 mauvealert (3.11.0) stable; urgency=low
 
   * Removed needless counting of alerts in the web interface
