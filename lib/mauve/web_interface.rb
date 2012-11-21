@@ -598,7 +598,7 @@ EOF
             @alerts = Alert.all_unacknowledged
             @grouped_alerts = group_by(@alerts, @group_by)
           when "acknowledged"
-            @alert = Alert.all_acknowledged
+            @alerts = Alert.all_acknowledged
             @grouped_alerts = group_by(@alerts, @group_by)
           else
             haml(:not_implemented)
