@@ -142,17 +142,17 @@ module Mauve
 
           logger.info "Connected as #{@jid}"
 
-          @client.on_exception do |ex, stream, where|
+          # @client.on_exception do |ex, stream, where|
             #
             # The XMPP4R exception clauses in Stream all close the stream, so
             # we just need to reconnect.
             #
-            unless ex.nil? or @closing 
-              logger.warn(["Caught",ex.class,ex.to_s,"during XMPP",where].join(" "))
-              logger.debug ex.backtrace.join("\n")
-              self.close
-            end
-          end
+          #   unless ex.nil? or @closing 
+          #     logger.warn(["Caught",ex.class,ex.to_s,"during XMPP",where].join(" "))
+          #     logger.debug ex.backtrace.join("\n")
+          #     self.close
+          #   end
+          # end
         rescue StandardError => ex
           logger.error "Connect failed #{ex.to_s}"
           logger.debug ex.backtrace.join("\n")
