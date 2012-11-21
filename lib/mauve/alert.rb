@@ -319,18 +319,32 @@ module Mauve
       #
       @attributes_before_save ||= Hash.new
 
-      is_a_new_alert = @attributes_before_save.values.all?{|a| a.nil?}
       #
       # Do not alert about changes, for now.
       #
       is_a_change    = false # [:subject, :summary].any?{|k| @attributes_before_save.keys.include?(k)}
 
       #
-      # We notify if the update type has changed (but not from nil), or if the update type is
+      # Work out what state the alert was in before the update.
+      #
+      if @attributes_before_save.has_key?(:update_type)
+        original_update_type = @attributes_before_save[:update_type]
+        #
+        # If the original update type is nil, then it was cleared.
+        #
+        original_update_type ||= "cleared"
+      else
+        #
+        # If there was no update, the original type is the same as the current type.
+        #
+        original_update_type = self.update_type
+      end
+
+      #
+      # We notify if the update type has changed, or if the update type is
       # "raised", and the above is_a_change condition is true
       #
-      if (@attributes_before_save.has_key?(:update_type) and !is_a_new_alert) or
-         (self.update_type == "raised" and (is_a_new_alert or is_a_change))
+      if (self.update_type != original_update_type) or (is_a_change and self.raised?)
 
         self.notify
 
