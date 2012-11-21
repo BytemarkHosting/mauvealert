@@ -691,7 +691,7 @@ module Mauve
       #
       # @return [Array]
       def all_raised
-        all(:raised_at.not => nil, :order => [:raised_at.asc]) & (all(:cleared_at => nil) | all(:raised_at.gte => :cleared_at))
+        all(:raised_at.not => nil, :order => [:raised_at.asc]) & (all(:cleared_at => nil) | all(:conditions => ['"raised_at" >= "cleared_at"']))
       end
       
       # All alerts currently raised and unacknowledged
