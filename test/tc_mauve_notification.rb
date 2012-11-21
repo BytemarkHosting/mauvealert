@@ -426,7 +426,13 @@ EOF
     alert.raise!
 
     assert_equal(1, Alert.count, "Wrong number of alerts saved")
-    
+
+    #
+    # Make sure the alert group gets cached
+    #
+    alert.reload
+    assert_equal("default", alert.cached_alert_group)
+  
     #
     # Also make sure that only 2 notifications has been sent..
     #
