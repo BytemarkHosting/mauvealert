@@ -190,7 +190,7 @@ module Mauve
       source_list = Mauve::Configuration.current.source_lists[listname]
       return false unless source_list.is_a?(SourceList)
 
-      source_list.include?(self.subject)
+      source_list.includes?(self.subject)
     end
 
     # Returns the alert level 
@@ -655,7 +655,7 @@ module Mauve
       #
       # @return [Array]
       def all_unacknowledged
-        all_raised & all(:acknowldeged_at => nil)
+        all_raised & all(:acknowledged_at => nil)
       end
 
       # All alerts currently raised and acknowledged
