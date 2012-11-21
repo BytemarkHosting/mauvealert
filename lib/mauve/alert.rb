@@ -698,21 +698,21 @@ module Mauve
       #
       # @return [Array]
       def all_unacknowledged
-        all_raised - all_acknowledged
+        all_raised & all(:acknowldeged_at => nil)
       end
 
-      # All alerts currently acknowledged
+      # All alerts currently raised and acknowledged
       #
       # @return [Array]
       def all_acknowledged
-        all(:acknowledged_at.not => nil)
+        all_raised & all(:acknowledged_at.not => nil)
       end
 
       # All alerts currently cleared
       #
       # @return [Array]
       def all_cleared
-        all - all_raised - all_acknowledged
+        all - all_raised
       end
 
       # Returns a hash of all the :urgent, :normal and :low alerts.
