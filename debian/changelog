@@ -1,3 +1,10 @@
+mauvealert (3.11.2) stable; urgency=low
+
+  * Fixed typo in WebInterface.
+  * Make sure alerts only get sent on save if their status has changed.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 21 Nov 2012 16:38:00 +0000
+
 mauvealert (3.11.1) stable; urgency=low
 
   * Added a sleep to the server main loop
