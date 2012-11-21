@@ -36,10 +36,12 @@ module Mauve
     # This sends the notification for an alert
     #
     def notify(alert, at)
+      alert.reload
       if alert.alert_group.nil?
         logger.warn "Could not notify for #{alert} since there are no matching alert groups"
       else
         alert.alert_group.notify(alert, at)
+        alert.save if alert.is_a?(Alert)
       end
     end
 
