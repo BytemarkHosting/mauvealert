@@ -123,6 +123,13 @@ module Mauve
         end
       end
 
+      host_as_ip = nil
+      begin
+        host_as_ip = IPAddr.new(host)
+      rescue ArgumentError
+        # Rescue IPAddr argument errors, i.e. host is not an IP address.
+      end
+
       return true if self.list.any? do |l|
         case l
           when String
@@ -130,16 +137,16 @@ module Mauve
           when Regexp
             host =~ l
           when IPAddr 
-            begin
-              l.include?(IPAddr.new(host))
-            rescue ArgumentError
-              # rescue random IPAddr argument errors
-              false
-            end
+            host_as_ip.is_a?(IPAddr) and l.include?(host_as_ip)
           else
             false
         end
       end
+
+      #
+      # To cut down the amount of DNS queries, we'll bail out at this point.
+      #
+      return false
 
       return false unless self.list.any?{|l| l.is_a?(IPAddr)}
 

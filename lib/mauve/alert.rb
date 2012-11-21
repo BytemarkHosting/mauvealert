@@ -190,50 +190,7 @@ module Mauve
       source_list = Mauve::Configuration.current.source_lists[listname]
       return false unless source_list.is_a?(SourceList)
 
-      host = self.subject
-
-      #
-      # Pick out hostnames from URIs.
-      #
-      if host =~ /^[a-z][a-z0-9+-]+:\/\//
-        begin      
-          uri = URI.parse(host)
-          host = uri.host unless uri.host.nil?
-        rescue URI::InvalidURIError => ex
-          # ugh
-          logger.warn "Did not recognise URI #{host}"
-        end
-      end
-
-      return true if source_list.list.any? do |l|
-        case l
-          when String
-            host == l
-          when Regexp
-            host =~ l
-          when IPAddr 
-            begin
-              l.include?(IPAddr.new(host))
-            rescue ArgumentError => err
-              # rescue random IPAddr argument errors
-              false
-            end
-          else
-            false
-        end
-      end
-
-      return false unless source_list.list.any?{|l| l.is_a?(IPAddr)}
-
-      @subject_ips ||= MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
-
-      return false if @subject_ips.nil? or @subject_ips.empty?
-
-      return source_list.list.select{|i| i.is_a?(IPAddr)}.any? do |list_ip| 
-        @subject_ips.any?{|ip| list_ip.include?(ip)}
-      end
-      
-      return false
+      source_list.include?(self.subject)
     end
 
     # Returns the alert level 
