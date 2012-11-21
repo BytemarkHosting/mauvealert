@@ -292,6 +292,11 @@ module Mauve
         end
 
       end
+
+      #
+      # Add a few seconds sleep.  The server only needs to do these self checks once every few seconds.
+      #
+      sleep 5
     end
     
 
