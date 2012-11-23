@@ -63,7 +63,12 @@ end
 class TcMauveDatabasePostgresPeculiarities < TcMauveDatabasePeculiarities
   def setup
     super
-    system("createdb #{@temp_db} --encoding UTF8") || flunk("Failed to create #{@temp_db}")
+    system("createdb #{@temp_db} --encoding UTF8")
+    unless $?.success?
+      msg = "Skipping postgres tests, as DB creation (#{@temp_db}) failed."
+      @temp_db = nil
+      flunk(msg)
+    end
     # @pg_conn = PGconn.open(:dbname => @temp_db) 
     @db_url = "postgres:///#{@temp_db}"
   end
