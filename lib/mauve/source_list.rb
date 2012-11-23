@@ -169,21 +169,29 @@ module Mauve
     #
     def resolve
       @last_resolved_at = Time.now
-      
-      url_list = []
-      if @url
-        url_list_s = do_get(@url)
-        if url_list_s.is_a?(String)
-          url_list = url_list_s.split("\n").collect{|s| do_parse_source(s)}.flatten.compact
-        end
-      end
 
-      new_list = (url_list + @list).collect do |host| 
-        if host.is_a?(String)
-          [host] + MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
-        else
-          host
+      if true == Configuration.current.minimal_dns_lookups
+
+        new_list = [] + @list
+
+      else
+
+        url_list = []
+        if @url
+          url_list_s = do_get(@url)
+          if url_list_s.is_a?(String)
+            url_list = url_list_s.split("\n").collect{|s| do_parse_source(s)}.flatten.compact
+          end
         end
+
+        new_list = (url_list + @list).collect do |host| 
+          if host.is_a?(String)
+            [host] + MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
+          else
+            host
+          end
+        end
+
       end
 
       @resolved_list = new_list.flatten

@@ -22,10 +22,11 @@ module Mauve
          "www2.example.com"   => %w(1.2.3.5 2001:2::2)
         }
         if lookup.has_key?(host)
-          self.count += lookup[host].length if $debug
+          self.count += lookup[host].length 
           lookup[host]
         else
-          get_ips_for_without_testing(host)
+          self.count += 1
+          []
         end
       end
 

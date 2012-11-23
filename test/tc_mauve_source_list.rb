@@ -91,7 +91,11 @@ class TcMauveSourceList < Mauve::UnitTest
 
   def test_ip_crossmatch_fail_when_minimal_dns_is_available
     Configuration.current.minimal_dns_lookups = true
+    dns_lookup_count_before_test = MauveResolv.count
 
+    #
+    # These should all fail, since no extra cossmatching is happening.
+    #
     sl = SourceList.new("test")
     assert_nothing_raised { sl += "test-1.example.com" }
     assert( !sl.includes?("www.example.com"), "www.example.com not found in #{sl.list}" )
@@ -99,6 +103,8 @@ class TcMauveSourceList < Mauve::UnitTest
     sl = SourceList.new("test")
     assert_nothing_raised { sl += "2001::/3" }
     assert( !sl.includes?("www2.example.com"), "www2.example.com not found in #{sl.list}" )
+
+    assert_equal(0, MauveResolv.count - dns_lookup_count_before_test, "Some DNS lookups took place, even when minimal_dns_lookups was set")
   end
 
   def test_remote_source_list
