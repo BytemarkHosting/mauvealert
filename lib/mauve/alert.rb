@@ -160,19 +160,19 @@ module Mauve
       # 
       # Find the AlertGroup by name if we've got a cached value
       #
-      alert_group = AlertGroup.find{|a| self.cached_alert_group == a.name} if self.cached_alert_group
+      ag = AlertGroup.find{|a| self.cached_alert_group == a.name} if self.cached_alert_group
 
-      if alert_group.nil?
+      if ag.nil?
         #
         # If we've not found the alert group by name look for it again, the
         # proper way.
         #
-        alert_group = AlertGroup.find{|a| a.includes?(self)}
-        alert_group = AlertGroup.all.last if alert_group.nil?
-        self.cached_alert_group = alert_group.name unless alert_group.nil?
+        ag = AlertGroup.find{|a| a.includes?(self)}
+        ag = AlertGroup.all.last if ag.nil?
+        self.cached_alert_group = ag.name unless ag.nil?
       end
       
-      alert_group 
+      ag 
     end
 
     # Pick out the source lists that match this alert by subject.
@@ -314,6 +314,7 @@ module Mauve
     #
     # @return [Boolean] 
     def notify_if_needed
+      # puts "Saved #{self.inspect}"
       #
       # Make sure we don't barf
       #
@@ -413,12 +414,6 @@ module Mauve
       self.will_unacknowledge_at = ack_until
       self.update_type = "acknowledged"
 
-      #
-      # Re-cache the alert group.
-      #
-      self.cached_alert_group = nil
-      self.alert_group
-
       unless save
         logger.error("Couldn't save #{self}") 
         false
@@ -478,12 +473,6 @@ module Mauve
         self.cleared_at = nil
         # Don't clear will_clear_at
         self.update_type = "raised" if self.update_type.nil? or self.update_type != "changed" or self.original_attributes[Alert.properties[:update_type]] == "cleared"
-
-        #
-        # Find the alert group to allow it to be cached.
-        #
-        self.cached_alert_group = nil
-        self.alert_group
       end
 
       unless save
@@ -520,10 +509,6 @@ module Mauve
         self.cleared_at = at if self.cleared_at.nil?
         self.will_clear_at = nil
         self.update_type = "cleared"
-        #
-        # Un-cache the alert group
-        #
-        self.cached_alert_group = nil
       end
 
       if save
