@@ -1,3 +1,13 @@
+mauvealert (3.11.4-1) stable; urgency=low
+
+  * AlertGroup is no longer looked for on raise/clear/ack.  It is looked up on
+    notification.
+  * Update web_interface to use public_folder instead of just public
+  * Tidied notifier a little.  Alert#cached_alert_group is reset before
+    notification.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 23 Nov 2012 15:43:11 +0000
+
 mauvealert (3.11.3-3) stable; urgency=low
 
   * dm-aggregates now included.
