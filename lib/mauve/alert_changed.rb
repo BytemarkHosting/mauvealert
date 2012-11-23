@@ -108,7 +108,13 @@ module Mauve
       #
       self.remind_at = nil
 
-      save
+      if self.save
+        logger.debug "Successfully cleared #{self}"
+        true
+      else
+        logger.warn "Failed to clear #{self} -- this will lead to duplicate reminders."
+        false
+      end
     end
     
     # The time this AlertChanged should next be polled at, or nil.  Mimics
