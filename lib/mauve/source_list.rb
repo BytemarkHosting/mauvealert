@@ -5,6 +5,7 @@ require 'uri'
 require 'mauve/mauve_time'
 require 'mauve/mauve_resolv'
 require 'mauve/generic_http_api_client'
+require 'mauve/configuration'
 
 module Mauve
 
@@ -146,7 +147,7 @@ module Mauve
       #
       # To cut down the amount of DNS queries, we'll bail out at this point.
       #
-      return false
+      return false if true == Configuration.current.minimal_dns_lookups
 
       return false unless self.list.any?{|l| l.is_a?(IPAddr)}
 

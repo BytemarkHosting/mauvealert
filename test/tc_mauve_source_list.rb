@@ -1,10 +1,9 @@
 $:.unshift "../lib/"
 
 require 'th_mauve'
-require 'mauve/source_list'
 require 'th_mauve_resolv'
+require 'mauve/source_list'
 require 'webmock'
-require 'pp'
 
 class TcMauveSourceList < Mauve::UnitTest
 
@@ -88,6 +87,18 @@ class TcMauveSourceList < Mauve::UnitTest
     sl = SourceList.new("test")
     assert_nothing_raised { sl += "2001::/3" }
     assert( sl.includes?("www2.example.com"), "www2.example.com not found in #{sl.list}" )
+  end
+
+  def test_ip_crossmatch_fail_when_minimal_dns_is_available
+    Configuration.current.minimal_dns_lookups = true
+
+    sl = SourceList.new("test")
+    assert_nothing_raised { sl += "test-1.example.com" }
+    assert( !sl.includes?("www.example.com"), "www.example.com not found in #{sl.list}" )
+
+    sl = SourceList.new("test")
+    assert_nothing_raised { sl += "2001::/3" }
+    assert( !sl.includes?("www2.example.com"), "www2.example.com not found in #{sl.list}" )
   end
 
   def test_remote_source_list

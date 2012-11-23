@@ -40,6 +40,7 @@ module Mauve
     #
     attr_reader   :bytemark_auth_url, :bytemark_calendar_url, :remote_http_timeout, :remote_https_verify_mode, :failed_login_delay
     attr_reader   :max_acknowledgement_time, :working_hours, :dead_zone, :daytime_hours
+    attr_reader   :minimal_dns_lookups
 
 
     #
@@ -68,6 +69,11 @@ module Mauve
       # Rate limit login attempts to limit the success of brute-forcing.
       #
       self.failed_login_delay = 1
+
+      #
+      # Reduce the amount of DNS lookups when matching alerts to groups.
+      #
+      self.minimal_dns_lookups = false
 
       #
       # Maximum amount of time to acknowledge for
@@ -246,6 +252,14 @@ module Mauve
       ranges
     end
 
+
+    def minimal_dns_lookups=(bool)
+      if bool.is_a?(TrueClass) or bool.to_s.strip =~ /^(1|y(es)?|t(rue))/
+        @minimal_dns_lookups = true
+      else
+        @minimal_dns_lookups = false
+      end
+    end
 
   end
 
