@@ -5,6 +5,7 @@
 #
 require 'dm-core'
 require 'dm-migrations'
+require 'dm-aggregates'
 %w(dm-sqlite-adapter-with-mutex dm-postgres-adapter).each do |req|
   begin
     require req
