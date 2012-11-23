@@ -41,17 +41,24 @@ module Mauve
       #
       alert.reload
 
-      if alert.alert_group.nil?
+      #
+      # Forces alert-group to be re-evaluated on notification.
+      #
+      alert.cached_alert_group = nil
+      this_alert_group = alert.alert_group
+
+      #
+      # This saves without callbacks if the cached_alert_group has been
+      # altered.
+      #
+      alert.save! if alert.dirty?
+
+      if this_alert_group.nil?
         logger.warn "Could not notify for #{alert} since there are no matching alert groups"
 
       else
-        # Forces alert-group to be re-evaluated on notification.
-        alert.cached_alert_group = nil
-        alert.alert_group.notify(alert, at)
-        #
-        # This saves without callbacks if the alert has been altered.
-        #
-        alert.save! if alert.dirty?
+        this_alert_group.notify(alert, at)
+
       end
     end
 
