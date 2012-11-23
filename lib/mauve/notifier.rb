@@ -41,7 +41,10 @@ module Mauve
         logger.warn "Could not notify for #{alert} since there are no matching alert groups"
       else
         alert.alert_group.notify(alert, at)
-        alert.save if alert.is_a?(Alert)
+        #
+        # This saves without callbacks.
+        #
+        alert.save! if alert.is_a?(Alert) and alert.original_attributes.has_key?("cached_alert_group")
       end
     end
 
