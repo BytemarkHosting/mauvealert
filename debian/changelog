@@ -1,3 +1,9 @@
+mauvealert (3.11.3-3) stable; urgency=low
+
+  * dm-aggregates now included.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 23 Nov 2012 13:05:26 +0000
+
 mauvealert (3.11.3-2) stable; urgency=low
 
   * Updated dependencies to take new-style library names
