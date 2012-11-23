@@ -25,24 +25,25 @@ Architecture: all
 Pre-Depends: libjs-jquery
 Depends: mauvealert-common (>= 3.8.0),
  adduser,
- libdm-core-ruby1.8 (>= 1.2.0) | ruby-dm-core  (>= 1.2.0),
- libdm-migrations-ruby1.8 (>= 1.2.0) | ruby-dm-migrations  (>= 1.2.0),
- libdm-sqlite-adapter-ruby1.8 (>= 1.2.0) | ruby-dm-sqlite-adapter  (>= 1.2.0),
- libdm-types-ruby1.8 (>= 1.2.0) | ruby-dm-types  (>= 1.2.0),
- libdm-validations-ruby1.8 (>= 1.2.0) | ruby-dm-validations  (>= 1.2.0),
- libhaml-ruby1.8 (>= 3.0.15) | haml (>= 3.0.15) | ruby-haml  (>= 3.0.15) | haml (>= 3.0.15),
- liblog4r-ruby1.8 | ruby-log4r,
- libredcloth-ruby1.8 | ruby-redcloth,
- librmail-ruby1.8 | ruby-rmail,
- libsanitize-ruby1.8 (>= 2.0.3) | ruby-sanitize  (>= 2.0.3),
- libsinatra-ruby1.8 (>= 1.0) | ruby-sinatra  (>= 1.0),
+ ruby-dm-core (>= 1.2.0)           | libdm-core-ruby1.8 (>= 1.2.0),
+ ruby-dm-migrations (>= 1.2.0)     | libdm-migrations-ruby1.8 (>= 1.2.0),
+ ruby-dm-sqlite-adapter (>= 1.2.0) | libdm-sqlite-adapter-ruby1.8 (>= 1.2.0),
+ ruby-dm-types (>= 1.2.0)          | libdm-types-ruby1.8 (>= 1.2.0),
+ ruby-dm-aggregates (>= 1.2.0)     | libdm-aggregates-ruby1.8 (>= 1.2.0),
+ ruby-dm-validations (>= 1.2.0)    | libdm-validations-ruby1.8 (>= 1.2.0) ,
+ ruby-haml (>= 3.0.15)    | libhaml-ruby1.8 (>= 3.0.15) | haml (>= 3.0.15),
+ ruby-sanitize (>= 2.0.3) | libsanitize-ruby1.8 (>= 2.0.3),
+ ruby-sinatra (>= 1.0)    | libsinatra-ruby1.8 (>= 1.0),
+ ruby-log4r    | liblog4r-ruby1.8,
+ ruby-redcloth | libredcloth-ruby1.8,
+ ruby-rmail    | librmail-ruby1.8,
+ ruby-thin     | thin1.8 | thin,
+ ruby-xmpp4r   | libxmpp4r-ruby1.8,
  lsb-base (>= 3.2-14),
  ruby1.8 (>= 1.8.7),
- thin1.8 | thin | ruby-thin,
- libxmpp4r-ruby1.8 | ruby-xmpp4r,
  ${misc:Depends}
 Suggests: mauvealert-client
-Recommends: liblocale-ruby1.8 | ruby-locale
+Recommends: ruby-locale | liblocale-ruby1.8
 Description: Mauve network alert system -- server
  Mauve is a network alert system for system and network administrators.  You can
  use it to quickly set up ad-hoc monitoring for a variety of services, and to
