@@ -52,7 +52,7 @@ module Mauve
     # Ugh.. hacky way to dynamically configure the document root.
     set :root, Proc.new{ HTTPServer.instance.document_root }
     set :views, Proc.new{ root && File.join(root, 'views') }
-    set :public,  Proc.new{ root && File.join(root, 'static') }
+    set :public_folder,  Proc.new{ root && File.join(root, 'static') }
     set :static, true
     set :show_exceptions, true
 
