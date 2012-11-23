@@ -1,3 +1,13 @@
+mauvealert (3.11.3) stable; urgency=low
+
+  * minimal_dns_lookups configuration item added, preventing extra DNS lookups
+    when matching hosts to source lists.
+  * When the cached alert group is saved (in Notifier#notify) the callbacks
+    which trigger notifications are now skipped.
+  * Tidied up postgres test failure.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 23 Nov 2012 10:49:21 +0000
+
 mauvealert (3.11.2) stable; urgency=low
 
   * Fixed typo in WebInterface.
