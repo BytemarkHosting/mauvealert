@@ -36,15 +36,22 @@ module Mauve
     # This sends the notification for an alert
     #
     def notify(alert, at)
+      #
+      # Make sure we're looking at a fresh copy of the alert.
+      #
       alert.reload
+
       if alert.alert_group.nil?
         logger.warn "Could not notify for #{alert} since there are no matching alert groups"
+
       else
+        # Forces alert-group to be re-evaluated on notification.
+        alert.cached_alert_group = nil
         alert.alert_group.notify(alert, at)
         #
-        # This saves without callbacks.
+        # This saves without callbacks if the alert has been altered.
         #
-        alert.save! if alert.is_a?(Alert) and alert.original_attributes.has_key?("cached_alert_group")
+        alert.save! if alert.dirty?
       end
     end
 
