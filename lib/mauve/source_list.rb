@@ -1,6 +1,6 @@
 # encoding: UTF-8
 require 'log4r'
-require 'ipaddr'
+require 'ipaddress'
 require 'uri'
 require 'mauve/mauve_time'
 require 'mauve/mauve_resolv'
@@ -118,6 +118,7 @@ module Mauve
         begin      
           uri = URI.parse(host)
           host = uri.host unless uri.host.nil?
+          host = $1 if host =~ /^\[([0-9a-f:]+)\]$/i
         rescue URI::InvalidURIError => ex
           # ugh
           logger.warn "Did not recognise URI #{host}"
@@ -125,10 +126,11 @@ module Mauve
       end
 
       host_as_ip = nil
+
       begin
-        host_as_ip = IPAddr.new(host)
+        host_as_ip = IPAddress.parse(host)
       rescue ArgumentError
-        # Rescue IPAddr argument errors, i.e. host is not an IP address.
+        # Rescue IPAddress argument errors, i.e. host is not an IP address.
       end
 
       return true if self.list.any? do |l|
@@ -137,8 +139,8 @@ module Mauve
             host == l
           when Regexp
             host =~ l
-          when IPAddr 
-            host_as_ip.is_a?(IPAddr) and l.include?(host_as_ip)
+          when IPAddress 
+            host_as_ip.is_a?(l.class) and l.include?(host_as_ip)
           else
             false
         end
@@ -149,14 +151,14 @@ module Mauve
       #
       return false if true == Configuration.current.minimal_dns_lookups
 
-      return false unless self.list.any?{|l| l.is_a?(IPAddr)}
+      return false unless self.list.any?{|l| l.is_a?(IPAddress)}
 
-      ips = MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
+      ips = MauveResolv.get_ips_for(host).collect{|i| IPAddress.parse(i)}
 
       return false if ips.empty?
 
-      return self.list.select{|i| i.is_a?(IPAddr)}.any? do |list_ip| 
-        ips.any?{|ip| list_ip.include?(ip)}
+      return self.list.select{|i| i.is_a?(IPAddress)}.any? do |list_ip|
+        ips.any?{|ip| ip.is_a?(list_ip.class) and list_ip.include?(ip) }
       end
       
       return false
@@ -186,7 +188,7 @@ module Mauve
 
         new_list = (url_list + @list).collect do |host| 
           if host.is_a?(String)
-            [host] + MauveResolv.get_ips_for(host).collect{|i| IPAddr.new(i)}
+            [host] + MauveResolv.get_ips_for(host).collect{|i| IPAddress.parse(i)}
           else
             host
           end
@@ -214,7 +216,7 @@ module Mauve
             gsub(/\*/, "[0-9a-z\\-]+") +
             "\\.?$")
       elsif h.is_a?(String) and h =~ /^[0-9a-f\.:]+(\/\d+)?$/i
-        IPAddr.new(h)
+        IPAddress.parse(h)
       elsif h.is_a?(String) and h =~ /^\/(.*)\/$/
         Regexp.new($1)
       elsif h.is_a?(String) or h.is_a?(Regexp)
