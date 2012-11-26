@@ -108,13 +108,22 @@ module Mauve
       #
       self.remind_at = nil
 
-      if self.save
-        logger.debug "Successfully cleared #{self}"
-        true
-      else
-        logger.warn "Failed to clear #{self} -- this will lead to duplicate reminders."
-        false
+      unless self.save
+        #
+        # If the save has failed due to validation errors, but there aren't
+        # actually any errors, just save, by-passing validation.
+        #
+        if self.respond_to?("errors") and self.errors.is_a?(DataMapper::Validations::ValidationErrors) and self.errors.errors.empty?
+          logger.debug "Failed to save #{self.inspect} due to unexplained validation error. Saving again skipping validation."
+          self.save!
+          return true
+        else
+          logger.warn "Failed to clear #{self.inspect}, due to #{self.errors.inspect} -- this will lead to duplicate reminders."
+          return false
+        end
       end
+
+      return true
     end
     
     # The time this AlertChanged should next be polled at, or nil.  Mimics
