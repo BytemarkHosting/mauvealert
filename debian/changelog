@@ -1,3 +1,10 @@
+mauvealert (3.11.5-1) stable; urgency=low
+
+  * Now uses ruby-ipaddress instead of IPAddr.
+  * Now logs when AlertChanged fails, and bypassess validation when needed.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 26 Nov 2012 17:06:39 +0000
+
 mauvealert (3.11.4-1) stable; urgency=low
 
   * AlertGroup is no longer looked for on raise/clear/ack.  It is looked up on
