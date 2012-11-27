@@ -14,7 +14,7 @@ require 'dm-aggregates'
   end
 end
 require 'dm-types'
-require 'dm-validations'
+require 'dm-validations-with-empty-errors-hack'
 
 # DataMapper::Model.raise_on_save_failure = true
 
