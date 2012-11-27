@@ -28,7 +28,7 @@ module Mauve
     protected
 
     def do_set_timestamps(context = :default)
-      self.at = Time.now unless self.original_attributes.has_key?("at")
+      self.at = Time.now if self.dirty?
     end
 
     public

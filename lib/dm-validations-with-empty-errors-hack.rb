@@ -17,6 +17,7 @@ module DataMapper
           logger.warn "Forced to save #{self.inspect} without validations due to #{self.errors.inspect}."
           super
         else
+          logger.warn "Failed to save #{self.inspect} with validations due to #{self.errors.inspect}."
           false
         end
       else

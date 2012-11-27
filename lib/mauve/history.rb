@@ -111,7 +111,7 @@ module Mauve
     # Update the created_at time on the object
     #
     def do_set_created_at(context = :default)
-      self.created_at = Time.now unless self.created_at.is_a?(Time) 
+      self.created_at = Time.now if self.new?
     end
 
     public

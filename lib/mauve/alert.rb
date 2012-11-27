@@ -284,7 +284,7 @@ module Mauve
     end
 
     def do_set_timestamps(context = :default)
-      self.updated_at = Time.now unless self.original_attributes.has_key?("updated_at")
+      self.updated_at = Time.now if self.dirty?
     end
    
     # This is to stop datamapper inserting duff dates into the database.
@@ -364,9 +364,7 @@ module Mauve
 
         end
 
-        if !h.save
-          logger.error "Unable to save history due to #{h.errors.inspect}"
-        end
+        h.save
       end
 
       true
