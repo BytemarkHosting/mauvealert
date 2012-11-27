@@ -31,6 +31,11 @@ class TcMauveHistory < Mauve::UnitTest
 
     h = History.new(:alerts => [], :type => nil, :event => "Hello")
     assert_raise(DataMapper::SaveFailureError, "History saved with blank type -- validation not working"){h.save}
+    #
+    # pop off the error message
+    #
+    logger_pop
+
     assert_equal([:type], h.errors.keys, "Just the type field should be invalid")
 
   end
