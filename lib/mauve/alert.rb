@@ -14,7 +14,7 @@ module Mauve
  
     include DataMapper::Resource
     
-    property :alert_id, Integer
+    property :alert_id, Integer, :key => true
     property :earliest, EpochTime
     belongs_to :alert, :model => "Alert"
     
