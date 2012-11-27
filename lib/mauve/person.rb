@@ -206,7 +206,7 @@ module Mauve
         note =  "#{@alert.update_type.capitalize} #{name} notification to #{@person.username} (#{destination}) " +  (res ? "succeeded" : "failed" )
         logger.info note+" about #{@alert}."
         h = History.new(:alerts => [@alert], :type => "notification", :event => note, :user => @person.username)
-        logger.error "Unable to save history due to #{h.errors.inspect}" if !h.save
+        h.save
 
         return res
       end
