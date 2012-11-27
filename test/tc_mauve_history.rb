@@ -25,9 +25,14 @@ class TcMauveHistory < Mauve::UnitTest
     #
     h = History.new(:alerts => [], :type => "note", :event => "Hello <script>alert(\"arse\");</script>")
 
-    h.save
+    assert(h.save)
     h.reload
     assert_equal("Hello ",h.event, "HTML not stripped correctly on save.")
+
+    h = History.new(:alerts => [], :type => nil, :event => "Hello")
+    assert_raise(DataMapper::SaveFailureError, "History saved with blank type -- validation not working"){h.save}
+    assert_equal([:type], h.errors.keys, "Just the type field should be invalid")
+
   end
 end
 
