@@ -89,7 +89,7 @@ module Mauve
          "[\xF1-\xF3][\x80-\xBF]{3}",          # planes 4-15
          "\xF4[\x80-\x8F][\x80-\xBF]{2}"       # plane 16
         ].join("|")})*$/)
-    
+ 
     property :id, Serial
     property :alert_id, String, :required => true, :unique_index => :alert_index, :length=>256, :lazy => false
     property :source, String, :required => true, :unique_index => :alert_index, :length=>512, :lazy => false
@@ -118,9 +118,7 @@ module Mauve
 
     before :valid?, :do_set_timestamps
     before :save, :do_sanitize_html
-    before :save, :take_copy_of_changes
 
-    after  :save, :notify_if_needed
     after  :destroy, :destroy_associations
 
     validates_with_method :check_dates
@@ -301,78 +299,6 @@ module Mauve
       end
     end
 
-    # This allows us to take a copy of the changes before we save.
-    #
-    def take_copy_of_changes
-      @attributes_before_save = Hash.new
-      self.original_attributes.each do |k,v| 
-        @attributes_before_save[k.name] = v
-      end
-    end
-
-    # This sends notifications.  It is called after each save.
-    #
-    # @return [Boolean] 
-    def notify_if_needed
-      # puts "Saved #{self.inspect}"
-      #
-      # Make sure we don't barf
-      #
-      @attributes_before_save ||= Hash.new
-
-      #
-      # Do not alert about changes, for now.
-      #
-      is_a_change    = false # [:subject, :summary].any?{|k| @attributes_before_save.keys.include?(k)}
-
-      #
-      # Work out what state the alert was in before the update.
-      #
-      if @attributes_before_save.has_key?(:update_type)
-        original_update_type = @attributes_before_save[:update_type]
-        #
-        # If the original update type is nil, then it was cleared.
-        #
-        original_update_type ||= "cleared"
-      else
-        #
-        # If there was no update, the original type is the same as the current type.
-        #
-        original_update_type = self.update_type
-      end
-
-      #
-      # We notify if the update type has changed, or if the update type is
-      # "raised", and the above is_a_change condition is true
-      #
-      if (self.update_type != original_update_type) or (is_a_change and self.raised?)
-
-        self.notify
-
-        h = History.new(:alerts => [self], :type => "update")
-
-        if self.update_type == "acknowledged"
-          h.event = "ACKNOWLEDGED until #{self.will_unacknowledge_at}"
-          h.user  = self.acknowledged_by
-
-        elsif is_a_change
-          h.event = "CHANGED: "
-          h.event += @attributes_before_save.keys.collect{|k| "#{k.to_s}: #{@attributes_before_save[k]} -> #{self.__send__(k)}"}.join(", ") 
-
-        else
-          h.event = (self.update_type || "UNKNOWN").upcase
-
-        end
-
-        h.save
-      end
-
-      true
-    end
-
-    #
-    # 
-    #
 
     # Remove all history for an alert, when an alert is destroyed.
     #
@@ -388,6 +314,80 @@ module Mauve
     # @return [Boolean] Showing if an alert has been sent.
     def notify(at = Time.now)
       Server.notification_push([self, at])
+    end
+
+    # Save an alert, creating a history and notifications, as needed.
+    # 
+    #
+    def save
+      #
+      # Fetch the original update type.
+      #
+      update_type_key = self.original_attributes.keys.find{|k| k.name == :update_type}
+
+      #
+      # Work out what state the alert was in before the update.
+      #
+      if self.dirty? and !update_type_key.nil?
+        original_update_type = self.original_attributes[update_type_key]
+
+        #
+        # If the original update type is nil, then it was cleared.
+        #
+        original_update_type ||= "cleared"
+
+      else
+        #
+        # If there was no update, the original type is the same as the current type.
+        #
+        original_update_type = self.update_type
+
+      end
+
+      is_a_change = false
+      should_notify = ((self.update_type != original_update_type) or (is_a_change and self.raised?))
+
+      begin
+        self.transaction do
+          self.raise_on_save_failure = true
+          super
+
+          #
+          # We notify if the update type has changed, or if the update type is
+          # "raised", and the above is_a_change condition is true
+          #
+          if should_notify
+            h = History.new(:alerts => [self], :type => "update")
+            h.raise_on_save_failure = true
+
+            if self.update_type == "acknowledged"
+              h.event = "ACKNOWLEDGED until #{self.will_unacknowledge_at}"
+              h.user  = self.acknowledged_by
+
+            else
+              h.event = (self.update_type || "UNKNOWN").upcase
+
+            end
+
+            h.save
+          end
+
+        end # end of transaction -- if the save has failed, the notify won't get executed.
+
+        if should_notify
+          self.notify
+        end
+
+        #
+        # Success
+        #
+        return true
+      rescue DataMapper::SaveFailureError => err 
+        logger.error "Failed to save #{self} due to #{err.inspect}"
+      end
+
+      # Failure.
+      return false
     end
 
     # Acknowledge an alert
@@ -412,14 +412,9 @@ module Mauve
       self.will_unacknowledge_at = ack_until
       self.update_type = "acknowledged"
 
-      unless save
-        logger.error("Couldn't save #{self}") 
-        false
-      else
-        true
-      end
+      self.save
     end
-    
+ 
     # Unacknowledge an alert
     #
     # @return [Boolean] showing the unacknowledgment has been successful
@@ -429,12 +424,7 @@ module Mauve
       self.will_unacknowledge_at = nil
       self.update_type = (raised? ? "raised" : "cleared")
 
-      unless save
-        logger.error("Couldn't save #{self}") 
-        false
-      else
-        true
-      end
+      self.save
     end
    
     # Raise an alert at a specified time
@@ -473,12 +463,7 @@ module Mauve
         self.update_type = "raised" if self.update_type.nil? or self.update_type != "changed" or self.original_attributes[Alert.properties[:update_type]] == "cleared"
       end
 
-      unless save
-        logger.error("Couldn't save #{self}") 
-        false
-      else
-        true
-      end
+      self.save
     end
 
     # Clear an alert at a specified time
@@ -509,7 +494,7 @@ module Mauve
         self.update_type = "cleared"
       end
 
-      if save
+      if self.save
         #
         # Clear all reminders.
         #
@@ -526,7 +511,7 @@ module Mauve
         #
         # Oops.
         #
-        logger.error("Couldn't save #{self}") 
+        logger.error("Not clearing reminders as save of #{self} failed")
         false
       end
     end
