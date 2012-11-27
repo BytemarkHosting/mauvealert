@@ -1,3 +1,9 @@
+mauvealert (3.11.6-2) stable; urgency=low
+
+  * Fixed missing library file. 
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 27 Nov 2012 10:16:35 +0000
+
 mauvealert (3.11.6-1) stable; urgency=low
 
   * Added dm-validations monkey-patch to automatically save validation
