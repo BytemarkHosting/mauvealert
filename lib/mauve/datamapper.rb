@@ -13,6 +13,7 @@ require 'dm-aggregates'
     # do not a lot.
   end
 end
+require 'dm-transactions'
 require 'dm-types'
 require 'dm-validations-with-empty-errors-hack'
 
