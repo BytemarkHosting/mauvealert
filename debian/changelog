@@ -1,3 +1,9 @@
+mauvealert (3.11.8-1) stable; urgency=low
+
+  * Re-wrote alert saving logic to use database transactions.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 27 Nov 2012 16:16:09 +0000
+
 mauvealert (3.11.7-1) stable; urgency=low
 
   * Models are now more picky when setting created_at/updated_at times.
