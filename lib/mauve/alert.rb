@@ -217,19 +217,18 @@ module Mauve
     # The alert subject
     #
     # @return [String]
-    def subject; attribute_get(:subject) || attribute_get(:source) || "not set" ; end
+    def subject; super || self.source || "not set" ; end
 
     # The alert detail
     # 
     # @return [String]
-    def detail;  attribute_get(:detail)  || "_No detail set._" ; end
+    def detail;  super || "_No detail set._" ; end
 
     #
     # Set the subject -- this clears the cached_alert_group.
     #
     def subject=(s)
       self.cached_alert_group = nil
-      @subject_ips = nil
       attribute_set(:subject, s)
     end 
 
@@ -288,7 +287,7 @@ module Mauve
     # This is to stop datamapper inserting duff dates into the database.
     #
     def check_dates
-      bad_dates = self.attributes.find_all do |key, value|
+      bad_dates = self.dirty_attributes.find_all do |key, value|
         value.is_a?(Time) and (value < (Time.now - 3650.days) or value > (Time.now + 3650.days))
       end
 
@@ -298,7 +297,6 @@ module Mauve
         [ false, "The dates "+bad_dates.collect{|k,v| "#{v.to_s} (#{k})"}.join(", ")+" are invalid." ]
       end
     end
-
 
     # Remove all history for an alert, when an alert is destroyed.
     #
