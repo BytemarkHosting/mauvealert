@@ -360,7 +360,7 @@ module Mauve
           h.event += @attributes_before_save.keys.collect{|k| "#{k.to_s}: #{@attributes_before_save[k]} -> #{self.__send__(k)}"}.join(", ") 
 
         else
-          h.event = self.update_type.upcase
+          h.event = (self.update_type || "UNKNOWN").upcase
 
         end
 
