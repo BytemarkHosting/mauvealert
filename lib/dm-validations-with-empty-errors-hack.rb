@@ -3,29 +3,19 @@ require 'dm-validations'
 module DataMapper
   module Validations
     #
-    # Rewrite save method to save without validations, if the validations failed, but give no reason.
+    # This only performs validations if the object being saved is dirty.
     #
-    # @api private
     def save_self(*)
-      if Validations::Context.any? && !valid?(model.validators.current_context)
-        #
-        # Don't do anything unusual if there is no logger available.
-        #
-        return false unless self.respond_to?("logger")
-
-        if self.errors.empty?
-          logger.warn "Forced to save #{self.inspect} without validations due to #{self.errors.inspect}."
-          super
-        else
-          logger.warn "Failed to save #{self.inspect} with validations due to #{self.errors.inspect}."
-          false
-        end
+      # 
+      # short-circuit if the resource is not dirty
+      #
+      if dirty_self? && Validations::Context.any? && !valid?(model.validators.current_context)
+        false
       else
         super
       end
     end
   end
 end
-
 
 

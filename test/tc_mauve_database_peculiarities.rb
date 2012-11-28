@@ -78,6 +78,63 @@ class TcMauveDatabasePostgresPeculiarities < TcMauveDatabasePeculiarities
     super
     (system("dropdb #{@temp_db}") || puts("Failed to drop #{@temp_db}")) if @temp_db
   end
+
+
+  def test_reminders_only_go_once
+    config=<<EOF
+server {
+  database "#{@db_url}"
+  use_notification_buffer  false
+}
+
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
+person ("test1") {
+  email "test1@example.com"
+  all { email }
+  suppress_notifications_after( 1 => 1 )
+}
+
+alert_group("default") {
+  notify("test1") {
+    during{ true }
+    every 1.minute
+  }
+}
+EOF
+    Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
+    Server.instance.setup
+
+     a = Alert.new(
+      :alert_id  => "test",
+      :source    => "test",
+      :subject   => "test"
+    )
+
+    assert(a.raise!, "raise was not successful")
+    assert(a.saved?)
+    assert_equal(1, notification_buffer.length)
+    notification_buffer.pop
+
+    10.times do   
+      Timecop.freeze(Time.now + 1.minute)
+      5.times do
+        AlertChanged.all.each do |ac|
+          assert(ac.poll)
+        end
+      end
+      assert_equal(1, notification_buffer.length)
+      notification_buffer.pop
+    end
+
+  end
+
+
 end
 
 class TcMauveDatabaseSqlite3Peculiarities < TcMauveDatabasePeculiarities
