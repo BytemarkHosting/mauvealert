@@ -43,6 +43,10 @@
     %tr
       %th{:title => "The time at which the alert will be automatically cleared"} Will clear
       %td= @alert.will_raise_at.to_s_human
+  -if @alert.suppressed?
+    %tr
+      %th{:title => "The time at which notifications for this alert will start"} Suppressed until
+      %td= @alert.suppress_until.to_s_human
   %tr
     %th History
     %td
