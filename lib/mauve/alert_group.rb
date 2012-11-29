@@ -173,7 +173,7 @@ module Mauve
 
         if this_reminder.update_type.nil? or 
           (alert.raised? and this_reminder.update_type == "CLEARED") or
-          (alert.cleared? and %w(RAISED ACKNOWLEDGED).include?(this_reminder.update_type))
+          (alert.cleared? and %w(RE-RAISED RAISED ACKNOWLEDGED).include?(this_reminder.update_type))
 
           this_reminder.update_type = alert.update_type
           this_reminder.remind_at = alert.suppress_until

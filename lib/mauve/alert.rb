@@ -326,7 +326,7 @@ module Mauve
       elsif self.raised? and self.acknowledged? and !self.was_acknowledged?
         "acknowledged"
       elsif self.raised? and !self.acknowledged? and self.was_acknowledged?
-        "unacknowledged"
+        "re-raised"
       else
         nil
       end
