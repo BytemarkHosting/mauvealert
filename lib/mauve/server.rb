@@ -178,6 +178,7 @@ module Mauve
 
       AlertHistory.migrate!
       AlertEarliestDate.create_view!
+      DataMapper.finalize
 
       return nil
     end
