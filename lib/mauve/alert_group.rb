@@ -10,14 +10,14 @@ module Mauve
   #
   class AlertGroup < Struct.new(:name, :includes, :acknowledgement_time, :level, :notifications)
 
-    # 
+    #
     # Define some constants, and the ordering.
     #
     URGENT = :urgent
     NORMAL = :normal
     LOW    = :low
     LEVELS = [LOW, NORMAL, URGENT]
-    
+
     class << self
 
       # Finds all AlertGroups that match an alert.
@@ -36,7 +36,7 @@ module Mauve
         grps
       end
 
-      # 
+      #
       #
       #
       def find_all(&block)
@@ -48,7 +48,7 @@ module Mauve
       end
 
       #
-      # 
+      #
       #
       def find(&block)
         return nil unless block_given?
@@ -71,15 +71,15 @@ module Mauve
 
         Configuration.current.alert_groups
       end
-      
-      # Find all alerts that match 
+
+      # Find all alerts that match
       #
       # @deprecated Buggy method, use Alert.get_all().
       #
       # This method returns all the alerts in all the alert_groups.  Only
       # the first one should be returned thus making this useless. If you want
       # a list of all the alerts matching a level, use Alert.get_all().
-      # 
+      #
       # @return [Array]
       def all_alerts_by_level(level)
         Configuration.current.alert_groups.map do |alert_group|
@@ -88,7 +88,7 @@ module Mauve
       end
 
     end
-    
+
     # Creates a new AlertGroup
     #
     # @param name Name of alert group
@@ -100,19 +100,19 @@ module Mauve
       self.includes = Proc.new { true }
       self
     end
-    
+
     # @return [String]
     def to_s
       "#<AlertGroup:#{name} (level #{level})>"
     end
-  
+
     # The list of current raised alerts in this group.
     #
     # @return [Array] Array of Mauve::Alert
     def current_alerts
       Alert.all(:cleared_at => nil, :raised_at.not => nil).select { |a| includes?(a) }
     end
-    
+
     # Decides whether a given alert belongs in this group according to its
     # includes { } clause
     #
@@ -139,22 +139,22 @@ module Mauve
     # undergone a significant change.  We resend this to every notify list.
     # The time is used to determine the time to be used when evaluating
     # "during" blocks in the notifier clauses.
-    # 
-    # @param [Mauve::Alert] alert 
+    #
+    # @param [Mauve::Alert] alert
     # @param [Time] at
     #
     # @return [Boolean] indicates success or failure of alert.
     def notify(alert, at=Time.now)
       #
-      # If there are no notifications defined. 
+      # If there are no notifications defined.
       #
       if notifications.nil?
         logger.warn("No notifications found for #{self.inspect}")
         return false
       end
 
-      during_runners = [] 
-      
+      during_runners = []
+
       #
       # Bail out if notifications for this alert have been suppressed.
       #
@@ -168,10 +168,10 @@ module Mauve
           :was_relevant => false
         )
 
-        this_reminder.level = level.to_s 
+        this_reminder.level = level.to_s
         this_reminder.at  = at
 
-        if this_reminder.update_type.nil? or 
+        if this_reminder.update_type.nil? or
           (alert.raised? and this_reminder.update_type == "CLEARED") or
           (alert.cleared? and %w(RE-RAISED RAISED ACKNOWLEDGED).include?(this_reminder.update_type))
 
@@ -279,7 +279,7 @@ module Mauve
     end
 
     #
-    # 
+    #
     #
     def resolve_notifications(at = Time.now)
       self.notifications.collect do |notification|
