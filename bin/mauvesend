@@ -74,6 +74,13 @@
 #                          no time is specified, "now" is assumed. See
 #                          SPECIFYING TIMES below for the format of <time>.
 #
+# --suppress, -e <time>    Notifications about this alert should not be sent
+#                          until the given time.  This allows notifications
+#                          about flapping alerts to be suppressed for a period
+#                          of time, or alerts about planned maintenance to be
+#                          suppressed. See SPECIFYING TIMES below for the
+#                          format of <time>.
+#
 # SPECIFYING TIMES
 #
 # Times can be specified for an alert to be raised or cleared. This can be
@@ -240,6 +247,7 @@ begin
     ['-u', '--subject', GetoptLong::OPTIONAL_ARGUMENT],
     ['-c', '--clear',   GetoptLong::OPTIONAL_ARGUMENT],
     ['-r', '--raise',   GetoptLong::OPTIONAL_ARGUMENT],
+    ['-e', '--suppress', GetoptLong::OPTIONAL_ARGUMENT],
     ['-d', '--detail',  GetoptLong::OPTIONAL_ARGUMENT],
     ['-v', '--verbose', GetoptLong::NO_ARGUMENT]
   ).each do |opt,arg|
@@ -280,6 +288,7 @@ begin
           when '-d' then message.detail = arg
           when '-c' then message.clear_time = parse_time_spec(arg).to_i
           when '-r' then message.raise_time = parse_time_spec(arg).to_i
+          when '-e' then message.suppress_until = parse_time_spec(arg).to_i
           else
             error "Unknown option #{opt}"
         end
