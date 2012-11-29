@@ -412,6 +412,13 @@ module Mauve
     #
     # @return [Boolean] showing the unacknowledgment has been successful
     def unacknowledge!
+      #
+      # Start the notification procedure again.
+      #
+      if self.was_acknowledged?
+        self.raised_at = Time.now
+      end
+
       self.acknowledged_by = nil
       self.acknowledged_at = nil
       self.will_unacknowledge_at = nil
