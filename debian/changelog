@@ -1,3 +1,9 @@
+mauvealert (3.12.1-1) stable; urgency=low
+
+  * Added optional notification suppression for alerts.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 29 Nov 2012 10:35:04 +0000
+
 mauvealert (3.11.8-1) stable; urgency=low
 
   * Re-wrote alert saving logic to use database transactions.
