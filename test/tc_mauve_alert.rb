@@ -173,6 +173,123 @@ EOF
     
   end
 
+  def test_recieve_update_with_suppression
+    Server.instance.setup
+
+    update = Proto::AlertUpdate.new
+    update.source = "test-host"
+    message = Proto::Alert.new
+    update.alert << message
+    message.id = "test_recieve_update"
+
+    #
+    # If we send the same message every 2 minutes, with the suppress time
+    # moving forward each time, it should get set once, and then stay the same
+    # after that.
+    #
+    suppress_until = nil
+
+    5.times do |i|
+      message.raise_time = Time.now.to_i
+      message.suppress_until = Time.now.to_i + 10.minutes
+      suppress_until = Time.now + 10.minutes if suppress_until.nil?
+
+      Alert.receive_update(update, Time.now, "127.0.0.1")
+      a = Alert.first(:alert_id => 'test_recieve_update')
+
+      assert(a.raised?, "Alert not raised after a raised message has been sent")
+      assert(a.suppressed?, "Alert has not been suppressed when the suppress_until value has been set")
+      assert_equal(suppress_until, a.suppress_until, "The suppress until time has been set incorrectly when being raised repeatedly")
+
+      Timecop.freeze(Time.now + 2.minute)
+    end
+    
+    #
+    # Ten minutes have passed == the suppression should have lapsed.
+    #
+    assert_equal(0, (Time.now - suppress_until).to_i, "Ten minutes have not elapsed!")
+    a = Alert.first(:alert_id => 'test_recieve_update')
+    assert(!a.suppressed?, "The alert is still suppressed past its suppress_until time")
+
+    #
+    # Try again -- the suppression has expired, but the alert is still raised.
+    # This should not re-set the suppress_until value.
+    #
+    5.times do
+      message.suppress_until = Time.now.to_i + 10.minutes
+      Alert.receive_update(update, Time.now, "127.0.0.1")
+      a = Alert.first(:alert_id => 'test_recieve_update')
+      assert(a.raised?)
+      assert_equal(suppress_until, a.suppress_until)
+      assert(!a.suppressed?)
+
+      Timecop.freeze(Time.now + 2.minute)
+    end
+
+    #
+    # Now on clear, we should be able to set the suppression time again.
+    #
+    suppress_until = Time.now + 10.minutes
+    message.raise_time = nil
+    message.clear_time = Time.now.to_i
+    message.suppress_until = suppress_until.to_i
+
+    Alert.receive_update(update, Time.now, "127.0.0.1")
+    a = Alert.first(:alert_id => 'test_recieve_update')
+    assert(a.cleared?)
+    assert_equal(suppress_until, a.suppress_until)
+
+    #
+    # Now move on two minutes, and raise the alert.  The suppression time should not move forward.
+    #
+    Timecop.freeze(Time.now + 2.minutes)
+
+    4.times do
+      message.raise_time = Time.now.to_i
+      message.suppress_until = Time.now.to_i + 10.minutes
+      Alert.receive_update(update, Time.now, "127.0.0.1")
+      a = Alert.first(:alert_id => 'test_recieve_update')
+
+      assert(a.raised?)
+      assert(a.suppressed?)
+      assert_equal(suppress_until, a.suppress_until)
+
+      Timecop.freeze(Time.now + 2.minute)
+    end
+
+    #
+    # 10 minutes have now passed, The alert should no longer be suppressed.
+    #
+    assert_equal(0, (Time.now - suppress_until).to_i, "Ten minutes have not elapsed!")
+    a = Alert.first(:alert_id => 'test_recieve_update')
+    assert(!a.suppressed?, "The alert is still suppressed past its suppress_until time")
+
+    #
+    # Try again -- the suppression has expired, but the alert is still raised.
+    # In this case the suppress_until time should not be moved on, until the
+    # alert has cleared.
+    #
+    message.suppress_until = Time.now.to_i + 10.minutes
+    Alert.receive_update(update, Time.now, "127.0.0.1")
+    a = Alert.first(:alert_id => 'test_recieve_update')
+    assert(a.raised?)
+    assert_equal(suppress_until, a.suppress_until)
+    assert(!a.suppressed?)
+
+    #
+    # Now clear, and the suppress time should be set back to nil.
+    #
+    message.raise_time = nil
+    message.clear_time = Time.now.to_i
+    message.suppress_until = nil
+    Alert.receive_update(update, Time.now, "127.0.0.1")
+    a = Alert.first(:alert_id => 'test_recieve_update')
+    assert(a.cleared?)
+    assert_equal(nil, a.suppress_until)
+    assert(!a.suppressed?)
+
+  end
+    
   def test_notify_if_needed
     Configuration.current = ConfigurationBuilder.parse(@test_config)
     Server.instance.setup
@@ -293,7 +410,7 @@ EOF
     Server.instance.setup
 
     alert = Alert.new(
-      :alert_id  => "test_no_notification_for_old_alerts",
+      :alert_id  => "test_destroy_history_on_destroy",
       :source    => "test",
       :subject   => "test"
     )
@@ -313,6 +430,49 @@ EOF
     alert.destroy
     assert_equal(0, History.all.length)
 
+  end
+
+  def test_alert_suppression
+    #
+    # This is a bit of a duff test
+    #
+    Configuration.current = ConfigurationBuilder.parse(@test_config)
+    Server.instance.setup
+
+    alert = Alert.new(
+      :alert_id  => "test_alert_suppression1",
+      :source    => "test",
+      :subject   => "test",
+      :suppress_until => Time.now + 5.minutes
+    )
+    alert.save
+    alert.reload
+
+    assert_equal(Time.now + 5.minutes, alert.suppress_until)
+    assert(alert.suppressed?)
+    
+    alert = Alert.new(
+      :alert_id  => "test_alert_suppression2",
+      :source    => "test",
+      :subject   => "test",
+      :suppress_until => Time.now - 5.minutes
+    )
+    alert.save
+    alert.reload
+
+    assert_equal(Time.now - 5.minutes, alert.suppress_until)
+    assert(!alert.suppressed?,"Alert marked as suppressed when the suppression period has expired")
+
+    alert = Alert.new(
+      :alert_id  => "test_alert_suppressio3",
+      :source    => "test",
+      :subject   => "test"
+    )
+    alert.save
+    alert.reload
+
+    assert_equal(nil, alert.suppress_until)
+    assert(!alert.suppressed?,"Alert marked as suppressed when the suppression period was never set")
   end
 
 end

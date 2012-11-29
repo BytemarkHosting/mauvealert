@@ -154,6 +154,36 @@ module Mauve
       end
 
       during_runners = [] 
+      
+      #
+      # Bail out if notifications for this alert have been suppressed.
+      #
+      if alert.suppressed?
+        logger.info("Notifications suppressed until #{alert.suppress_until} for #{alert.inspect}")
+
+        this_reminder = AlertChanged.first_or_new(
+          :alert_id => alert.id,
+          :person => self.name,
+          :remind_at.not => nil,
+          :was_relevant => false
+        )
+
+        this_reminder.level = level.to_s 
+        this_reminder.at  = at
+
+        if this_reminder.update_type.nil? or 
+          (alert.raised? and this_reminder.update_type == "CLEARED") or
+          (alert.cleared? and %w(RAISED ACKNOWLEDGED).include?(this_reminder.update_type))
+
+          this_reminder.update_type = alert.update_type
+          this_reminder.remind_at = alert.suppress_until
+        else
+          this_reminder.remind_at = nil
+        end
+
+        return this_reminder.save
+      end
+
 
       #
       # This is where we set the reminder -- i.e. on a per-alert-group basis.

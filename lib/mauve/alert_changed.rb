@@ -99,9 +99,19 @@ module Mauve
       end
 
       #
-      # Push this notifitcation onto the queue.
+      # Bail out if notifications for this alert have been suppressed.
       #
-      Server.notification_push([alert, Time.now])
+      if alert.suppressed?
+        #
+        # Skip reminders if the alert is suppressed.
+        #
+        logger.info("Notifications suppressed until #{alert.suppressed_until} for #{alert.inspect}")
+      else
+        #
+        # Push this notifitcation onto the queue.
+        #
+        Server.notification_push([alert, Time.now])
+      end
 
       #
       # Need to make sure this reminder is cleared.

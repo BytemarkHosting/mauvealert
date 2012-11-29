@@ -44,6 +44,9 @@ message Alert {
   //
   optional uint32 importance = 7;
 
+  // Suppress any notifications about this alert until this UNIX time.
+  //
+  optional uint64 suppress_until = 8;
 }
 
 // The AlertUpdate is the unit of communication from an alerting source;

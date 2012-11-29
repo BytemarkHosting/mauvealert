@@ -46,6 +46,9 @@
 #   //
 #   optional uint32 importance = 7;
 # 
+#   // Suppress any notifications about this alert until this UNIX time.
+#   //
+#   optional uint64 suppress_until = 8;
 # }
 # 
 # // The AlertUpdate is the unit of communication from an alerting source;
@@ -102,6 +105,7 @@ module Mauve
       optional :string, :summary, 5
       optional :string, :detail, 6
       optional :uint32, :importance, 7
+      optional :uint64, :suppress_until, 8
     end
     class AlertUpdate < ::Protobuf::Message
       defined_in __FILE__

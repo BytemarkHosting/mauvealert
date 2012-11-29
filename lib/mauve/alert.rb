@@ -101,6 +101,7 @@ module Mauve
     property :raised_at, EpochTime
     property :cleared_at, EpochTime
     property :updated_at, EpochTime
+    property :suppress_until, EpochTime
     property :acknowledged_at, EpochTime
     property :acknowledged_by, String, :lazy => false
     property :update_type, String, :lazy => false
@@ -458,7 +459,8 @@ module Mauve
         self.will_raise_at = nil
         self.cleared_at = nil
         # Don't clear will_clear_at
-        self.update_type = "raised" if self.update_type.nil? or self.update_type != "changed" or self.original_attributes[Alert.properties[:update_type]] == "cleared"
+        self.update_type = "raised" if self.update_type.nil? or !self.acknowledged?
+        self.suppress_until = nil unless self.suppressed? or self.was_raised?
       end
 
       self.save
@@ -490,13 +492,14 @@ module Mauve
         self.cleared_at = at if self.cleared_at.nil?
         self.will_clear_at = nil
         self.update_type = "cleared"
+        self.suppress_until = nil unless self.suppressed? or self.was_cleared?
       end
 
       if self.save
         #
         # Clear all reminders.
         #
-        self.changes.all(:remind_at.not => nil, :at.lte => at, :update_type => "raised").each do |ac|
+        self.changes.all(:remind_at.not => nil).each do |ac|
           ac.remind_at = nil
           ac.save
         end
@@ -513,7 +516,7 @@ module Mauve
         false
       end
     end
-      
+
     # The next time this alert should be polled, either to raise, clear, or
     # unacknowledge, or nil if nothing is due.
     #
@@ -545,11 +548,41 @@ module Mauve
       !raised_at.nil? and (cleared_at.nil? or raised_at > cleared_at)
     end
 
+    # Was the alert raised before changes were made?
+    #
+    # @return [Boolean]
+    def was_raised?
+      was_raised_at = if original_attributes.has_key?(Alert.properties[:raised_at])
+        original_attributes[Alert.properties[:raised_at]]
+      else
+        self.raised_at
+      end
+
+      was_cleared_at = if original_attributes.has_key?(Alert.properties[:cleared_at])
+        original_attributes[Alert.properties[:cleared_at]]
+      else
+        self.cleared_at
+      end
+
+      !was_raised_at.nil? and (was_cleared_at.nil? or was_raised_at > was_cleared_at)
+    end
+
     # Is the alert acknowledged?
     #
     # @return [Boolean]
     def acknowledged?
       !acknowledged_at.nil?
+    end
+
+    # Was the alert acknowledged before the current changes?
+    #
+    # @return [Boolean]
+    def was_acknowledged?
+      if original_attributes.has_key?(Alert.properties[:acknowledged_at])
+        !original_attributes[Alert.properties[:acknowledged_at]].nil?
+      else
+        self.acknowledged?
+      end
     end
 
     # Is the alert cleared? Cleared is just the opposite of raised.
@@ -559,6 +592,20 @@ module Mauve
       !raised?
     end
  
+    # Was the alert cleared before the current changes?
+    #
+    # @return [Boolean]
+    def was_cleared?
+      !was_raised?
+    end
+
+    # Is the alert suppressed?
+    #
+    # @return [Boolean]
+    def suppressed?
+      self.suppress_until.is_a?(Time) and self.suppress_until > Time.now
+    end
+
     # Work out an array of extra people to notify.
     #
     # @return [Array] array of persons
@@ -806,6 +853,17 @@ module Mauve
           alert_db.importance = alert.importance if alert.importance != 0 
 
           alert_db.updated_at = reception_time
+
+          #
+          # The alert suppression time can be set by an update if
+          #
+          #  * the alert is not already suppressed
+          #  * the alert has changed state.
+          #
+          if !alert_db.suppressed? and 
+            ((alert_db.was_raised? and !alert_db.raised?) or (alert_db.was_cleared? and !alert_db.cleared?))
+            alert_db.suppress_until = Time.at(alert.suppress_until + time_offset)
+          end
 
           if alert_db.raised? 
             #

@@ -106,11 +106,14 @@ EOF
     a = Alert.new(
       :alert_id  => "test",
       :source    => "test",
-      :subject   => "test" 
+      :subject   => "test",
+      :suppress_until => Time.now + 5.minutes 
     )
 
     a.raise!
-    assert_equal("test1@example.com", notification_buffer.pop[2])
+    #
+    # Should be suppressed.
+    #
     assert(notification_buffer.empty?)
 
     Timecop.freeze(Time.now + 5.minutes)
@@ -159,6 +162,121 @@ EOF
     a.clear!
     assert_equal("test2@example.com", notification_buffer.pop[2])
     assert(notification_buffer.empty?)
+  end
+
+  def test_alert_suppression
+    config=<<EOF
+server {
+  database "sqlite3::memory:"
+  use_notification_buffer false
+}
+
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
+person ("test1") {
+  email "test1@example.com"
+  all { email }
+}
+
+alert_group("default") {
+  includes{ true }
+  notify("test1")  {
+    during{ true }
+    every 15.minutes
+  }
+}
+EOF
+    Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
+    Server.instance.setup
+
+    a = Alert.new(
+      :alert_id  => "test",
+      :source    => "test",
+      :subject   => "test",
+      :suppress_until => Time.now + 5.minutes 
+    )
+
+    #
+    # No notifications should be sent for 5 minutes
+    #
+    a.raise!
+
+    5.times do
+      assert(0,notification_buffer.length)
+      Timecop.freeze(Time.now + 1.minutes)
+      a.poll
+      AlertChanged.all.each{|ac| ac.poll}
+    end
+
+    #
+    # After 5 minutes a notification should be sent, and a reminder set for 15 minutes afterwards.
+    #
+    assert(1,notification_buffer.length)
+    ac = a.changes.all(:remind_at.not => nil)
+    assert_equal(1,ac.length, "Only one reminder should be in place at end of suppression period")
+    assert_equal(Time.now+15.minutes, ac.first.remind_at, "Reminder not set for the correct time after suppression")
+
+    #
+    # Clear the alert.
+    #
+    a.clear!
+    assert(1, notification_buffer.length)
+    ac = a.changes.all(:remind_at.not => nil)
+    assert_equal(0,ac.length, "No reminders should be in place after a clear")
+
+
+    #####
+    #
+    # This covers a planned maintenance scenario, when an alert is suppressed
+    # whilst cleared.  Flapping should not cause any notifications.
+    #
+
+    #
+    # No notifications should be sent for 15 minutes
+    #
+    a.suppress_until = Time.now + 15.minutes
+    a.clear!
+
+    Timecop.freeze(Time.now + 3.minutes)
+
+    2.times do
+      5.times do
+        #
+        # Raise.  This should not cause any notifications for 10 minutes.
+        #
+        a.raise!
+        assert(0,notification_buffer.length)
+        Timecop.freeze(Time.now + 1.minutes)
+        a.poll
+        AlertChanged.all.each{|ac| ac.poll}
+      end
+
+      #
+      # This should not raise any alerts, and all reminders should be cleared.
+      #
+      a.clear!
+      assert(0,notification_buffer.length)
+
+      Timecop.freeze(Time.now + 1.minutes)
+      a.poll
+      AlertChanged.all.each{|ac| ac.poll}
+
+      ac = a.changes.all(:remind_at.not => nil)
+      assert_equal(0, ac.length, "Reminder in place at when the raised alert was cleared.")
+    end
+
+    # Now re-raise.
+    a.raise!
+    assert(1,notification_buffer.length)
+
+    ac = a.changes.all(:remind_at.not => nil)
+    assert_equal(1,ac.length, "Only one reminder should be in place at end of suppression period")
+    assert_equal(Time.now+15.minutes, ac.first.remind_at, "Reminder not set for the correct time after suppression")
   end
 
 end
