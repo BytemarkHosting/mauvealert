@@ -136,23 +136,6 @@ module Mauve
       @logger ||= self.class.logger
     end
 
-    # @deprecated Not sure if this is used any more.
-    #
-    # @param [Integer] Seconds 
-    #
-    # @return [String]
-    def time_relative(secs)
-      secs = secs.to_i.abs
-      case secs
-        when 0..59 then "just now"
-        when 60..3599 then "#{secs/60}m ago"
-        when 3600..86399 then "#{secs/3600}h ago"
-        else
-          days = secs/86400
-          days == 1 ? "yesterday" : "#{secs/86400} days ago"
-      end
-    end
-
     #
     # @return [Mauve::AlertGroup] The first matching AlertGroup for this alert
     def alert_group
