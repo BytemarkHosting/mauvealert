@@ -7,7 +7,6 @@ require 'mauve/server'
 require 'mauve/configuration'
 require 'mauve/configuration_builder'
 require 'mauve/configuration_builders'
-require 'pp' 
 
 class TcMauveAlertGroup < Mauve::UnitTest 
 
@@ -277,6 +276,8 @@ EOF
     ac = a.changes.all(:remind_at.not => nil)
     assert_equal(1,ac.length, "Only one reminder should be in place at end of suppression period")
     assert_equal(Time.now+15.minutes, ac.first.remind_at, "Reminder not set for the correct time after suppression")
+
+
   end
 
 end

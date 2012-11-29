@@ -320,57 +320,69 @@ module Mauve
     #
     def save
       #
-      # Fetch the original update type.
+      # Notification should happen if
       #
-      update_type_key = self.original_attributes.keys.find{|k| k.name == :update_type}
+      #  * the alert has just been raised
+      #  * the alert is raised and its acknowledged status has changed
+      #  * the alert has just been cleared, and wasn't suppressed before the clear.
+      # 
+      #
+      should_notify = (
+        (self.raised?  and self.was_cleared?) or
+        (self.raised?  and self.was_acknowledged? != self.acknowledged?) or 
+        (self.cleared? and self.was_raised? and !self.was_suppressed?)
+      )
 
       #
-      # Work out what state the alert was in before the update.
+      # Set the update type.
       #
-      if self.dirty? and !update_type_key.nil?
-        original_update_type = self.original_attributes[update_type_key]
-
-        #
-        # If the original update type is nil, then it was cleared.
-        #
-        original_update_type ||= "cleared"
-
+      ut = if self.cleared? and !self.was_cleared?
+        "cleared" 
+      elsif self.raised? and !self.was_raised?
+        "raised"
+      elsif self.raised? and self.acknowledged? and !self.was_acknowledged?
+        "acknowledged"
+      elsif self.raised? and !self.acknowledged? and self.was_acknowledged?
+        "unacknowledged"
       else
-        #
-        # If there was no update, the original type is the same as the current type.
-        #
-        original_update_type = self.update_type
-
+        nil
       end
 
-      is_a_change = false
-      should_notify = ((self.update_type != original_update_type) or (is_a_change and self.raised?))
+      history = nil
+
+      if ut.nil?
+
+        self.update_type = "cleared" if self.new?
+
+      else
+        self.update_type = ut
+
+        history = History.new(:alerts => [self], :type => "update")
+        history.raise_on_save_failure = true
+
+        if update_type == "acknowledged"
+          history.event = "ACKNOWLEDGED until #{self.will_unacknowledge_at}"
+          history.user  = self.acknowledged_by
+        else
+          history.event = update_type.upcase
+        end
+
+        #
+        # Add a note saying that notifications have been suppressed
+        #
+        if !should_notify 
+          history.event += " notifications suppressed" 
+        elsif self.suppressed?
+          history.event += " notifications suppressed until #{self.suppress_until}"
+        end
+      end
+
+      self.raise_on_save_failure = true
 
       begin
         self.transaction do
-          self.raise_on_save_failure = true
           super
-
-          #
-          # We notify if the update type has changed, or if the update type is
-          # "raised", and the above is_a_change condition is true
-          #
-          if should_notify
-            h = History.new(:alerts => [self], :type => "update")
-            h.raise_on_save_failure = true
-
-            if self.update_type == "acknowledged"
-              h.event = "ACKNOWLEDGED until #{self.will_unacknowledge_at}"
-              h.user  = self.acknowledged_by
-
-            else
-              h.event = (self.update_type || "UNKNOWN").upcase
-
-            end
-
-            h.save
-          end
-
+          history.save if history.is_a?(History)
         end # end of transaction -- if the save has failed, the notify won't get executed.
 
         if should_notify
@@ -409,7 +421,6 @@ module Mauve
       self.acknowledged_by = person.username
       self.acknowledged_at = Time.now
       self.will_unacknowledge_at = ack_until
-      self.update_type = "acknowledged"
 
       self.save
     end
@@ -421,7 +432,6 @@ module Mauve
       self.acknowledged_by = nil
       self.acknowledged_at = nil
       self.will_unacknowledge_at = nil
-      self.update_type = (raised? ? "raised" : "cleared")
 
       self.save
     end
@@ -459,7 +469,6 @@ module Mauve
         self.will_raise_at = nil
         self.cleared_at = nil
         # Don't clear will_clear_at
-        self.update_type = "raised" if self.update_type.nil? or !self.acknowledged?
         self.suppress_until = nil unless self.suppressed? or self.was_raised?
       end
 
@@ -491,7 +500,6 @@ module Mauve
         # Don't clear will_raise_at
         self.cleared_at = at if self.cleared_at.nil?
         self.will_clear_at = nil
-        self.update_type = "cleared"
         self.suppress_until = nil unless self.suppressed? or self.was_cleared?
       end
 
@@ -606,6 +614,20 @@ module Mauve
       self.suppress_until.is_a?(Time) and self.suppress_until > Time.now
     end
 
+    # Was the alert suppressed before the current changes?
+    #
+    # @return [Boolean]
+    def was_suppressed?
+      was_suppressed_until = if original_attributes.has_key?(Alert.properties[:suppress_until])
+        original_attributes[Alert.properties[:suppress_until]]
+      else
+        self.suppress_until
+      end
+
+      was_suppressed_until.is_a?(Time) and was_suppressed_until > Time.now
+    end
+
+
     # Work out an array of extra people to notify.
     #
     # @return [Array] array of persons
@@ -613,10 +635,9 @@ module Mauve
       last_raised_at = self.raised_at
 
       if last_raised_at.nil?
-        last_raise = self.histories(:event => "RAISED", :limit => 1, :order => :created_at.desc).first
+        last_raise = self.histories(:event.like => "RAISED%", :type => "update", :limit => 1, :order => :created_at.desc).first
         last_raised_at = last_raise.created_at unless last_raise.nil?
       end
-
 
       return [] if last_raised_at.nil?
 
