@@ -159,7 +159,7 @@ module Mauve
       # Bail out if notifications for this alert have been suppressed.
       #
       if alert.suppressed?
-        logger.info("Notifications suppressed until #{alert.suppress_until} for #{alert.inspect}")
+        logger.info("Notifications suppressed until #{alert.suppress_until} for #{alert}")
 
         this_reminder = AlertChanged.first_or_new(
           :alert_id => alert.id,

@@ -354,9 +354,9 @@ module Mauve
         # Add a note saying that notifications have been suppressed
         #
         if !should_notify 
-          history.event += " notifications suppressed" 
+          history.event += " (notifications not required)"
         elsif self.suppressed?
-          history.event += " notifications suppressed until #{self.suppress_until}"
+          history.event += " (notifications suppressed until #{self.suppress_until.to_s_human})"
         end
       end
 
