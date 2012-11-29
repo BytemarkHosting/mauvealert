@@ -1,3 +1,13 @@
+mauvealert (3.13.2-1) stable; urgency=low
+
+  * Raised time now set to unacknowledgment time when alerts become
+    unacknowledged
+  * Tidied up history entries
+  * Changed UNACKNOWLEDGED to RE-RAISED when alerts are no longer ack'd
+  * Added suppression information to views
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 29 Nov 2012 21:05:51 +0000
+
 mauvealert (3.13.1-1) stable; urgency=low
 
   * Rewrote decision code for notifying on save for an alert.
