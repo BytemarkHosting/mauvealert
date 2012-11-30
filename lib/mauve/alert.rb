@@ -455,7 +455,7 @@ module Mauve
         self.acknowledged_by = nil
         self.acknowledged_at = nil
         self.will_unacknowledge_at = nil
-        self.raised_at = at if self.raised_at.nil?
+        self.raised_at = at if self.raised_at.nil? or self.was_acknowledged?
         self.will_raise_at = nil
         self.cleared_at = nil
         # Don't clear will_clear_at
