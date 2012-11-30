@@ -23,16 +23,15 @@ tr {
   border-bottom: none;
 }
 
-tr.urgent {
+tr.urgent.raised {
   background-color: #f88;
 }
 
-tr.normal {
-  /* Mauve, as defined by wikipedia. */
+tr.normal.raised {
   background-color: #ff8;
 }
 
-tr.low {
+tr.low.raised {
   background-color: #8f8;
 }
 

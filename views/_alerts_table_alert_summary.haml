@@ -1,5 +1,5 @@
 - alert = alerts_table_alert_summary if defined? alerts_table_alert_summary
-- row_class = (row_class || []) + [ cycle(nil, "hilight"), alert.raised? && "triggered", alert.acknowledged? && "acknowledged", alert.level]
+- row_class = (row_class || []) + [ cycle(nil, "hilight"), alert.raised? && "raised", alert.acknowledged? && "acknowledged", alert.level]
 %tr{ :class => row_class, :id => ["tr", "summary", alert.id] }
   %td
     %input{ :type => "checkbox", :id => "alerts[#{alert.id}]", :name => "alerts[#{alert.id}]", :class => 'alert' }
