@@ -116,39 +116,6 @@ module Mauve
 
     public
 
-    # This adds an alert or an array of alerts to the cache of alerts
-    # associated with this model.
-    #
-    # Blasted datamapper not eager-loading my model.
-    #
-    # @param [Array or Alert] a Array of Alerts or a single Alert
-    # @raise ArgumentError If +a+ is not an Array or an Alert
-    def add_to_cached_alerts(a)
-      @cached_alerts ||= []
-      if a.is_a?(Array) and a.all?{|m| m.is_a?(Alert)}
-        @cached_alerts += a
-      elsif a.is_a?(Alert)
-        @cached_alerts << a
-      else
-        raise ArgumentError, "#{a.inspect} not an Alert"
-      end
-    end
-
-    # Find all the alerts for this History.  This caches the alerts found.
-    # Call #reload to get rid of the cache.
-    #
-    # @return [Array] Alerts
-    def alerts
-      @cached_alerts ||= super
-    end
-
-    # Reload the object, and clear the cache.
-    #
-    def reload
-      @cached_alerts = nil
-      super
-    end
-
     # @return Log4r::Logger
     def logger
       Log4r::Logger.new self.class.to_s

@@ -251,6 +251,7 @@ EOF
         end
       end
 
+      succeeded = []
       failed = []
 
       alerts.each do |k,v|
@@ -278,7 +279,9 @@ EOF
               a.suppress_until = nil
               a.save
           end
-          unless result
+          if result
+            succeeded << a
+          else
             failed << a
           end
         rescue StandardError => ex
@@ -478,7 +481,7 @@ EOF
       @alert  = Alert.get!(params['id'])
       @title += " Events: Alert #{@alert.alert_id} from #{@alert.source}"
       @alert_counts = alert_counts(false)
-      @events = find_events(query)
+      @events =  AlertHistory.all(formulate_events_query(query)).history
 
       haml :events_list
     end
@@ -497,44 +500,42 @@ EOF
       # Start must be a Monday
       #
       if params[:start] =~ /\A(\d{4,4})-(\d{1,2})/
-        @month = Time.local($1.to_i,$2.to_i,1,0,0,0,0)
+        @month = Date.new($1.to_i, $2.to_i, 1)
       else
-        t = Time.now
-        @month = Time.local(t.year, t.month, 1, 0, 0, 0, 0)
+        t = Date.today
+        @month = Date.new(t.year, t.month, 1)
       end
 
       start  = @month
-      finish = start + 31.days
+      finish = (start >> 1) 
 
-      start  -= (start.wday == 0 ? 6 : (start.wday - 1)).day
+      start  -= (start.wday == 0 ? 6 : (start.wday - 1))
       finish -= finish.day if finish.month == @month.month+1
-      finish += (finish.wday == 0 ? 0 : (7 - finish.wday)).days
+      finish += (finish.wday == 0 ? 0 : (7 - finish.wday))
 
-      weeks = ((finish - start)/1.week).ceil
- 
-      query = {:history => {}}
-      query[:history][:created_at.gte] = start
-      query[:history][:created_at.lt] = finish
+      weeks = ((finish - start)/7).ceil
 
       #
       # Now sort events into a per-week per-weekday array.  Have to use the
       # proc syntax here to prevent an array of pointers being created..?!
       #
-      @events = find_events(query)
       @events_by_week = Array.new(weeks){ Array.new(7) { Array.new } }
+      today = start
+      while today <= finish
+        tomorrow = (today + 1)
 
-      @events.each do |event|
-        event_week = ((event.created_at - start)/(7.days)).floor
-        event_day  = (event.created_at.wday == 0 ? 6 : (event.created_at.wday - 1))
+        query = {:history => {}}
+        query[:history][:created_at.gte] = Time.local(today.year, today.month, today.day, 0, 0, 0)
+        query[:history][:created_at.lt]  = Time.local(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0)
+
+        events =  AlertHistory.all(formulate_events_query(query)).history
+
+        event_week = ((today - start)/7).floor
+        event_day  = (today.wday == 0 ? 6 : (today.wday - 1))
+
         @events_by_week[event_week] ||= Array.new(7) { Array.new }
-        @events_by_week[event_week][event_day] << event
-      end
-
-      #
-      # Make sure we have all our weeks filled out.
-      #
-      @events_by_week.each_with_index do |e, i|
-        @events_by_week[i] = Array.new(7) { Array.new } if e.nil?
+        @events_by_week[event_week][event_day] = events
+        today = tomorrow
       end
 
       @today = start
@@ -581,7 +582,7 @@ EOF
       query[:history][:created_at.gte] = @start
       query[:history][:created_at.lt]  = finish
       
-      @events = find_events(query)
+      @events =  AlertHistory.all(formulate_events_query(query)).history
       @alert_counts = alert_counts(false)
 
       haml :events_list
@@ -603,7 +604,6 @@ EOF
         end
 
         @alerts = alerts.sort.uniq
-        @title += " #{@alerts.count} records found." 
       end
 
       @permitted_actions = []
@@ -695,7 +695,7 @@ EOF
       end
 
 
-      def find_events(query = Hash.new)
+      def formulate_events_query(query = Hash.new)
 
         if params["history"]
           query[:history] ||= Hash.new
@@ -704,7 +704,7 @@ EOF
             query[:history][:type] = params["history"]["type"]
           end
         end
-
+ 
         if !query[:history] or !query[:history][:type]
           query[:history] ||= Hash.new
           query[:history][:type] = "update"
@@ -729,29 +729,8 @@ EOF
           end
         end
 
-        #
-        #
-        # THIS IS NOT EAGER LOADING.  But I've no idea how the best way would be to do it.
-        #
-        alert_histories = AlertHistory.all(query)
-  
-        histories = alert_histories.history.to_a
-        alerts    = alert_histories.alert.to_a
-
-
-        alert_histories.each do |ah|
-          history = histories.find{|h| ah.history_id == h.id}
-          alert   = alerts.find{|a| ah.alert_id == a.id}
-          next if alert.nil?
-          history.add_to_cached_alerts( alert )
-        end
-
-        #
-        # Present the histories in time-ascending order (which is not the default..)
-        #
-        histories.reverse
+        query
       end
-
     end
    
     error DataMapper::ObjectNotFoundError do
