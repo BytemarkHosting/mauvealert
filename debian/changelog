@@ -1,10 +1,11 @@
 mauvealert (3.14.2-1) stable; urgency=low
 
+  * Added search views to package 
   * Alert actions are now controlled by just one form, and two actions.
   * Alerts in search results are now de-duped.
   * Serch results are only coloured if they're raised.
 
- -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 30 Nov 2012 14:52:34 +0000
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 30 Nov 2012 14:55:16 +0000
 
 mauvealert (3.14.1-1) stable; urgency=low
 
