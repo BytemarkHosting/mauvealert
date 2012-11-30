@@ -1,3 +1,10 @@
+mauvealert (3.14.1-1) stable; urgency=low
+
+  * Web frontend now has a search box.
+  * Alert counts now reinstated.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 30 Nov 2012 12:35:44 +0000
+
 mauvealert (3.13.2-1) stable; urgency=low
 
   * Raised time now set to unacknowledgment time when alerts become

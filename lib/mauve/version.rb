@@ -5,6 +5,6 @@ module Mauve
 
   #
   # Current version
-  VERSION="3.13.2"
+  VERSION="3.14.1"
 
 end
