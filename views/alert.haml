@@ -1,4 +1,4 @@
-%h1 Alert detail
+%h2 Alert detail
 %table
   %tr
     %th.summary{:title => "Text for humans describing the nature of the alert, first 100 characters are only ones guaranteed to make it to pagers, twitter, SMS etc."} Summary
@@ -60,19 +60,6 @@
           %a{:href => "/events/alert/#{@alert.id}"}
             View full event history
 %h2 Actions
-- if !@alert.acknowledged?
-  %form{:method => :post, :action => "/alert/#{@alert.id}/acknowledge"}
-    =partial("acknowledge_input")
-- else
-  %form.hidden{:method => :post, :action => "/alert/#{@alert.id}/unacknowledge"}
-    %input{:type => :submit, :value => "Unacknowledge this alert"}                
-%a#hide{:onclick => "$('form.hidden').toggle(); return false", :href=>"#"} Show other actions
-- if @alert.cleared?
-  %form.hidden{:method => :post, :action => "/alert/#{@alert.id}/raise"}
-    %input{:type => :submit, :value => "Raise this alert"}
-- if @alert.raised?
-  %form.hidden{:method => :post, :action => "/alert/#{@alert.id}/clear"}
-    %input{:type => :submit, :value => "Clear this alert"}                
-%form.hidden{:method => :post, :action => "/alert/#{@alert.id}/destroy"}
-  %input{:type => :submit, :value => "Destroy this alert"}                
+%form{:method => :post, :action => "/alert/#{@alert.id}"}
+  =partial("alert_actions")
 

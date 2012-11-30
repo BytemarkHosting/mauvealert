@@ -1,7 +1,7 @@
-%form#alerts{:method => :post, :action => '/alerts/acknowledge'}
+%form#alerts{:method => :post, :action => '/alerts'}
   = partial('alerts_table')
   %h2 Actions
-  %p= partial('acknowledge_input')
+  %p= partial('alert_actions')
 :javascript
   // Do the magic updates..
   setTimeout("updateAlertsTable('#{@alert_type}','#{@group_by}');", 120000)

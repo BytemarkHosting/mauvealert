@@ -13,9 +13,9 @@
         =@min_length
         characters long.
   - else
-    %form#alerts{:method => :post, :action => '/alerts/acknowledge'}
+    %form#alerts{:method => :post, :action => '/alerts'}
       = partial('search_table')
       - unless @alerts.empty?
         %h2 Actions
-        %p= partial('acknowledge_input')
+        %p= partial('alert_actions')
 

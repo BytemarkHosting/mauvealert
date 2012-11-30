@@ -208,14 +208,30 @@ EOF
       @grouped_alerts = alerts_table(@alert_type, params[:group_by])
       @title += " #{@alert_type.capitalize}: "
 
+      @permitted_actions = []
+      @permitted_actions << "clear"
+
+      unless @alert_type == "acknowledged"
+        @permitted_actions << "acknowledge" 
+      else 
+        @permitted_actions << "unacknowledge"
+      end
+
+      #
+      # Always allow suppress and unsuppress
+      #
+      @permitted_actions << "suppress" 
+      @permitted_actions << "unsuppress"
+
       haml(:alerts)
     end
 
-    post '/alerts/acknowledge' do
+    post '/alerts' do
       #
       # TODO: error check inputs
       #
       # ack_until is in milliseconds!
+      function   = params[:function]    || "acknowledge"
       ack_until  = params[:ack_until]
       n_hours    = params[:n_hours]    || 2
       type_hours = params[:type_hours] || "daytime"
@@ -224,15 +240,17 @@ EOF
 
       n_hours = (n_hours.to_f > 188 ? 188 : n_hours.to_f)
       type_hours = "daytime" unless %w(daytime working wallclock).include?(type_hours)
+      function   = "acknowledge" unless %w(raise clear acknowledge unacknowledge unsuppress suppress).include?(function)
 
-      if ack_until.to_s.empty?
-        now = Time.now
-        ack_until = now.in_x_hours(n_hours, type_hours.to_s)
-      else
-        ack_until = Time.at(ack_until.to_i)
+      if %w(suppress acknowledge).include?(function)
+        if ack_until.to_s.empty?
+          now = Time.now
+          ack_until = now.in_x_hours(n_hours, type_hours.to_s)
+        else
+          ack_until = Time.at(ack_until.to_i)
+        end
       end
 
-      succeeded = []
       failed = []
 
       alerts.each do |k,v|
@@ -244,8 +262,25 @@ EOF
         end
 
         begin
-          a.acknowledge!(@person, ack_until)
-          succeeded << a
+          result = case function
+            when "raise"
+              a.raise!
+            when "clear"
+              a.clear!
+            when "acknowledge"
+              a.acknowledge!(@person, ack_until)
+            when "unacknowledge"
+              a.unacknowledge!
+            when "suppress"
+              a.suppress_until = ack_until
+              a.save
+            when "unsuppress"
+              a.suppress_until = nil
+              a.save
+          end
+          unless result
+            failed << a
+          end
         rescue StandardError => ex
           logger.error "Caught #{ex.to_s} when trying to save #{a.inspect}"
           logger.debug ex.backtrace.join("\n")
@@ -261,10 +296,9 @@ EOF
         logger.debug h.errors unless h.save
       end
 
-      flash["error"] = "Failed to acknowledge #{failed.length} alerts." if failed.length > 0
-      flash["notice"] = "Successfully acknowledged #{succeeded.length} alerts" if succeeded.length > 0
+      flash["error"] = "Failed to #{function} #{failed.length} alerts." if failed.length > 0
 
-      redirect "/alerts/raised"
+      redirect back
     end
     
     ######################################################
@@ -356,76 +390,85 @@ EOF
       @alert = Alert.get!(params['id'])
       @alert_counts = alert_counts(false)
 
+      @permitted_actions = []
+      unless @alert.raised?
+        @permitted_actions << "raise"
+      else
+        @permitted_actions << "clear"
+
+        unless @alert.acknowledged?
+          @permitted_actions << "acknowledge" 
+        else 
+          @permitted_actions << "unacknowledge"
+        end
+      end
+
+      unless @alert.suppressed?
+        @permitted_actions << "suppress" 
+      else
+        @permitted_actions << "unsuppress"
+      end
+      
+
       haml :alert
     end
     
-    post '/alert/:id/acknowledge' do
+    post '/alert/:id' do
       alert = Alert.get(params[:id])
       
+      function   = params[:function]
       ack_until  = params[:ack_until].to_i
       n_hours    = params[:n_hours].to_f
       type_hours = params[:type_hours].to_s
       note       = params[:note]       || nil
       
       type_hours = "daytime" unless %w(daytime working wallclock).include?(type_hours)
+      function   = "acknowledge" unless %w(raise clear acknowledge unacknowledge suppress unsuppress).include?(function)
 
-      if ack_until == 0
-        now = Time.now
-        ack_until = now.in_x_hours(n_hours, type_hours)
+      if %w(suppress acknowledge).include?(function)
+        if ack_until == 0
+          now = Time.now
+          ack_until = now.in_x_hours(n_hours, type_hours)
+        else
+          ack_until = Time.at(ack_until)
+        end
+      end
+
+      result = case function
+        when "raise"
+          alert.raise!
+        when "clear"
+          alert.clear!
+        when "acknowledge"
+          alert.acknowledge!(@person, ack_until)
+        when "unacknowledge"
+          alert.unacknowledge!
+        when "suppress"
+          alert.suppress_until = ack_until
+          alert.save
+        when "unsuppress"
+          alert.suppress_until = nil
+          alert.save
+      end
+
+       if result
+        #
+        # Add the note
+        #
+        unless note.to_s.empty?
+          h = History.new(:alerts => [alert], :type => "note", :event => note.to_s, :user => session['username'])
+          logger.debug h.errors unless h.save
+        end
+      
       else
-        ack_until = Time.at(ack_until)
+        flash['warning'] = "Failed to #{function} alert <em>#{alert.alert_id}</em> from source #{alert.source}."
       end
 
-      alert.acknowledge!(@person, ack_until)
-      
-      #
-      # Add the note
-      #
-      unless note.to_s.empty?
-        h = History.new(:alerts => [alert], :type => "note", :event => note.to_s, :user => session['username'])
-        logger.debug h.errors unless h.save
-      end
-      
-      flash['notice'] = "Successfully acknowledged alert <em>#{alert.alert_id}</em> from source #{alert.source} until #{alert.will_unacknowledge_at.to_s_human}."
-      redirect "/alert/#{alert.id}"
-    end
-
-    post '/alert/:id/unacknowledge' do
-      alert = Alert.get!(params[:id])
-      alert.unacknowledge!
-      flash['notice'] = "Successfully raised alert #{alert.alert_id} from source #{alert.source}."
-      redirect "/alert/#{alert.id}"
-    end
-
-    post '/alert/:id/raise' do
-      alert = Alert.get!(params[:id])
-      alert.raise!
-      flash['notice'] = "Successfully raised alert #{alert.alert_id} from source #{alert.source}."
-      redirect "/alert/#{alert.id}"
-    end
-    
-    post '/alert/:id/clear' do
-      alert = Alert.get(params[:id])
-      alert.clear!
-      flash['notice'] = "Successfully cleared alert #{alert.alert_id} from source #{alert.source}."
-      redirect "/alert/#{alert.id}"
-    end
-    
-    post '/alert/:id/destroy' do
-      alert = Alert.get(params[:id])
-      alert.destroy
-      flash['notice'] = "Successfully destroyed alert #{alert.alert_id} from source #{alert.source}."
-      redirect "/"
+      redirect back
     end
 
     ########################################################################
     
-    get '/preferences' do
-      haml :preferences
-    end
-    
-    ########################################################################
-   
     get '/events/alert/:id' do
       query = {:alert => {}, :history => {}}
       query[:alert][:id] = params[:id]
@@ -433,7 +476,7 @@ EOF
       query[:history][:type] = ["update", "notification"]
 
       @alert  = Alert.get!(params['id'])
-      @title += " Events: Alert #{alert.alert_id} from #{alert.source}"
+      @title += " Events: Alert #{@alert.alert_id} from #{@alert.source}"
       @alert_counts = alert_counts(false)
       @events = find_events(query)
 
@@ -554,20 +597,25 @@ EOF
       @q = @q.to_s.strip unless @q.nil?
 
       unless @q.nil? or @q.length < @min_length
+        alerts = []
         %w(source subject alert_id summary).each do |field|
-           @alerts += Alert.all(field.to_sym.send("like") =>  "%#{@q}%")
+           alerts += Alert.all(field.to_sym.send("like") =>  "%#{@q}%")
         end
-        @alerts = @alerts.sort
+
+        @alerts = alerts.sort.uniq
         @title += " #{@alerts.count} records found." 
       end
 
+      @permitted_actions = []
+      @permitted_actions << "clear" if @alerts.any?{|a| a.raised?}
+      @permitted_actions << "raise" if @alerts.any?{|a| a.cleared?}
+      @permitted_actions << "acknowledge" if @alerts.any?{|a| !a.acknowledged?}
+      @permitted_actions << "unacknowledge" if @alerts.any?{|a| a.acknowledged?}
+      @permitted_actions << "unsuppress" if @alerts.any?{|a| a.suppressed? }
+      @permitted_actions << "suppress" if @alerts.any?{|a| !a.suppressed? }
+
       haml :search
     end
-
-    post '/suppress' do
-      haml :suppress
-    end
-
 
     ########################################################################
     
