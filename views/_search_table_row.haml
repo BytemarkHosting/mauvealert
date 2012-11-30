@@ -14,5 +14,28 @@
         :onclick => "fetchDetail('#{alert.id}'); return false;"} 
       Details &darr;
   %td
-    = (alert.update_type || "cleared").capitalize
-    = ((alert.raised? && alert.raised_at) || (alert.acknowledged? && alert.acknowledged_at) || alert.cleared_at || alert.updated_at || Time.now).to_s_relative
+    - case alert.update_type
+      - when "cleared"
+        - if alert.will_raise_at
+          Will raise at
+          = alert.will_raise_at.to_s_human
+        - else
+          Cleared at
+          = alert.cleared_at.to_s_human
+      - when /(re-)?raised/
+        - if alert.will_clear_at
+          Will clear at
+          = alert.will_clear_at.to_s_human
+        - else
+          = alert.update_type.capitalize
+          at
+          = alert.raised_at.to_s_human
+      - when /acknowledged/
+        Ack'd at
+        = alert.acknowledged_at.to_s_human
+        until
+        = alert.will_unacknowledge_at.to_s_human
+      - else
+        = alert.update_type.capitalize
+        at
+        = alert.updated_at
