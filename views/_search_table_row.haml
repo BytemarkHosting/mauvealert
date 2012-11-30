@@ -1,0 +1,18 @@
+- alert = search_table_row if defined? search_table_row
+- row_class = (row_class || []) + [ cycle(nil, "hilight"), alert.raised? && "triggered", alert.acknowledged? && "acknowledged", alert.level]
+%tr{ :class => row_class, :id => ["tr", "summary", alert.id] }
+  %td
+    %input{ :type => "checkbox", :id => "alerts[#{alert.id}]", :name => "alerts[#{alert.id}]", :class => 'alert' }
+  %td
+    %label{ :for => "alerts[#{alert.id}]" }
+      %strong= alert.subject
+      = alert.summary
+    - if alert.suppressed?
+      (suppressed)
+    %a{ :id => ["a","detail", alert.id], | 
+        :href => "/alert/#{alert.id}",   |
+        :onclick => "fetchDetail('#{alert.id}'); return false;"} 
+      Details &darr;
+  %td
+    = (alert.update_type || "cleared").capitalize
+    = ((alert.raised? && alert.raised_at) || (alert.acknowledged? && alert.acknowledged_at) || alert.cleared_at || alert.updated_at || Time.now).to_s_relative

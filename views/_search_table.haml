@@ -1,0 +1,21 @@
+%table#search_table
+  %tr
+    %th#selector
+      %input#toggle_all{ :type => "checkbox" }
+      :javascript
+        // This just toggles all the checkboxes.
+        $('#toggle_all').change( function() {
+          $('input.alert').each( function(index) {
+            this.checked = !this.checked;
+          });
+        });
+    %th#summary Summary
+    %th#time    Last update
+  - if @alerts.length > 0
+    = partial("search_table_row", :collection => @alerts)
+  - else
+    %tr{:class => %w(notice)}
+      %td
+      %td{:style => "text-align: center;"}
+        = "No alerts found!"
+      %td

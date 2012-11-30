@@ -1,0 +1,21 @@
+%h2 Search
+%form{:method => "GET", :action => '/search'}
+  %p
+    %label{:for => "q"}
+      Search for
+    %input{:type => "text", :name => "q", :value => "#{@q}"}
+    %input{:type => "submit", :name => "submit", :value => "Search"}
+- unless @q.nil?
+  - if @q.length < @min_length and @alerts.empty?
+    %div{:class => ["error"]}
+      %p
+        Search terms must be at least
+        =@min_length
+        characters long.
+  - else
+    %form#alerts{:method => :post, :action => '/alerts/acknowledge'}
+      = partial('search_table')
+      - unless @alerts.empty?
+        %h2 Actions
+        %p= partial('acknowledge_input')
+
