@@ -557,7 +557,7 @@ EOF
         %w(source subject alert_id summary).each do |field|
            @alerts += Alert.all(field.to_sym.send("like") =>  "%#{@q}%")
         end
-
+        @alerts = @alerts.sort
         @title += " #{@alerts.count} records found." 
       end
 
