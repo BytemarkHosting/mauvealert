@@ -88,6 +88,11 @@ EOF
       @title = "Mauve:"
       @person = nil
       #
+      # Set our alert counts hash up, needed by the navbar.
+      #
+      @alert_counts = Hash.new{|h,k| h[k] = 0}
+
+      #
       # Make sure we're authenticated.
       #
       if session.has_key?('username') and Configuration.current.people.has_key?(session['username'].to_s)
@@ -110,9 +115,7 @@ EOF
         # Set up some defaults.
         #
         @group_by = "subject"
-        @alerts_ackd = []
-        @alerts_cleared = []
-        @alerts_raised = []
+
       else
         # Uh-oh.. Intruder alert!
         #
@@ -198,10 +201,12 @@ EOF
     end
 
     get '/alerts/:alert_type/:group_by' do 
-
       return haml(:not_implemented) unless %w(raised acknowledged).include?(params[:alert_type])
 
-      alerts_table(params)
+      @alert_type     = params[:alert_type] == "acknowledged" ? "acknowledged" : "raised"
+      @alert_counts   = alert_counts(true)
+      @grouped_alerts = alerts_table(@alert_type, params[:group_by])
+      @title += " #{@alert_type.capitalize}: "
 
       haml(:alerts)
     end
@@ -283,7 +288,6 @@ EOF
       else      
         type_hours = "daytime" unless %w(daytime working wallclock).include?(type_hours)
         ack_until = now.in_x_hours(n_hours, type_hours)
-        pp ack_until
         ack_until = max_ack if ack_until > max_ack
       end
       
@@ -305,16 +309,16 @@ EOF
     get '/ajax/alert_counts' do
       content_type :json
       
-      counts = Hash.new{|h,k| h[k] = 0}
+      alert_counts = alert_counts(true)
 
-      Alert.all_unacknowledged.each{|a| counts[a.level] += 1}
-
-      (AlertGroup::LEVELS.reverse.collect{|l| counts[l]}+
-        [Alert.all_acknowledged.length, 0]).to_json
+      [:urgent, :normal, :low, :acknowledged, :cleared].collect{|k| alert_counts[k]}.to_json
     end
 
     get '/ajax/alerts_table/:alert_type/:group_by' do
-      alerts_table(params)
+      return haml(:not_implemented, :layout => false) unless %w(raised acknowledged).include?(params[:alert_type])
+
+      @alert_type     = params[:alert_type] == "acknowledged" ? "acknowledged" : "raised"
+      @grouped_alerts = alerts_table(@alert_type, params[:group_by])
       haml :_alerts_table, :layout => false
     end
 
@@ -350,6 +354,7 @@ EOF
 
     get '/alert/:id' do
       @alert = Alert.get!(params['id'])
+      @alert_counts = alert_counts(false)
 
       haml :alert
     end
@@ -428,6 +433,8 @@ EOF
       query[:history][:type] = ["update", "notification"]
 
       @alert  = Alert.get!(params['id'])
+      @title += " Events: Alert #{alert.alert_id} from #{alert.source}"
+      @alert_counts = alert_counts(false)
       @events = find_events(query)
 
       haml :events_list
@@ -488,6 +495,9 @@ EOF
       end
 
       @today = start
+      @title += " Events" 
+      @alert_counts = alert_counts(false)
+
       haml :events_calendar
     end
    
@@ -529,25 +539,27 @@ EOF
       query[:history][:created_at.lt]  = finish
       
       @events = find_events(query)
+      @alert_counts = alert_counts(false)
 
       haml :events_list
     end
 
     get '/search' do
       @alerts = []
-      haml :search
-    end
- 
-    get '/search/results' do
-      query = {}
-      allowed = %w(source subject alert_id summary)
+      @alert_counts = alert_counts(false)
+      @q = params[:q] || nil
+      @title += " Search:"
+      @min_length = 3
 
-      params.each do |k,v|
-        next if v.to_s.empty?
-        query[k.to_sym.send("like")] = v.to_s if allowed.include?(k)
+      @q = @q.to_s.strip unless @q.nil?
+
+      unless @q.nil? or @q.length < @min_length
+        %w(source subject alert_id summary).each do |field|
+           @alerts += Alert.all(field.to_sym.send("like") =>  "%#{@q}%")
+        end
+
+        @title += " #{@alerts.count} records found." 
       end
-
-      @alerts = Alert.all(query)
 
       haml :search
     end
@@ -578,30 +590,20 @@ EOF
         end
       end
 
-      def alerts_table(params)
-        if %w(raised cleared acknowledged).include?(params[:alert_type])
-          @alert_type = params[:alert_type]
-        else
-          @alert_type = "raised"
+      def alerts_table(alert_type, group_by)
+        unless %w(subject source summary id alert_id level).include?(group_by)
+          group_by = "subject"
         end
 
-        if %w(subject source summary id alert_id level).include?(params[:group_by])
-          @group_by = params[:group_by]
-        else
-          @group_by = "subject"
-        end
-
-        @title += " Alerts "
-
-        case @alert_type
+        case alert_type
           when "raised"
-            @alerts = Alert.all_unacknowledged
-            @grouped_alerts = group_by(@alerts, @group_by)
+            alerts = Alert.all_unacknowledged
+            group_by(alerts, group_by)
           when "acknowledged"
-            @alerts = Alert.all_acknowledged
-            @grouped_alerts = group_by(@alerts, @group_by)
+            alerts = Alert.all_acknowledged
+            group_by(alerts, group_by)
           else
-            haml(:not_implemented)
+            []
         end
       end  
  
@@ -610,6 +612,40 @@ EOF
         @cycle = (@cycle + 1) % list.length
         list[@cycle]
       end
+
+      #
+      # Returns a hash which contains the counts of:
+      #
+      #   * all raised alerts (:raised)
+      #   * all cleared alerts (:cleared)
+      #   * all raised and acknowledged alerts (:acknowledged)
+      #   * all raised and unacknowledged alerts (:unacknowledged)
+      #
+      # If by_level is true, then alerts are counted up by level too.
+      #
+      #   * all raised and unacknowledged alerts by level (:urgent, :normal, :low)
+      #
+      #
+      def alert_counts(by_level = false)
+        counts = Hash.new
+        counts[:raised] = Alert.all_raised.count
+        counts[:cleared] = Alert.all.count - counts[:raised]
+        counts[:acknowledged] = Alert.all_acknowledged.count
+        counts[:unacknowledged] = counts[:raised] - counts[:acknowledged]
+
+        if by_level
+          #
+          # Now we need to work out the levels
+          #
+          [:urgent, :normal, :low].each{|k| counts[k] = 0}
+          Alert.all_unacknowledged.each do |a| 
+            counts[a.level] += 1
+          end
+        end
+
+        counts
+      end
+
 
       def find_events(query = Hash.new)
 

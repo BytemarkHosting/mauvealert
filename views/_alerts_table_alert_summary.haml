@@ -7,10 +7,10 @@
     %label{ :for => "alerts[#{alert.id}]" }
       %strong= alert.subject
       = alert.summary
+    - if alert.suppressed?
+      (suppressed)
     %a{ :id => ["a","detail", alert.id], | 
         :href => "/alert/#{alert.id}",   |
         :onclick => "fetchDetail('#{alert.id}'); return false;"} 
-    - if alert.suppressed?
-      (suppressed)
       Details &darr;
   %td= (alert.raised_at || alert.cleared_at || Time.now).to_s_relative

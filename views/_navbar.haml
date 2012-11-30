@@ -6,18 +6,15 @@
       %li{:class => [ @alert_type == "raised" && "nav_selected"]}
         %a{:href => '/alerts/raised/'+@group_by} 
           Raised (
-          %span#count_raised><= @alerts_raised.length
+          %span#count_raised><= @alert_counts[:unacknowledged]
           )
       %li{:class => [ @alert_type == "acknowledged" && "nav_selected"]}
         %a{:href => '/alerts/acknowledged/'+@group_by} 
           Ack'd (
-          %span#count_ackd><= @alerts_ackd.length
+          %span#count_ackd><= @alert_counts[:acknowledged]
           )
-      %li{:class => [ @alert_type == "cleared" && "nav_selected"]}
-        %a{:href => '/alerts/cleared/'+@group_by} 
-          Cleared (
-          %span#count_cleared><= @alerts_cleared.length
-          )
+      %li{:class => [ request.path_info =~ /^\/search/ && "nav_selected"]}
+        %a{:href => '/search'} Search
       %li{:class => [ request.path_info =~ /^\/events/ && "nav_selected"]}
         %a{:href => '/events/calendar'} Events
       %li

@@ -1,5 +1,10 @@
 %head
-  %title= @title
+  %title
+    = @title
+    - if[:urgent, :normal, :low].all?{|k| @alert_counts.has_key?(k) }
+      [
+      = [:urgent, :normal, :low].collect{|l| @alert_counts[l]}.join(" / ")
+      ]
   %meta{:name => "viewport", :content => "width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes"}/
   %link{:rel => "stylesheet", :href => "/stylesheets/bytemark.css"}/
   %link{:rel => "stylesheet", :href => "/stylesheets/mauve.css", :media => "all", :type => "text/css"}/
