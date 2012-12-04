@@ -206,7 +206,7 @@ EOF
     a.raise!
 
     5.times do
-      assert(0,notification_buffer.length)
+      assert_equal(0,notification_buffer.length)
       Timecop.freeze(Time.now + 1.minutes)
       a.poll
       AlertChanged.all.each{|ac| ac.poll}
@@ -215,7 +215,8 @@ EOF
     #
     # After 5 minutes a notification should be sent, and a reminder set for 15 minutes afterwards.
     #
-    assert(1,notification_buffer.length)
+    assert_equal(1,notification_buffer.length)
+    notification_buffer.pop
     ac = a.changes.all(:remind_at.not => nil)
     assert_equal(1,ac.length, "Only one reminder should be in place at end of suppression period")
     assert_equal(Time.now+15.minutes, ac.first.remind_at, "Reminder not set for the correct time after suppression")
@@ -224,7 +225,8 @@ EOF
     # Clear the alert.
     #
     a.clear!
-    assert(1, notification_buffer.length)
+    assert_equal(1, notification_buffer.length)
+    notification_buffer.pop
     ac = a.changes.all(:remind_at.not => nil)
     assert_equal(0,ac.length, "No reminders should be in place after a clear")
 
@@ -249,7 +251,7 @@ EOF
         # Raise.  This should not cause any notifications for 10 minutes.
         #
         a.raise!
-        assert(0,notification_buffer.length)
+        assert_equal(0,notification_buffer.length)
         Timecop.freeze(Time.now + 1.minutes)
         a.poll
         AlertChanged.all.each{|ac| ac.poll}
@@ -259,7 +261,7 @@ EOF
       # This should not raise any alerts, and all reminders should be cleared.
       #
       a.clear!
-      assert(0,notification_buffer.length)
+      assert_equal(0,notification_buffer.length)
 
       Timecop.freeze(Time.now + 1.minutes)
       a.poll
@@ -271,7 +273,7 @@ EOF
 
     # Now re-raise.
     a.raise!
-    assert(1,notification_buffer.length)
+    assert_equal(1,notification_buffer.length)
 
     ac = a.changes.all(:remind_at.not => nil)
     assert_equal(1,ac.length, "Only one reminder should be in place at end of suppression period")
@@ -280,8 +282,152 @@ EOF
 
   end
 
+  def test_alert_suppression_after_acknowledge
+    config=<<EOF
+server {
+  database "sqlite3::memory:"
+  use_notification_buffer false
+}
+
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
+person ("test1") {
+  email "test1@example.com"
+  all { email }
+}
+
+alert_group("default") {
+  includes{ true }
+  notify("test1")  {
+    during{ true }
+    every 15.minutes
+  }
+}
+EOF
+    Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
+    Server.instance.setup
+
+    a = Alert.new(
+      :alert_id  => "test",
+      :source    => "test",
+      :subject   => "test"
+    )
+
+    #
+    # Raise the alert. 
+    #
+    a.raise!
+    assert_equal(1,notification_buffer.length)
+    notification_buffer.pop
+
+    #
+    # Now acknowledge it
+    #
+    Timecop.freeze(Time.now + 5.minutes)
+    assert(a.acknowledge!(Configuration.current.people["test1"],Time.now + 5.minutes))
+    assert_equal(1,notification_buffer.length)
+    notification_buffer.pop
+
+    #
+    # And suppress it
+    #
+    Timecop.freeze(Time.now + 1.minutes)
+    a.suppress_until = Time.now + 5.minutes
+    assert(a.save!)
+    assert(a.suppressed?)
+    assert_equal(0,notification_buffer.length)
+
+    #
+    # Now the alert will unacknowlege in 4 minutes, but no notifications should
+    # be sent.
+    #
+    Timecop.freeze(Time.now + 4.minutes)
+    assert(a.suppressed?)
+    a.poll
+    AlertChanged.all.each{|ac| ac.poll}
+    assert_equal(0,notification_buffer.length)
+
+    #
+    # A minute later, it should no longer be suppressed, and a re-raised
+    # notification should get sent
+    #
+    Timecop.freeze(Time.now + 1.minutes)
+    assert(!a.suppressed?)
+    a.poll
+    AlertChanged.all.each{|ac| ac.poll}
+    assert_equal(1,notification_buffer.length)
+    notification_buffer.pop
+  end
+
+  def test_alert_suppression_during_non_notification_period
+    config=<<EOF
+server {
+  database "sqlite3::memory:"
+  use_notification_buffer false
+}
+
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
+person ("test1") {
+  email "test1@example.com"
+  all { email }
+}
+
+alert_group("default") {
+  includes{ true }
+
+  notify("test1")  {
+    during{ hours_in_day 1 }
+    every 15.minutes
+  }
+}
+EOF
+    Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
+    Server.instance.setup
+
+    a = Alert.new(
+      :alert_id  => "test",
+      :source    => "test",
+      :subject   => "test",
+     :suppress_until => Time.now + 5.minutes
+    )
+
+    #
+    # Raise the alert. The alert is suppressed.  Don't send alerts.
+    #
+    a.raise!
+    assert(a.suppressed?)
+    assert_equal(0,notification_buffer.length)
+
+    #
+    # Now the alert is no longer suppressed, however the person should not receive alerts until 1am. 
+    #
+    Timecop.freeze(Time.now + 5.minutes)
+    assert(!a.suppressed?)
+    a.poll
+    AlertChanged.all.each{|ac| ac.poll}
+    assert_equal(0,notification_buffer.length)
+
+    #
+    # At 1am the notification should get sent
+    #
+    Timecop.freeze(Time.now + 55.minutes)
+    assert(!a.suppressed?)
+    a.poll
+    AlertChanged.all.each{|ac| ac.poll}
+    assert_equal(1,notification_buffer.length)
+    notification_buffer.pop
+  end
+
 end
-
-
-
 
