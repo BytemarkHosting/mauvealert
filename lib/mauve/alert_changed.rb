@@ -105,7 +105,7 @@ module Mauve
         #
         # Skip reminders if the alert is suppressed.
         #
-        logger.info("Notifications suppressed until #{alert.suppressed_until} for #{alert.inspect}")
+        logger.info("Notifications suppressed until #{alert.suppress_until} for #{alert.inspect}")
       else
         #
         # Push this notifitcation onto the queue.
