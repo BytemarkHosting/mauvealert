@@ -318,6 +318,8 @@ EOF
       :subject   => "test"
     )
 
+    # raise, acknowledge, suppress, unsuppress, unacknowledge
+
     #
     # Raise the alert. 
     #
@@ -362,6 +364,75 @@ EOF
     AlertChanged.all.each{|ac| ac.poll}
     assert_equal(1,notification_buffer.length)
     notification_buffer.pop
+
+    AlertChanged.all.destroy
+
+    #
+    # Now do the same, but suppress before the ack.
+    #
+    a = Alert.new(
+      :alert_id  => "test2",
+      :source    => "test",
+      :subject   => "test",
+      :suppress_until => Time.now + 1.minutes
+    )
+
+    #
+    # Raise the alert. 
+    #
+    a.raise!
+    assert(a.suppressed?)
+    assert_equal(0,notification_buffer.length)
+
+    #
+    #
+    # It unsupresses
+    #
+    Timecop.freeze(Time.now + 1.minutes)
+    assert(!a.suppressed?)
+    a.poll
+    AlertChanged.all.each{|ac| ac.poll}
+    assert_equal(1,notification_buffer.length)
+    notification_buffer.pop
+
+    #
+    # Now suppress again
+    #
+    Timecop.freeze(Time.now + 1.minutes)
+    a.suppress_until = Time.now + 3.minutes
+    assert(a.save!)
+
+    #
+    # And acknowledge it
+    #
+    Timecop.freeze(Time.now + 1.minutes)
+    assert(a.acknowledge!(Configuration.current.people["test1"],Time.now + 1.minutes))
+    a.poll
+    AlertChanged.all.each{|ac| ac.poll}
+    assert_equal(0,notification_buffer.length)
+
+    #
+    # Now the alert will unacknowlege in 1 minute, but no notifications should
+    # be sent.
+    #
+    Timecop.freeze(Time.now + 1.minutes)
+    a.poll
+    AlertChanged.all.each{|ac| ac.poll}
+    assert(a.suppressed?)
+    assert(!a.acknowledged?)
+    assert(a.raised?)
+    assert_equal(0,notification_buffer.length)
+    #
+    # A minute later, it should no longer be suppressed, and a re-raised
+    # notification should get sent
+    #
+    Timecop.freeze(Time.now + 1.minutes)
+    assert(!a.suppressed?)
+    a.poll
+    AlertChanged.all.each{|ac| ac.poll}
+    assert(a.raised?)
+    assert_equal(1,notification_buffer.length)
+    
   end
 
   def test_alert_suppression_during_non_notification_period

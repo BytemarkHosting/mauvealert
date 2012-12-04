@@ -171,9 +171,15 @@ module Mauve
         this_reminder.level = level.to_s
         this_reminder.at  = at
 
+        #
+        # Set a reminder if
+        #  * there was no existing reminder
+        #  * the alert now is raised, but the reminder was set when the alert was cleared, or the alert was ack'd.
+        #  * the alert now is cleared, but the reminder was set when the alert was raised/re-raised/ack'd
+        #
         if this_reminder.update_type.nil? or
-          (alert.raised? and this_reminder.update_type == "CLEARED") or
-          (alert.cleared? and %w(RE-RAISED RAISED ACKNOWLEDGED).include?(this_reminder.update_type))
+          (alert.raised? and  %w(cleared acknowledged).include?(this_reminder.update_type.to_s.downcase)) or
+          (alert.cleared? and %w(re-raised raised acknowledged).include?(this_reminder.update_type.to_s.downcase))
 
           this_reminder.update_type = alert.update_type
           this_reminder.remind_at = alert.suppress_until
