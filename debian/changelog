@@ -1,3 +1,9 @@
+mauvealert (3.15.3-1) stable; urgency=low
+
+  * Further fix-ups to the alert notification suppression code.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 04 Dec 2012 14:08:47 +0000
+
 mauvealert (3.15.2-1) stable; urgency=low
 
   * Added "eager" loading when looking at event histories.
