@@ -14,4 +14,4 @@
   = history.event
   - if history.user
     = "by #{history.user}"
-  - @today = history.created_at
+  - @today = Date.new(history.created_at.year, history.created_at.month, history.created_at.day)

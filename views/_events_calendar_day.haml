@@ -1,8 +1,8 @@
 %td{:class => (@today.month % 2 == 0 ? "even" : "odd")}
   %p.event_date
     %a{:href => "/events/list/#{@today.strftime("%F")}?#{request.query_string}"}
-      = @today.strftime(((@today - 1).month != @today.month) ? "%d %b" : "%d")
-  =partial("history", :collection => events_calendar_day.last(10).to_a.reverse)
+      = @today.strftime((@today.day == 1) ? "%d %b" : "%d")
+  =partial("history", :collection => events_calendar_day.last(10).alerts.to_a.reverse)
   %p
     - n_events = events_calendar_day.count
     - if n_events > 10
@@ -12,4 +12,4 @@
     - if n_events > 0
       %a{:href => "/events/list/#{@today.strftime("%F")}?#{request.query_string}"}
         Show the whole day.
-  - @today += 1
+- @today = @today + 1

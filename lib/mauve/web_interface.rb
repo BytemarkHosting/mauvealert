@@ -528,13 +528,13 @@ EOF
         query[:history][:created_at.gte] = Time.local(today.year, today.month, today.day, 0, 0, 0)
         query[:history][:created_at.lt]  = Time.local(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0)
 
-        events =  AlertHistory.all(formulate_events_query(query)).history
+        events =  AlertHistory.all(formulate_events_query(query))
 
         event_week = ((today - start)/7).floor
         event_day  = (today.wday == 0 ? 6 : (today.wday - 1))
 
         @events_by_week[event_week] ||= Array.new(7) { Array.new }
-        @events_by_week[event_week][event_day] = events
+        @events_by_week[event_week][event_day] = (events.count == 0 ? [] : events.history)
         today = tomorrow
       end
 
