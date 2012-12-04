@@ -11,8 +11,8 @@
     %a{:href => "/events/calendar/#{@start.strftime("%Y-%m")}?"+request.query_string}
       Calendar view
   = partial('events_form')
-- if @events.length > 0
-  = partial('history', :collection => @events)
+- if @events.count > 0
+  = partial('history', :collection => @events.collect{|e| e.history.cached_alerts << e.alert ; e }.collect{|e| e.history}.uniq.sort{|a,b| a.created_at <=> b.created_at})
 - else
   %p
     %strong

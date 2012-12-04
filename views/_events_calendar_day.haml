@@ -2,7 +2,7 @@
   %p.event_date
     %a{:href => "/events/list/#{@today.strftime("%F")}?#{request.query_string}"}
       = @today.strftime((@today.day == 1) ? "%d %b" : "%d")
-  =partial("history", :collection => events_calendar_day.last(10).alerts.to_a.reverse)
+  =partial("history", :collection => events_calendar_day.first(10).collect{|e| e.history.cached_alerts << e.alert ; e }.collect{|e| e.history}.uniq.sort{|a,b| a.created_at <=> b.created_at})
   %p
     - n_events = events_calendar_day.count
     - if n_events > 10

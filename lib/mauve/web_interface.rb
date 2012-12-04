@@ -476,12 +476,13 @@ EOF
       query = {:alert => {}, :history => {}}
       query[:alert][:id] = params[:id]
 
-      query[:history][:type] = ["update", "notification"]
+      query[:history][:type]  = ["update", "notification"]
+      query[:history][:order] = [:created_at.asc]
 
       @alert  = Alert.get!(params['id'])
       @title += " Events: Alert #{@alert.alert_id} from #{@alert.source}"
       @alert_counts = alert_counts(false)
-      @events =  AlertHistory.all(formulate_events_query(query)).history
+      @events =  AlertHistory.all(formulate_events_query(query))
 
       haml :events_list
     end
@@ -527,14 +528,14 @@ EOF
         query = {:history => {}}
         query[:history][:created_at.gte] = Time.local(today.year, today.month, today.day, 0, 0, 0)
         query[:history][:created_at.lt]  = Time.local(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0)
+        query[:history][:order]          = [:created_at.asc]
 
         events =  AlertHistory.all(formulate_events_query(query))
-
         event_week = ((today - start)/7).floor
         event_day  = (today.wday == 0 ? 6 : (today.wday - 1))
 
         @events_by_week[event_week] ||= Array.new(7) { Array.new }
-        @events_by_week[event_week][event_day] = (events.count == 0 ? [] : events.history)
+        @events_by_week[event_week][event_day] = events
         today = tomorrow
       end
 
@@ -581,8 +582,9 @@ EOF
       query = {:history => {}}
       query[:history][:created_at.gte] = @start
       query[:history][:created_at.lt]  = finish
+      query[:history][:order]          = [:created_at.asc]
       
-      @events =  AlertHistory.all(formulate_events_query(query)).history
+      @events =  AlertHistory.all(formulate_events_query(query))
       @alert_counts = alert_counts(false)
 
       haml :events_list

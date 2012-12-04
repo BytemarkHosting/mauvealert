@@ -116,6 +116,16 @@ module Mauve
 
     public
 
+    def cached_alerts
+      return @cached_alerts if defined? @cached_alerts
+      @cached_alerts = []
+    end
+
+    def reload
+      @cached_alerts = []
+      super
+    end
+
     # @return Log4r::Logger
     def logger
       Log4r::Logger.new self.class.to_s

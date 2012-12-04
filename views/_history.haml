@@ -3,7 +3,7 @@
     = history.created_at.strftime("%a %d %b %Y")
 %p
   = history.created_at.strftime("%R")
-  - history.alerts.each do |alert|
+  - (history.cached_alerts.empty? ? history.alerts : history.cached_alerts).each do |alert|
     %a{ :href => self.class.url_for(alert) } 
       = alert.id
       %strong
