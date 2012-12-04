@@ -1,3 +1,11 @@
+mauvealert (3.15.2-1) stable; urgency=low
+
+  * Added "eager" loading when looking at event histories.
+  * Fixed event views to use dates, and to miss queries for days with no
+    events.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 04 Dec 2012 11:56:19 +0000
+
 mauvealert (3.15.1-1) stable; urgency=low
 
   * Rationalised alert tables to look the same for both searches and
