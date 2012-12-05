@@ -351,7 +351,7 @@ module Mauve
           history.event = "ACKNOWLEDGED until #{self.will_unacknowledge_at}"
           history.user  = self.acknowledged_by
         else
-          history.event = update_type.upcase
+          history.event = [self.update_type.upcase, self.summary].join(": ")
         end
 
         #
