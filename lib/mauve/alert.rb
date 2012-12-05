@@ -209,11 +209,6 @@ module Mauve
     def detail;  super || "_No detail set._" ; end
 
     #
-    # The update type
-    #
-    def update_type; super || "cleared" ; end
-
-    #
     # Set the subject -- this clears the cached_alert_group.
     #
     def subject=(s)
@@ -338,10 +333,7 @@ module Mauve
 
       history = nil
 
-      if ut.nil?
-        self.update_type = "cleared" if self.new? or self.update_type.nil?
-
-      else
+      unless ut.nil?
         self.update_type = ut
 
         history = History.new(:alerts => [self], :type => "update")
@@ -363,6 +355,11 @@ module Mauve
           history.event += " (notifications suppressed until #{self.suppress_until.to_s_human})"
         end
       end
+
+      #
+      # Make sure the update type is always set.
+      #
+      self.update_type = "cleared" if self.update_type.nil?
 
       self.raise_on_save_failure = true
 
