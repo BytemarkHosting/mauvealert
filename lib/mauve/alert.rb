@@ -334,8 +334,7 @@ module Mauve
       history = nil
 
       if ut.nil?
-
-        self.update_type = "cleared" if self.new?
+        self.update_type = "cleared" if self.new? or self.update_type.nil?
 
       else
         self.update_type = ut
