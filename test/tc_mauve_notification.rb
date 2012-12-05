@@ -1007,4 +1007,63 @@ EOF
     assert_equal("test2@example.com", sent[2])
   end
 
+  def test_nofitications_after_replace_alert
+    config=<<EOF
+server {
+  use_notification_buffer false
+}
+
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
+person ("test1") {
+  email "test1@example.com"
+  all { email }
+}
+
+alert_group("test") {
+  level URGENT
+
+  notify( %w(test1 test2)) {
+    every 300
+    during { true }
+  }
+}
+EOF
+    
+    Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
+
+    Server.instance.setup
+
+    update = Proto::AlertUpdate.new
+    update.source = "test-host"
+    update.replace = true
+    message = Proto::Alert.new
+    update.alert << message
+    message.id = "test_recieve_update"
+    message.summary = "test summary"
+    message.detail  = "test detail"
+    message.raise_time = Time.now.to_i
+
+    Alert.receive_update(update, Time.now, "127.0.0.1")
+    assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
+    sent = notification_buffer.pop 
+
+    #
+    # Now send a second update with no alerts specified.
+    #
+
+    update = Proto::AlertUpdate.new
+    update.source = "test-host"
+    update.replace = true
+    Alert.receive_update(update, Time.now, "127.0.0.1")
+    assert_equal(1, notification_buffer.size, "Wrong number of notifications sent")
+    sent = notification_buffer.pop
+
+  end
+
 end

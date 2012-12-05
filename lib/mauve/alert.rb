@@ -902,12 +902,15 @@ module Mauve
         #
         if update.replace
           alert_ids_mentioned = update.alert.map { |alert| alert.id }
-          logger.info "Replacing all alerts from #{update.source} except "+alert_ids_mentioned.join(",")
-          all(:source => update.source, 
-              :alert_id.not => alert_ids_mentioned,
-              :cleared_at => nil
-              ).each do |alert_db|
-            alert_db.clear!
+          logger.info "Replacing all alerts from #{update.source}"+(alert_ids_mentioned.count > 0 ? " except "+alert_ids_mentioned.join(",") : "")
+          #
+          # The to_a is used here to make sure datamapper runs the query now,
+          # rather than at some point in the future.
+          #
+          Alert.all(:source => update.source, 
+              :alert_id.not => alert_ids_mentioned
+              ).to_a.each do |alert_db|
+            alert_db.clear! unless alert_db.cleared?
           end
         end
       
