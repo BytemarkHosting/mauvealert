@@ -209,6 +209,11 @@ module Mauve
     def detail;  super || "_No detail set._" ; end
 
     #
+    # The update type
+    #
+    def update_type; super || "cleared" ; end
+
+    #
     # Set the subject -- this clears the cached_alert_group.
     #
     def subject=(s)
