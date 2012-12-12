@@ -118,7 +118,8 @@ module Mauve
     has 1, :alert_earliest_date
 
     before :valid?, :do_set_timestamps
-    before :save, :do_sanitize_html
+    before :valid?, :do_truncate_fields
+    before :save,   :do_sanitize_html
 
     after  :destroy, :destroy_associations
 
@@ -261,6 +262,25 @@ module Mauve
         next unless val.is_a?(String)
 
         attribute_set(key, Alert.clean_html(val))
+      end
+    end
+
+    #
+    # This truncates strings to their maximum allowed length.
+    #
+    def do_truncate_fields
+      attributes.each do |key, val|
+        prop = self.class.properties[key]
+        next unless prop.is_a?(DataMapper::Property::String)
+
+        #
+        # Truncate 
+        #
+        max_length = prop.length
+        if val.length > max_length
+          logger.warn "#{self.to_s} truncating #{key} to #{max_length} chars"
+          attribute_set(key, val[0...max_length])
+        end
       end
     end
 
