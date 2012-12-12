@@ -475,4 +475,23 @@ EOF
     assert(!alert.suppressed?,"Alert marked as suppressed when the suppression period was never set")
   end
 
+  def test_long_fields_get_truncated
+    Configuration.current = ConfigurationBuilder.parse(@test_config)
+    Server.instance.setup
+
+    alert = Alert.new(
+      :alert_id  => "x"*257,
+      :source    => "test",
+      :subject   => "test"
+    )
+
+    assert(alert.save, "Alert with overly long field failed to save")
+    # This should trigger a warning.
+    logger_pop
+
+    alert.reload
+    assert(256, alert.alert_id.length)
+
+  end
+
 end

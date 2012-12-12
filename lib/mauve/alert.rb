@@ -272,7 +272,7 @@ module Mauve
       attributes.each do |key, val|
         prop = self.class.properties[key]
         next unless prop.is_a?(DataMapper::Property::String)
-
+        next unless val.is_a?(String)
         #
         # Truncate 
         #
