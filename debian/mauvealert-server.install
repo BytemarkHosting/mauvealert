@@ -12,6 +12,7 @@ lib/mauve/configuration_builder.rb   usr/lib/ruby/1.8/mauve/
 lib/mauve/configuration_builders.rb  usr/lib/ruby/1.8/mauve/
 lib/mauve/configuration_builders     usr/lib/ruby/1.8/mauve/
 lib/mauve/datamapper.rb              usr/lib/ruby/1.8/mauve/
+lib/mauve/generic_http_api_client.rb usr/lib/ruby/1.8/mauve/
 lib/mauve/heartbeat.rb               usr/lib/ruby/1.8/mauve/
 lib/mauve/history.rb                 usr/lib/ruby/1.8/mauve/
 lib/mauve/http_server.rb             usr/lib/ruby/1.8/mauve/

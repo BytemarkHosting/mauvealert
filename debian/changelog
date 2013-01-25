@@ -1,3 +1,9 @@
+mauvealert (3.15.6-2) stable; urgency=low
+
+  * Added generic_http library that had been missed off.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 25 Jan 2013 13:47:05 +0000
+
 mauvealert (3.15.6-1) stable; urgency=low
 
   * Alert fields are now truncated if they're too long.
