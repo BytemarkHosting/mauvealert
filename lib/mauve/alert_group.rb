@@ -245,7 +245,7 @@ module Mauve
         this_reminder.level = level.to_s
         this_reminder.at    = at
         this_reminder.update_type = alert.update_type
-        this_reminder.remind_at => remind_at
+        this_reminder.remind_at = remind_at
         this_reminder.was_relevant = true
         this_reminder.save
       end
