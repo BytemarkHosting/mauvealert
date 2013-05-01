@@ -239,7 +239,8 @@ module Mauve
         this_reminder = AlertChanged.first_or_new(
           :alert_id => alert.id,
           :person => self.name,
-          :remind_at.not => nil
+          :remind_at.not => nil,
+          :remind_at.gt => at
         )
 
         this_reminder.level = level.to_s
