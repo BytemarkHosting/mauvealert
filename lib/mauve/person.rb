@@ -114,7 +114,13 @@ module Mauve
 
       return self.notification_thresholds.any? do |period, previous_alert_times|
         #
-        # This is going to work out if we would be suppressed if 
+        # This is going to work out if we would be suppressed if we send a notification now.
+        #
+        previous_alert_times = History.all(:user => self.username,
+           :type => "notification", 
+           :created_at.gt => (now - period), 
+           :event.like => '% succeeded')
+
         if with_notification_at.nil?
          first = previous_alert_times.first
          last  = previous_alert_times.last
@@ -258,13 +264,13 @@ module Mauve
         # 
         # Remember that we've sent an alert
         #
-        self.notification_thresholds.each do |period, previous_alert_times|
+        #self.notification_thresholds.each do |period, previous_alert_times|
           #
           # Hmm.. not sure how to make this thread-safe.
           #
-          self.notification_thresholds[period].push now
-          self.notification_thresholds[period].shift
-        end
+        #  self.notification_thresholds[period].push now
+        #  self.notification_thresholds[period].shift
+        #end
 
 
         return true
