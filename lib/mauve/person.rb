@@ -6,13 +6,12 @@ module Mauve
   class Person 
   
     attr_reader :username, :password, :urgent, :normal, :low, :email, :xmpp, :sms
-    attr_reader :notification_thresholds, :last_pop3_login, :suppressed, :notifications
+    attr_reader :last_pop3_login, :suppressed, :notifications
     attr_reader :notify_when_off_sick, :notify_when_on_holiday
 
     # Set up a new Person
     #
     def initialize(username)
-      @notification_thresholds = nil
       @suppressed = false
       #
       # TODO fix up web login so pop3 can be used as a proxy.
@@ -111,36 +110,45 @@ module Mauve
     # @param [Time] Current time.
     # @return [Boolean] If suppression is needed.
     def should_suppress?(with_notification_at = nil, now = Time.now)
+      #
+      # This is the query we use.  It doesn't get polled until later.
+      #
+      previous_notifications = History.all(:order => :created_at.desc, :user => self.username, :type => "notification", :event.like => '% succeeded', :fields => [:created_at])
 
-      return self.notification_thresholds.any? do |period, previous_alert_times|
-        #
-        # This is going to work out if we would be suppressed if we send a notification now.
-        #
-        previous_alert_times = History.all(:user => self.username,
-           :type => "notification", 
-           :created_at.gt => (now - period), 
-           :event.like => '% succeeded')
+      #
+      # Find the latest alert.
+      #
+      if with_notification_at.nil?
+        latest_notification = previous_notifications.first
+        latest = (latest_notification.nil? ? nil : latest_notification.created_at)
+      else
+        latest = with_notification_at
+      end
 
-        if with_notification_at.nil?
-         first = previous_alert_times.first
-         last  = previous_alert_times.last
+      return self.suppress_notifications_after.any? do |period, number|
+        #
+        # If no notification time has been specified, use the earliest alert time.
+        #
+        if with_notification_at.nil? or number == 0
+         earliest_notification = previous_notifications[number-1]
         else
-         first = previous_alert_times[1]
-         last  = with_notification_at
+         earliest_notification = previous_notifications[number-2]
         end
-   
-        (first.is_a?(Time) and (now - first) < period) or
-          (last.is_a?(Time) and @suppressed and (now - last) < period) 
+
+        earliest = (earliest_notification.nil? ? nil : earliest_notification.created_at)
+
+        (earliest.is_a?(Time) and (now - earliest) < period) or
+          (latest.is_a?(Time) and @suppressed and (now - latest) < period) 
       end
     end
    
-    # The notification thresholds for this user
     #
-    # @return [Hash]
-    def notification_thresholds
-      @notification_thresholds ||= { } 
+    # 
+    #
+    def suppress_notifications_after 
+      @suppress_notifications_after ||= { } 
     end
- 
+
     # This class implements an instance_eval context to execute the blocks
     # for running a notification block for each person.
     # 
@@ -260,23 +268,7 @@ module Mauve
         ).instance_eval(&__send__(level))
       end
 
-      if [result].flatten.any?
-        # 
-        # Remember that we've sent an alert
-        #
-        #self.notification_thresholds.each do |period, previous_alert_times|
-          #
-          # Hmm.. not sure how to make this thread-safe.
-          #
-        #  self.notification_thresholds[period].push now
-        #  self.notification_thresholds[period].shift
-        #end
-
-
-        return true
-      end
-
-      return false
+      return [result].flatten.any?
     end
    
     # 

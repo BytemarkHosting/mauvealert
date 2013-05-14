@@ -65,9 +65,9 @@ EOF
     assert_kind_of(Proc, person.normal)
     assert_kind_of(Proc, person.urgent)
 
-    assert_kind_of(Hash, person.notification_thresholds)
-    assert_equal(1,person.notification_thresholds.keys.length)
-    assert(person.notification_thresholds.all?{|k,v| k.is_a?(Integer) and v.is_a?(Array)})
+    assert_kind_of(Hash, person.suppress_notifications_after)
+    assert_equal(1,person.suppress_notifications_after.keys.length)
+    assert(person.suppress_notifications_after.all?{|k,v| k.is_a?(Integer) and v.is_a?(Integer)})
 
     assert_kind_of(Array, person.notifications)
     assert_equal(1, person.notifications.length)

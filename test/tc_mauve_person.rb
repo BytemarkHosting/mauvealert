@@ -97,7 +97,6 @@ EOF
         # Pop the notification off the buffer.
         #
         notification_buffer.pop
-        assert_equal(Time.now, person.notification_thresholds[60][-1], "Notification thresholds not updated at #{Time.now}.")
       else
         assert_equal(0, notification_buffer.length, "Notification sent when it should not have been at #{Time.now}.")
       end
@@ -176,7 +175,6 @@ EOF
         # Pop the notification off the buffer.
         #
         notification_buffer.pop
-        assert_equal(Time.now, person.notification_thresholds[60][-1], "Notification thresholds not updated at #{Time.now}.")
       else
         assert_equal(0, notification_buffer.length, "Notification sent when it should not have been at #{Time.now}.")
       end

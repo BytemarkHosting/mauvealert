@@ -51,10 +51,15 @@ module Mauve
       def suppress_notifications_after(h)
         raise ArgumentError.new("notification_threshold must be specified as e.g. (10 => 1.minute)") unless h.kind_of?(Hash)
 
-        h.each do |k,v|
-          raise ArgumentError.new("notification_threshold must be specified as e.g. (10 => 1.minute)") unless k.is_a?(Integer) and v.is_a?(Integer)
+        h.each do |number_of_alerts,in_period|
+          raise ArgumentError.new("notification_threshold must be specified as e.g. (10 => 1.minute)") unless number_of_alerts.is_a?(Integer) and in_period.is_a?(Integer)
 
-          @result.notification_thresholds[v] = Array.new(k)
+          @result.suppress_notifications_after[in_period] = number_of_alerts
+          # History.all(
+          # :limit => number_of_alerts, 
+          # :order => :created_at.desc, 
+          # :type => "notification",
+          # :event.like => '% succeeded')
         end
       end
 
@@ -87,7 +92,7 @@ module Mauve
       #
       # Add a default notification threshold
       #
-      person.notification_thresholds[600] = Array.new(5) if person.notification_thresholds.empty?
+      person.suppress_notifications_after[600] = 5 if person.suppress_notifications_after.empty?
       
       #
       # Add a default notify clause
