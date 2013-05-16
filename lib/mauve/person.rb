@@ -106,39 +106,74 @@ module Mauve
 
     # Works out if a notification should be suppressed.  If no parameters are supplied, it will 
     #
+    # @param [Symbol] Level of notification that is being tested
     # @param [Time] Theoretical time of notification
     # @param [Time] Current time.
     # @return [Boolean] If suppression is needed.
-    def should_suppress?(with_notification_at = nil, now = Time.now)
-      #
-      # This is the query we use.  It doesn't get polled until later.
-      #
-      previous_notifications = History.all(:order => :created_at.desc, :user => self.username, :type => "notification", :event.like => '% succeeded', :fields => [:created_at])
+    def should_suppress?(level, with_notification_at = nil, now = Time.now)
 
-      #
-      # Find the latest alert.
-      #
-      if with_notification_at.nil?
-        latest_notification = previous_notifications.first
-        latest = (latest_notification.nil? ? nil : latest_notification.created_at)
-      else
-        latest = with_notification_at
-      end
+      self.suppress_notifications_after.any? do |period, number|
+        #
+        # When testing if the next alert will suppress, we know that if only
+        # one alert is needed to suppress, then this function should always
+        # return true.
+        #
+        return true if with_notification_at and number <= 1
 
-      return self.suppress_notifications_after.any? do |period, number|
         #
-        # If no notification time has been specified, use the earliest alert time.
+        # Here are the previous notifications set to this person in the last period.
         #
-        if with_notification_at.nil? or number == 0
-         earliest_notification = previous_notifications[number-1]
+        previous_notifications = History.all(
+          :user => self.username, :type => "notification", 
+          :created_at.gte => now - period, :created_at.lte => now,
+          :event.like => '% succeeded',
+          :order => :created_at.desc)
+
+        #
+        # Defintely not suppressed if no notifications have been found.
+        #
+        return false if previous_notifications.count == 0
+
+        #
+        # If we're suppressed already, we need to check the time of the last alert sent
+        #
+        if @suppressed
+
+          if with_notification_at.is_a?(Time)
+            latest = with_notification_at
+          else
+            latest = previous_notifications.first.created_at
+          end
+          
+          #
+          # We should not suppress this alert if the last one was sent ages ago
+          #
+          if (now - latest) >= period
+            return false
+          end 
+
         else
-         earliest_notification = previous_notifications[number-2]
+          #
+          # We do not suppress if we can't find a sufficient number of previous alerts
+          #
+          if previous_notifications.count < (with_notification_at.nil? ? number : number - 1)
+            return false
+          end
+
         end
 
-        earliest = (earliest_notification.nil? ? nil : earliest_notification.created_at)
+        #
+        # If we're at the lowest level, return true now.
+        #
+        return true if !AlertGroup::LEVELS.include?(level) or AlertGroup::LEVELS.index(level) == 0
 
-        (earliest.is_a?(Time) and (now - earliest) < period) or
-          (latest.is_a?(Time) and @suppressed and (now - latest) < period) 
+        #
+        # Suppress this notification if all of the preceeding notifications were of the same or higher level.
+        #
+        return previous_notifications.alerts.all? do |a|
+          AlertGroup::LEVELS.index(a.level) >= AlertGroup::LEVELS.index(level) 
+        end
+
       end
     end
    
@@ -236,11 +271,11 @@ module Mauve
     def send_alert(level, alert, now=Time.now)
 
       was_suppressed = @suppressed
-      @suppressed    = self.should_suppress?
-      will_suppress  = self.should_suppress?(now)
+      @suppressed    = self.should_suppress?(level)
+      will_suppress  = self.should_suppress?(level, now)
 
       logger.info "Starting to send notifications again for #{username}." if was_suppressed and not @suppressed
-      
+
       #
       # We only suppress notifications if we were suppressed before we started,
       # and are still suppressed.
