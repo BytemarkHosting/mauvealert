@@ -319,9 +319,7 @@ module Mauve
         #
         # A bit of alert de-bouncing.
         #
-        if already_sent_to.include?(person.username)
-          logger.info("Already sent notification of #{alert} to #{person.username}")
-        else
+        unless already_sent_to.include?(person.username)
           person.send_alert(level, alert)
           already_sent_to << person.username
         end
