@@ -1,5 +1,5 @@
   <html xmlns="http://jabber.org/protocol/xhtml-im"><body xmlns="http://www.w3.org/1999/xhtml">
-<a href="<%=WebInterface.url_for(alert)%>"><%= alert.id%>: <%= alert.update_type.upcase %></a> <%= alert.level.to_s.capitalize %>: <% 
+<a href="<%=WebInterface.url_for(alert)%>"><%= alert.id%>: <%= alert.update_type.upcase %></a> (<%= alert.level %>): <% 
 case alert.update_type
 when "cleared"
 %><%= alert.cleared_at.to_s_relative %><% 

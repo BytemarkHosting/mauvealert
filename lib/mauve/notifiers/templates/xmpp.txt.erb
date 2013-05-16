@@ -1,4 +1,4 @@
-<%=alert.id %>: <%= alert.update_type.upcase %> <%= alert.level.to_s.capitalize %>: <% 
+<%=alert.id %>: <%= alert.update_type.upcase %> (<%= alert.level %>): <% 
 case alert.update_type
 when "cleared"
 %><%= alert.cleared_at.to_s_relative %><% 
