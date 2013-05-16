@@ -168,10 +168,11 @@ module Mauve
         return true if !AlertGroup::LEVELS.include?(level) or AlertGroup::LEVELS.index(level) == 0
 
         #
-        # Suppress this notification if all of the preceeding notifications were of the same or higher level.
+        # Suppress this notification if all the last N of the preceeding
+        # notifications were of a equal or higher level.
         #
-        return previous_notifications.alerts.all? do |a|
-          AlertGroup::LEVELS.index(a.level) >= AlertGroup::LEVELS.index(level) 
+        return previous_notifications.first(number).alerts.all? do |a|
+          AlertGroup::LEVELS.index(a.level) >= AlertGroup::LEVELS.index(level)
         end
 
       end

@@ -274,6 +274,13 @@ EOF
       [4, true, alerts[1]],
       [5, false, alerts.first],
       [6, true, alerts[1]],
+      [7, false, alerts[1]],
+      [8, false, alerts[1]],
+      [9, false, alerts[1]],
+      [10, true, alerts[2]],
+      [11, true, alerts[2]],
+      [12, false, alerts[2]],
+      [13, false, alerts.first]
     ].each do |offset, notification_sent, alert|
       # 
       # Advance in to the future!
