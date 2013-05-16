@@ -1,3 +1,12 @@
+mauvealert (3.15.10-1ubuntu1) stable; urgency=low
+
+  * Database is now queried to see if a notification should be suppressed.
+  * Notification suppression now takes urgency into account, such that more
+    urgent alerts are not smothered by less urgent ones.
+  * Templates now include which level the alert is.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 16 May 2013 11:47:33 +0100
+
 mauvealert (3.15.9-1) stable; urgency=low
 
   * Added Mauve::QuickUpdate library
