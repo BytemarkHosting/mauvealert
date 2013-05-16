@@ -1,3 +1,10 @@
+mauvealert (3.15.11-1) stable; urgency=low
+
+  * Notifications now generate just one history entry to ensure that the
+    previous changes regarding notification supression work.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 16 May 2013 14:13:43 +0100
+
 mauvealert (3.15.10-1ubuntu1) stable; urgency=low
 
   * Database is now queried to see if a notification should be suppressed.
