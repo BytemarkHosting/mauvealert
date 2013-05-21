@@ -1,3 +1,9 @@
+mauvealert (3.15.13-1) stable; urgency=low
+
+  * Switched off global socket reverse lookups.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 21 May 2013 14:34:15 +0100
+
 mauvealert (3.15.12-1) stable; urgency=low
 
   * Removed extra database lookup when receiving alert updates.
