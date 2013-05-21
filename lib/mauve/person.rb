@@ -171,7 +171,7 @@ module Mauve
         # Suppress this notification if all the last N of the preceeding
         # notifications were of a equal or higher level.
         #
-        return previous_notifications.first(number).alerts.all? do |a|
+        return previous_notifications.first(number).alerts.to_a.all? do |a|
           AlertGroup::LEVELS.index(a.level) >= AlertGroup::LEVELS.index(level)
         end
 
