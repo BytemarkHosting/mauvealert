@@ -1,3 +1,11 @@
+mauvealert (3.15.12-1) stable; urgency=low
+
+  * Removed extra database lookup when receiving alert updates.
+  * Added extra to_a when checking to see if an alert should be suppressed to
+    force the database lookup at that point.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 21 May 2013 12:24:13 +0100
+
 mauvealert (3.15.11-1) stable; urgency=low
 
   * Notifications now generate just one history entry to ensure that the
