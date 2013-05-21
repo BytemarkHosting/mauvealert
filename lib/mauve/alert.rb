@@ -824,7 +824,10 @@ module Mauve
           #
           alert.id = Alert.remove_html(alert.id.to_s)
  
-          alert_db = first(:alert_id => alert.id, :source => update.source) ||
+          #
+          # Load the database alert, and all its properties, since we're updating.
+          #
+          alert_db = first(:alert_id => alert.id, :source => update.source, :fields => Alert.properties) ||
             new(:alert_id => alert.id, :source => update.source)
 
           ##
