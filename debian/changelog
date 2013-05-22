@@ -1,3 +1,9 @@
+mauvealert (3.15.14-1) stable; urgency=low
+
+  * Web interface now defaults to wall-clock hours.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 22 May 2013 11:47:52 +0100
+
 mauvealert (3.15.13-1) stable; urgency=low
 
   * Switched off global socket reverse lookups.
