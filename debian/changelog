@@ -1,3 +1,9 @@
+mauvealert (3.15.6-3) stable; urgency=medium
+
+  * Relaxed mauvealert-client ruby dependency.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 03 Jul 2014 11:43:00 +0100
+
 mauvealert (3.15.6-2) stable; urgency=low
 
   * Added generic_http library that had been missed off.
