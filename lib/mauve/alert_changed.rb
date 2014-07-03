@@ -110,7 +110,7 @@ module Mauve
         #
         # Push this notifitcation onto the queue.
         #
-        Server.notification_push([alert, Time.now])
+        Server.notification_push([alert, self.remind_at])
       end
 
       #

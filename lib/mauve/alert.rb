@@ -824,7 +824,10 @@ module Mauve
           #
           alert.id = Alert.remove_html(alert.id.to_s)
  
-          alert_db = first(:alert_id => alert.id, :source => update.source) ||
+          #
+          # Load the database alert, and all its properties, since we're updating.
+          #
+          alert_db = first(:alert_id => alert.id, :source => update.source, :fields => Alert.properties) ||
             new(:alert_id => alert.id, :source => update.source)
 
           ##
@@ -850,6 +853,11 @@ module Mauve
               alert_db.raised_at     = nil
               alert_db.will_raise_at = raise_time
             end
+          else
+            #
+            # If no raise time has been set, then update the database to reflect this.
+            #
+            alert_db.raised_at = alert_db.will_raise_at = nil
           end
 
           if clear_time
@@ -863,6 +871,11 @@ module Mauve
               alert_db.cleared_at    = nil
               alert_db.will_clear_at = clear_time
             end
+          else
+            #
+            # If no clear time has been set, then update the database to reflect this.
+            #
+            alert_db.cleared_at = alert_db.will_clear_at = nil
           end
 
           #

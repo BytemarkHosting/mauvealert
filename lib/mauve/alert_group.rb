@@ -236,15 +236,21 @@ module Mauve
       # OK got the next reminder time.
       #
       unless remind_at.nil?
-        this_reminder = AlertChanged.new(
-          :level => level.to_s,
+        #
+        # Find the last reminder, if available for the same alert, update type, and person.
+        #
+        this_reminder = AlertChanged.first_or_new(
           :alert_id => alert.id,
           :person => self.name,
-          :at => at,
           :update_type => alert.update_type,
-          :remind_at => remind_at,
-          :was_relevant => true)
+          :remind_at.not => nil,
+          :remind_at.gt => at
+        )
 
+        this_reminder.level = level.to_s
+        this_reminder.at    = at
+        this_reminder.remind_at = remind_at
+        this_reminder.was_relevant = true
         this_reminder.save
       end
 

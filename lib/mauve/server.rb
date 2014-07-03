@@ -56,6 +56,11 @@ module Mauve
       @bank_holidays = nil 
 
       #
+      # Turn off unwanted reverse DNS lookups across the board.
+      #
+      BasicSocket.do_not_reverse_lookup = true
+
+      #
       # Set up a blank config.
       #
       Configuration.current = Configuration.new if Mauve::Configuration.current.nil?

@@ -69,7 +69,14 @@ module Mauve
       @logger      = Log4r::Logger.new 'Mauve'
       @outputter   = Mauve::TestOutputter.new("test")
       @outputter.formatter = Log4r::PatternFormatter.new( :pattern => "%d %l %m" )
-      @outputter.level     = ($debug ? Log4r::DEBUG : Log4r::WARN)
+      @outputter.level = case ENV['LOGLEVEL']
+        when "DEBUG"
+          Log4r::DEBUG
+        when "INFO"
+          Log4r::INFO
+        else
+          Log4r::WARN
+      end
       @logger.outputters   << @outputter
       return @logger
     end

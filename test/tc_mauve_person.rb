@@ -97,11 +97,9 @@ EOF
         # Pop the notification off the buffer.
         #
         notification_buffer.pop
-        assert_equal(Time.now, person.notification_thresholds[60][-1], "Notification thresholds not updated at #{Time.now}.")
       else
         assert_equal(0, notification_buffer.length, "Notification sent when it should not have been at #{Time.now}.")
       end
-
 
       logger_pop
     end
@@ -176,9 +174,129 @@ EOF
         # Pop the notification off the buffer.
         #
         notification_buffer.pop
-        assert_equal(Time.now, person.notification_thresholds[60][-1], "Notification thresholds not updated at #{Time.now}.")
       else
         assert_equal(0, notification_buffer.length, "Notification sent when it should not have been at #{Time.now}.")
+      end
+
+      logger_pop
+    end
+
+  end
+  
+  def test_send_alert_suppression_as_alerts_get_more_urgent
+    #
+    # This configuration is a bit different.  We only want one alert per
+    # minute.
+    #
+    config =<<EOF
+notification_method("email") {
+  debug!
+  deliver_to_queue []
+  disable_normal_delivery!
+}
+
+person ("test") {
+  email "test@example.com"
+  all { email }
+  suppress_notifications_after( 2 => 1.minute )
+}
+
+alert_group("low") {
+  level LOW
+  includes { alert_id =~ /^low-/  }
+
+  notify("test") {
+    every 10.seconds
+  } 
+}
+
+alert_group("normal") {
+  level NORMAL
+  includes { alert_id =~ /^normal-/ } 
+
+  notify("test") {
+    every 10.seconds
+  } 
+}
+
+alert_group("default") {
+  level URGENT
+
+  notify("test") {
+    every 10.seconds
+  } 
+}
+EOF
+  
+    Configuration.current = ConfigurationBuilder.parse(config)
+    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
+    Server.instance.setup
+
+    person = Configuration.current.people["test"]
+
+    alerts = [
+      Alert.new(
+        :alert_id  => "low-test",
+        :source    => "test",
+        :subject   => "test"
+      ),
+      Alert.new(
+        :alert_id  => "normal-test",
+        :source    => "test",
+        :subject   => "test"
+      ),
+      Alert.new(
+        :alert_id  => "urgent-test",
+        :source    => "test",
+        :subject   => "test"
+      )
+    ]
+
+    #
+    # Raise the alerts
+    #
+    alerts.each{|a| a.raise!}
+    assert_equal(false,    person.suppressed?, "Person suppressed before we even begin!")
+
+    assert_equal(:low, alerts[0].level)
+    assert_equal(:normal, alerts[1].level)
+    assert_equal(:urgent, alerts[2].level)
+
+    start_time = Time.now
+
+    #
+    # 
+    #
+    [ [0, true, alerts.first ],
+      [1, true, alerts.first ],
+      [2, false, alerts.first ],
+      [3, false, alerts.first ],
+      [4, true, alerts[1]],
+      [5, false, alerts.first],
+      [6, true, alerts[1]],
+      [7, false, alerts[1]],
+      [8, false, alerts[1]],
+      [9, false, alerts[1]],
+      [10, true, alerts[2]],
+      [11, true, alerts[2]],
+      [12, false, alerts[2]],
+      [13, false, alerts.first]
+    ].each do |offset, notification_sent, alert|
+      # 
+      # Advance in to the future!
+      #
+      Timecop.freeze(start_time + offset)
+
+      person.send_alert(alert.level, alert)
+
+      if notification_sent 
+        assert_equal(1, notification_buffer.length, "#{alert.level.to_s.capitalize} notification not sent when it should have been at #{Time.now}.")
+        #
+        # Pop the notification off the buffer.
+        #
+        notification_buffer.pop
+      else
+        assert_equal(0, notification_buffer.length, "#{alert.level.to_s.capitalize} notification sent when it should not have been at #{Time.now}.")
       end
 
       logger_pop

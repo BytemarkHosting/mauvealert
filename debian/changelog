@@ -1,8 +1,64 @@
-mauvealert (3.15.6-3) stable; urgency=medium
-
+mauvealert (3.15.14-2) stable; urgency=low
+ 
   * Relaxed mauvealert-client ruby dependency.
-
+ 
  -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 03 Jul 2014 11:43:00 +0100
+
+mauvealert (3.15.14-1) stable; urgency=low
+
+  * Web interface now defaults to wall-clock hours.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 22 May 2013 11:47:52 +0100
+
+mauvealert (3.15.13-1) stable; urgency=low
+
+  * Switched off global socket reverse lookups.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 21 May 2013 14:34:15 +0100
+
+mauvealert (3.15.12-1) stable; urgency=low
+
+  * Removed extra database lookup when receiving alert updates.
+  * Added extra to_a when checking to see if an alert should be suppressed to
+    force the database lookup at that point.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 21 May 2013 12:24:13 +0100
+
+mauvealert (3.15.11-1) stable; urgency=low
+
+  * Notifications now generate just one history entry to ensure that the
+    previous changes regarding notification supression work.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 16 May 2013 14:13:43 +0100
+
+mauvealert (3.15.10-1ubuntu1) stable; urgency=low
+
+  * Database is now queried to see if a notification should be suppressed.
+  * Notification suppression now takes urgency into account, such that more
+    urgent alerts are not smothered by less urgent ones.
+  * Templates now include which level the alert is.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 16 May 2013 11:47:33 +0100
+
+mauvealert (3.15.9-1) stable; urgency=low
+
+  * Added Mauve::QuickUpdate library
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 02 May 2013 14:23:34 +0100
+
+mauvealert (3.15.8-1) stable; urgency=low
+
+  * Added a further check to make sure the last alert of the same update type
+    was being updated by reminders.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 01 May 2013 15:41:10 +0100
+
+mauvealert (3.15.7-1) stable; urgency=low
+
+  * Altered alert_group to only set one reminder.
+  * Allow alert to clear raised_at/cleared_at times if none specified.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 01 May 2013 10:16:52 +0100
 
 mauvealert (3.15.6-2) stable; urgency=low
 

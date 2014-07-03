@@ -19,10 +19,10 @@
   for
   %input#n_hours{ :name => 'n_hours', :type => "number", :min => 0, :max => 48, :value => 2, :style => "min-width: 6ex;"}
   %select#type_hours{:name => 'type_of_hours'  } 
-    -# Default to daytime hours
-    %option{ :value => "working" }                         working
-    %option{ :value => "daytime", :selected => "selected"} daytime
-    %option{ :value => "wallclock" }                       wall-clock
+    -# Default to wall-clock hours.
+    %option{ :value => "working" }                           working
+    %option{ :value => "daytime"}                            daytime
+    %option{ :value => "wallclock", :selected => "selected"} wall-clock
   hours
   %span#ack_until_text
   %input#ack_until{ :value => '', :type => :hidden, :name => 'ack_until' }

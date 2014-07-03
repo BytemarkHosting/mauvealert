@@ -69,7 +69,7 @@ module Mauve
         
         deliver_to_queue << [Time.now, self.class, destination, message] if deliver_to_queue
         
-        if  @disable_normal_delivery
+        if @disable_normal_delivery
           true # pretend it happened OK if we're just testing
         else
           send_alert_without_debug(destination, alert, all_alerts, conditions)
