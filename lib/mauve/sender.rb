@@ -8,7 +8,7 @@ rescue LoadError
 end
 
 begin
-  require 'iconv'
+  require 'iconv' unless String.new.respond_to?(:encode)
 rescue LoadError
   # Do nothing -- these are bonus libraries :)
 end
@@ -165,7 +165,16 @@ module Mauve
         #
         # Make sure all string fields are UTF8 -- to ensure the maximal amount of information is sent.
         #
-        update.__send__("#{field.name}=", Iconv.conv("UTF-8//IGNORE", from_charset, value)) if value.is_a?(String) and defined?(Iconv)
+        if value.is_a?(String)
+          if value.respond_to?(:encode)
+            value = value.encode("UTF-8", :undef => :replace, :invalid => :replace)
+          elsif defined? Iconv
+            value = Iconv.conv("UTF-8//IGNORE", from_charset, value)
+          end
+        
+          update.__send__("#{field.name}=", value)
+        end
+
       end
 
       update.alert.each do |alert|
@@ -178,7 +187,15 @@ module Mauve
           #
           # Make sure all string fields are UTF8 -- to ensure the maximal amount of information is sent.
           #
-          alert.__send__("#{field.name}=", Iconv.conv("UTF-8//IGNORE", from_charset, value)) if value.is_a?(String) and defined?(Iconv)
+          if value.is_a?(String)
+            if value.respond_to?(:encode)
+              value = value.encode("UTF-8", :undef => :replace, :invalid => :replace)
+            elsif defined? Iconv
+              value = Iconv.conv("UTF-8//IGNORE", from_charset, value)
+            end
+
+            alert.__send__("#{field.name}=", value)
+          end
         end
       end
 
