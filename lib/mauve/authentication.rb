@@ -13,10 +13,10 @@ module Mauve
   # Base class for authentication.
   #
   class Authentication
-    
+
     ORDER = []
 
-    # Autenticates a user.
+    # Authenticate a user.
     #
     # @param [String] login
     # @param [String] password
@@ -34,14 +34,14 @@ module Mauve
     def logger
       self.class.logger
     end
-    
+
     # @return [Log4r::Logger]
     def self.logger
       @logger ||= Log4r::Logger.new(self.to_s)
     end
 
     # This calls all classes in the ORDER array one by one.  If all classes
-    # fail, a 5 second sleep rate-limits authentication attempts. 
+    # fail, a 5 second sleep rate-limits authentication attempts.
     #
     # @param [String] login
     # @param [String] password
@@ -79,7 +79,7 @@ module Mauve
   end
 
 
-  # This is the Bytemark authentication mechansim.
+  # This is the Bytemark authentication mechanism.
   #
   class AuthBytemark < Authentication
 
@@ -135,7 +135,7 @@ module Mauve
 
   end
 
-  # This is the local authentication mechansim, i.e. against the values in the
+  # This is the local authentication mechanism, i.e. against the values in the
   # Mauve config file.
   #
   class AuthLocal < Authentication
@@ -167,7 +167,7 @@ module Mauve
         return false
       end
     end
-  
+
   end
 
 end
