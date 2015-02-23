@@ -1,5 +1,5 @@
 # encoding: UTF-8
-require 'sha1'
+require 'digest/sha1'
 require 'xmlrpc/client'
 
 #

@@ -27,10 +27,10 @@ module Mauve
 
       is_flag_attribute "notify_when_on_holiday"
       is_flag_attribute "notify_when_off_sick"
-     
+
       # Sets the block for all levels of alert
       #
-      # @param [Block] block 
+      # @param [Block] block
       def all(&block); urgent(&block); normal(&block); low(&block); end
 
       #
@@ -56,8 +56,8 @@ module Mauve
 
           @result.suppress_notifications_after[in_period] = number_of_alerts
           # History.all(
-          # :limit => number_of_alerts, 
-          # :order => :created_at.desc, 
+          # :limit => number_of_alerts,
+          # :order => :created_at.desc,
           # :type => "notification",
           # :event.like => '% succeeded')
         end
@@ -93,14 +93,14 @@ module Mauve
       # Add a default notification threshold
       #
       person.suppress_notifications_after[600] = 5 if person.suppress_notifications_after.empty?
-      
+
       #
       # Add a default notify clause
       #
       if person.notifications.empty?
         default_notification = Notification.new(person)
         default_notification.every = 30.minutes
-        default_notification.during = lambda { working_hours? }
+        default_notification.during = Proc.new { working_hours? }
         person.notifications << default_notification
       end
 
@@ -108,11 +108,11 @@ module Mauve
       # Set up some default notify levels.
       #
       if person.urgent.nil? and person.normal.nil? and person.low.nil?
-        person.urgent = lambda { sms ; xmpp ; email }
-        person.normal = lambda { xmpp ; email }
-        person.low    = lambda { email }
+        person.urgent = Proc.new { sms ; xmpp ; email }
+        person.normal = Proc.new { xmpp ; email }
+        person.low    = Proc.new { email }
       end
-      
+
       @result.people[person.username] = person
     end
 

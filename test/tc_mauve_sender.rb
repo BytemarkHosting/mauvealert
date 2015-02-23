@@ -1,3 +1,4 @@
+# encoding: utf-8
 $:.unshift "../lib"
 
 require 'th_mauve_resolv'
@@ -9,7 +10,7 @@ require 'locale'
 require 'iconv'
 
 
-class TcMauveSender < Test::Unit::TestCase 
+class TcMauveSender < Test::Unit::TestCase
   include Mauve
 
   def setup
@@ -23,7 +24,7 @@ class TcMauveSender < Test::Unit::TestCase
   def test_sanitise
     Locale.clear
     Locale.current = "en_GB.ISO-8859-1"
-    
+
     #
     # Set up a couple of crazy sources.
     #
@@ -42,11 +43,11 @@ class TcMauveSender < Test::Unit::TestCase
 
     alert = Mauve::Proto::Alert.new
     update.alert << alert
-    
+
     alert_cleared = Mauve::Proto::Alert.new
     update.alert << alert_cleared
     alert_cleared.clear_time = Time.now.to_i
-    
+
     #
     # Make sure the update has the correct source
     #

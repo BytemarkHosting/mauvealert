@@ -1,3 +1,9 @@
+if ENV['COVERAGE']
+  require 'simplecov'
+  SimpleCov.start do
+    add_filter "test/"
+  end
+end
 
 %w(. ..).each do |path|
   libdir = File.join(path,"lib")
@@ -8,9 +14,10 @@ require 'pp'
 require 'test/unit'
 require 'th_mauve'
 
+
 %w(. test).each do |dir|
-Dir.glob(File.join(dir,"tc_*.rb")).each do |s|
-  require s
-end
+  Dir.glob(File.join(dir,"tc_*.rb")).each do |s|
+    require s
+  end
 end
 

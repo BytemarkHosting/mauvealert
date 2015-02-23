@@ -1,3 +1,4 @@
+# encoding: utf-8
 $:.unshift "../lib"
 
 require 'th_mauve'
@@ -44,8 +45,10 @@ EOF
 
     %w(UTF-8 WINDOWS-1252 SHIFT-JIS).each do |enc|
       x.each do |lang, str|
-        assert_nothing_raised("Failed to use iconv to convert to #{enc}") { str = Iconv.conv(enc+"//IGNORE", "utf8", str) }
-  
+        assert_nothing_raised("Failed to use iconv to convert to #{enc}") {
+          str = Iconv.conv(enc+"//IGNORE", "utf8", str)
+        }
+
         alert = Alert.new(
           :alert_id  => "#{lang}:#{enc}",
           :source    => "test",
@@ -69,7 +72,7 @@ class TcMauveDatabasePostgresPeculiarities < TcMauveDatabasePeculiarities
       @temp_db = nil
       flunk(msg)
     end
-    # @pg_conn = PGconn.open(:dbname => @temp_db) 
+    # @pg_conn = PGconn.open(:dbname => @temp_db)
     @db_url = "postgres:///#{@temp_db}"
   end
 
@@ -121,7 +124,7 @@ EOF
     assert_equal(1, notification_buffer.length)
     notification_buffer.pop
 
-    10.times do   
+    10.times do
       Timecop.freeze(Time.now + 1.minute)
       5.times do
         AlertChanged.all.each do |ac|
@@ -140,7 +143,7 @@ end
 class TcMauveDatabaseSqlite3Peculiarities < TcMauveDatabasePeculiarities
   def setup
     super
-    # @pg_conn = PGconn.open(:dbname => @temp_db) 
+    # @pg_conn = PGconn.open(:dbname => @temp_db)
     @db_url = "sqlite3::memory:"
   end
 
@@ -148,8 +151,8 @@ class TcMauveDatabaseSqlite3Peculiarities < TcMauveDatabasePeculiarities
   # This just makes sure our mixin has been added to the SqliteAdapter.
   #
   def test_has_mixin
-    assert DataMapper::Adapters::SqliteAdapter.private_instance_methods.include?("with_connection_old")
-    assert DataMapper::Adapters::SqliteAdapter.public_instance_methods.include?("synchronize")
+    assert DataMapper::Adapters::SqliteAdapter.private_instance_methods.include?(:with_connection_old)
+    assert DataMapper::Adapters::SqliteAdapter.public_instance_methods.include?(:synchronize)
   end
 
 end

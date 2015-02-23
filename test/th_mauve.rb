@@ -5,14 +5,14 @@ require 'pp'
 require 'singleton'
 
 # Taken from
-# 
+#
 # http://blog.ardes.com/2006/12/11/testing-singletons-with-ruby
 #
-class <<Singleton
+class << Singleton
 
   def included_with_reset(klass)
     included_without_reset(klass)
-    class <<klass
+    class << klass
       def reset_instance
         Singleton.send :__init__, self
         self
@@ -88,7 +88,7 @@ module Mauve
     def logger_shift
       @outputter.shift
     end
-    
+
     def teardown_logger
       logger = Log4r::Logger['Mauve']
       return if logger.nil?
@@ -105,7 +105,7 @@ module Mauve
 
     def teardown_database
       DataObjects::Pooling.pools.each{|pool| pool.dispose} if defined?(DataObjects::Pooling)
-    end 
+    end
 
     def setup_time
       Timecop.freeze(Time.local(2011,8,1,0,0,0,0))

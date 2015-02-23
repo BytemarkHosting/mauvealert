@@ -38,10 +38,10 @@ module Mauve
       super
       @hostname    = Socket.gethostname
       @database    = "sqlite3::memory:"
-      
+
       @started_at = Time.now
       @initial_sleep = 300
-      
+
       #
       # Keep these queues here to prevent a crash in a subthread losing all the
       # subsquent things in the queue.
@@ -53,7 +53,7 @@ module Mauve
       # Bank Holidays -- this list is kept here, because I can't think of
       # anywhere else to put it.
       #
-      @bank_holidays = nil 
+      @bank_holidays = nil
 
       #
       # Turn off unwanted reverse DNS lookups across the board.
@@ -94,7 +94,7 @@ module Mauve
 
       @packet_buffer
     end
- 
+
     # Sets up the notification buffer (or not).  The argument can be "false" or
     # "no" or a FalseClass object for no.  Anything else makes no change.
     #
@@ -149,13 +149,13 @@ module Mauve
 
     # This sorts out the Server.  It empties the notification and packet
     # buffers.  It configures and migrates the database.
-    #  
+    #
     # @return [NilClass]
     def setup
       #
       # Set up the database
       #
-      DataMapper.logger = Log4r::Logger.new("Mauve::DataMapper") 
+      DataMapper.logger = Log4r::Logger.new("Mauve::DataMapper")
       DataMapper.setup(:default, @database)
 
       #
@@ -166,7 +166,7 @@ module Mauve
         m = Mauve.const_get(c)
         next unless m.respond_to?("auto_upgrade!")
         m.auto_upgrade!
-        # 
+        #
         # Don't want to use automigrate, since this trashes the tables.
         #
         # m.auto_migrate! if m.respond_to?("auto_migrate!")
@@ -194,12 +194,12 @@ module Mauve
 #      self.state = :starting
 
       setup
-      
+
       run_thread { main_loop }
     end
 
-    alias run start 
-    
+    alias run start
+
     #
     # This stops the main loop, and all the threads that are defined in THREAD_CLASSES above.
     #
@@ -207,7 +207,7 @@ module Mauve
       if self.state == :stopping
         # uh-oh already told to stop.
         logger.error "Stop already called.  Killing self!"
-        Kernel.exit 1 
+        Kernel.exit 1
       end
 
       self.state = :stopping
@@ -215,13 +215,13 @@ module Mauve
       THREAD_CLASSES.each do |klass|
         klass.instance.stop unless klass.instance.nil?
       end
-      
-      thread_list = Thread.list 
+
+      thread_list = Thread.list
       thread_list.delete(Thread.current)
 
       thread_list.each do |t|
         t.exit
-      end      
+      end
 
       self.state = :stopped
     end
@@ -229,7 +229,7 @@ module Mauve
     private
 
     def main_loop
-      thread_list = Thread.list 
+      thread_list = Thread.list
 
       thread_list.delete(Thread.current)
 
@@ -239,7 +239,7 @@ module Mauve
       if self.class.notification_buffer_size >= 10
         logger.info "Notification buffer has #{self.class.notification_buffer_size} messages in it"
       end
-      
+
       if self.class.packet_buffer_size >= 100
         logger.info "Packet buffer has #{self.class.packet_buffer_size} updates in it"
       end
@@ -259,12 +259,12 @@ module Mauve
           klass.instance.stop
         end
 
-        # 
+        #
         # Do nothing if we're frozen or supposed to be stopping or still alive!
         #
         next if self.should_stop? or klass.instance.alive?
 
-        # 
+        #
         # ugh something is beginnging to smell.
         #
         begin
@@ -304,7 +304,7 @@ module Mauve
       #
       sleep 5
     end
-    
+
 
     class << self
 
@@ -316,7 +316,7 @@ module Mauve
       #
 
       # Push a packet onto the back of the +packet_buffer+
-      # 
+      #
       # @param [String] a Packet from the UDP server
       def packet_enq(a)
         instance.packet_buffer.push(a)
@@ -342,7 +342,7 @@ module Mauve
 
       alias packet_push packet_enq
       alias packet_pop  packet_deq
-      
+
       # Push a notification on to the back of the +notification_buffer+
       #
       # @param [Array] a Notification array, consisting of a Person and the args to Mauve::Person#send_alert
@@ -367,7 +367,7 @@ module Mauve
       rescue NoMethodError
         0
       end
-      
+
       alias notification_push notification_enq
       alias notification_pop  notification_deq
 

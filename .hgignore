@@ -9,3 +9,4 @@
 ^static/javascript/jquery$
 ^doc/
 ^.yardoc/
+^coverage/

@@ -49,15 +49,17 @@ alert_group("test_group") {
 }
 EOF
 
+
     Configuration.current = ConfigurationBuilder.parse(config)
     notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
 
     Server.instance.setup
 
+
     alert = Alert.new(:source => "test", :alert_id => "test_alert", :summary => "test alert")
     alert.raise!
 
-    reminders     = 1 
+    reminders     = 1
     notifications = 1
 
     mins = 0
@@ -146,7 +148,7 @@ EOF
     Timecop.freeze(Time.now + 10.minutes)
     AlertChanged.all.each{|ac| ac.poll}
     assert_equal(2, notification_buffer.length, "Extra notifications sent when alertchangeds are polled.")
-  
+
     #
     # OK if we poll the alert now it should be re-raised.
     #
@@ -202,7 +204,7 @@ EOF
     #
     # Raise and clear the alert multiple times.
     #
-    5.times do    
+    5.times do
       alert.raise!
       Timecop.freeze(Time.now + 15.minutes)
       alert.clear!

@@ -6,7 +6,7 @@ require 'mauve/configuration_builder'
 require 'mauve/configuration'
 require 'webmock'
 
-class TcMauveGenericApiClient < Mauve::UnitTest 
+class TcMauveGenericApiClient < Mauve::UnitTest
 
   include WebMock::API
   include Mauve
@@ -27,7 +27,7 @@ class TcMauveGenericApiClient < Mauve::UnitTest
     url = "http://localhost/"
 
     #
-    # This sets up two redirects, followed by the answer (below) 
+    # This sets up two redirects, followed by the answer (below)
     #
     2.times do |x|
       next_url = url + "#{x}/"
@@ -60,7 +60,7 @@ class TcMauveGenericApiClient < Mauve::UnitTest
     #
     logger_pop
   end
-  
+
   def test_do_get_with_cache
     url = "http://localhost/"
 
@@ -68,7 +68,7 @@ class TcMauveGenericApiClient < Mauve::UnitTest
     # This stubs the request to give out the time
     #
     stub_request(:get, url).
-      to_return( lambda{ {:status => 200, :body => YAML.dump(Time.now), :headers => {}} } )
+      to_return( Proc.new{ {:status => 200, :body => YAML.dump(Time.now), :headers => {}} } )
 
     #
     # This reponse should not be cached, the cache-until paramter is "now"

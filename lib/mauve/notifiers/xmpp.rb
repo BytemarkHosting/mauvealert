@@ -28,19 +28,19 @@ module Jabber
       10.times do
         pr = 0
         @tbcbmutex.synchronize { pr = @processing }
-        break if pr = 0
+        break if pr == 0
         Thread::pass if pr > 0
         sleep 1
       end
 
-      # Order Matters here! If this method is called from within 
-      # @parser_thread then killing @parser_thread first would 
-      # mean the other parts of the method fail to execute. 
+      # Order Matters here! If this method is called from within
+      # @parser_thread then killing @parser_thread first would
+      # mean the other parts of the method fail to execute.
       # That would be bad. So kill parser_thread last
       @tbcbmutex.synchronize { @processing = 0 }
       if @fd and !@fd.closed?
-        @fd.close 
-        stop 
+        @fd.close
+        stop
       end
       @status = DISCONNECTED
     end
@@ -52,7 +52,7 @@ end
 
 module Mauve
   module Notifiers
- 
+
     #
     # This is the Jabber/XMMP notifiers module.
     #
@@ -73,7 +73,7 @@ module Mauve
         attr_accessor :password
 
         def initialize(name)
-          Jabber::logger = self.logger       
+          Jabber::logger = self.logger
 #         Jabber::debug = true
 #          Jabber::warnings = true
 
@@ -85,13 +85,13 @@ module Mauve
         end
 
         # The logger instance
-        # 
+        #
         # @return [Log4r::Logger]
         def logger
           # Give the logger a sane name
           @logger ||= Log4r::Logger.new self.class.to_s.sub(/::Default$/,"")
         end
-       
+
         # Sets the client's JID
         #
         # @param [String] jid The JID required.
@@ -109,7 +109,7 @@ module Mauve
           # Make sure we're disconnected.
           self.close if @client.is_a?(Client)
 
-          @client = Client.new(@jid) 
+          @client = Client.new(@jid)
 
           @closing = false
           @client.connect
@@ -147,7 +147,7 @@ module Mauve
             # The XMPP4R exception clauses in Stream all close the stream, so
             # we just need to reconnect.
             #
-          #   unless ex.nil? or @closing 
+          #   unless ex.nil? or @closing
           #     logger.warn(["Caught",ex.class,ex.to_s,"during XMPP",where].join(" "))
           #     logger.debug ex.backtrace.join("\n")
           #     self.close
@@ -158,23 +158,23 @@ module Mauve
           logger.debug ex.backtrace.join("\n")
           self.close
           @client = nil
-        end  
+        end
 
         def stop
           @client.stop
         end
-  
+
         #
         # Closes the XMPP connection, if possible.  Sets @client to nil.
         #
         # @return [NilClass]
         def close
           @closing = true
-          if @client 
+          if @client
             if  @client.is_connected?
               @mucs.each do |jid, muc|
                 muc[:client].exit("Goodbye!") if muc[:client].active?
-              end 
+              end
               @client.send(Presence.new(nil, "Goodbye!").set_type(:unavailable))
             end
             @client.close!
@@ -188,8 +188,8 @@ module Mauve
         def ready?
           @client.is_a?(Jabber::Client) and @client.is_connected?
         end
-        
-        # Attempt to send an alert using XMPP. 
+
+        # Attempt to send an alert using XMPP.
         #
         # @param [String] destination The JID you're sending the alert to. This should be
         #   a bare JID in the case of an individual, or +muc:room@server+ for
@@ -207,21 +207,21 @@ module Mauve
         #   has a presence matching one or more of the choices - see
         #   Mauve::Notifiers::Xmpp::Default#check_jid_has_presence for options.
         #
-        # @return [Boolean] 
+        # @return [Boolean]
         def send_alert(destination, alert, all_alerts, conditions = {})
-          destination_jid = JID.new(destination)         
- 
+          destination_jid = JID.new(destination)
+
           was_suppressed = conditions[:was_suppressed] || false
           will_suppress  = conditions[:will_suppress]  || false
-          
-          if conditions && !check_alert_conditions(destination_jid, conditions) 
+
+          if conditions && !check_alert_conditions(destination_jid, conditions)
             logger.info("Alert conditions not met, not sending XMPP alert to #{destination_jid}")
             return false
           end
-         
+
           template_file = File.join(File.dirname(__FILE__),"templates","xmpp.txt.erb")
 
-          txt = if File.exists?(template_file) 
+          txt = if File.exists?(template_file)
             ERB.new(File.read(template_file)).result(binding).chomp
           else
             logger.error("Could not find xmpp.txt.erb template")
@@ -250,10 +250,10 @@ module Mauve
 
           message = Message.new(jid)
           message.body = msg
-          if html_msg 
+          if html_msg
             begin
               html_msg = REXML::Document.new(html_msg) unless html_msg.is_a?(REXML::Document)
-              message.add_element(html_msg) 
+              message.add_element(html_msg)
             rescue REXML::ParseException
               logger.error "Bad XHTML: #{html_msg.inspect}"
             end
@@ -295,11 +295,11 @@ module Mauve
           self.connect unless self.ready?
 
           return unless self.ready?
- 
+
           if jid.is_a?(String) and jid =~ /^muc:(.*)/
-            jid = JID.new($1) 
+            jid = JID.new($1)
           end
-            
+
           unless jid.is_a?(JID)
             logger.warn "#{jid} is not a MUC"
             return
@@ -310,9 +310,9 @@ module Mauve
           if !@mucs[jid.strip]
 
             logger.debug("Adding new MUC client for #{jid}")
-            
+
             @mucs[jid.strip] = {:jid => jid, :password => password, :client => Jabber::MUC::MUCClient.new(@client)}
-            
+
             # Add some callbacks
             @mucs[jid.strip][:client].add_message_callback do |m|
               receive_message(m)
@@ -339,10 +339,10 @@ module Mauve
           # Return the JID object
           #
           jid.strip
-        end 
-        
-        # 
-        # Checks whether the destination JID is a MUC. 
+        end
+
+        #
+        # Checks whether the destination JID is a MUC.
         #
         def is_muc?(jid)
           (jid.is_a?(JID)    and @mucs.keys.include?(jid.strip)) or
@@ -366,7 +366,7 @@ module Mauve
           # end
         end
 
-        # 
+        #
         # Checks to see if the JID is in our roster, and whether we are
         # subscribed to it or not. Will add to the roster and subscribe as
         # is necessary to ensure both are true.
@@ -381,7 +381,7 @@ module Mauve
           jid = JID.new(jid) unless jid.is_a?(JID)
 
           ri = @roster.find(jid).values.first
-          @roster.add(jid, nil, true) if ri.nil? 
+          @roster.add(jid, nil, true) if ri.nil?
 
           ri = @roster.find(jid).values.first
           ri.subscribe unless [:to, :both, :remove].include?(ri.subscription)
@@ -399,7 +399,7 @@ module Mauve
           #
           if @jid == msg.from or @mucs.any?{|jid, muc| muc.is_a?(Hash) and muc.has_key?(:client) and muc[:client].jid == msg.from}
             return nil
-          end 
+          end
 
           # We only want to hear messages from known contacts.
           unless is_known_contact?(msg.from)
@@ -419,7 +419,7 @@ module Mauve
         end
 
         def receive_error_message(msg)
-          logger.warn("Caught XMPP error #{msg}") 
+          logger.warn("Caught XMPP error #{msg}")
           nil
         end
 
@@ -437,7 +437,7 @@ module Mauve
             unless join_muc(jid)
               logger.warn "Failed to join MUC #{jid} following invitation"
               return nil
-            end            
+            end
           elsif msg.body
             #
             # Received a message with a body.
@@ -445,7 +445,7 @@ module Mauve
             jid = msg.from
           end
 
-          if jid 
+          if jid
             reply = parse_command(msg)
             send_message(jid, reply, nil, msg.type)
           end
@@ -458,11 +458,11 @@ module Mauve
           # match our resource or node in the body.
           #
           if @mucs[msg.from.strip][:client].is_a?(MUC::MUCClient) and
-                msg.x("jabber:x:delay") == nil and 
+                msg.x("jabber:x:delay") == nil and
                 (msg.body =~ /\b#{Regexp.escape(@mucs[msg.from.strip][:client].jid.resource)}\b/i or
                 msg.body =~ /\b#{Regexp.escape(@client.jid.node)}\b/i)
 
-            receive_normal_message(msg) 
+            receive_normal_message(msg)
           end
         end
 
@@ -480,13 +480,13 @@ module Mauve
               "Sorry -- destroy has been disabled.  Try \"clear\" instead."
             else
               File.executable?('/usr/games/fortune') ? `/usr/games/fortune -s -n 60`.chomp : "I'd love to stay and chat, but I'm really quite busy"
-          end          
+          end
         end
 
         def do_parse_help(msg)
           msg.body =~ /help\s+(\w+)/i
           cmd = $1
-          
+
           return case cmd
             when /^show/
                <<EOF
@@ -532,7 +532,7 @@ EOF
 
             else
               "I am Mauve #{Mauve::VERSION}.  I understand \"help\", \"show\", \"acknowledge\", and \"destroy\" commands.  Try \"help show\"."
-          end       
+          end
         end
 
         def do_parse_show(msg)
@@ -544,25 +544,25 @@ EOF
 
           type = $3 || "raised"
           type = "acknowledged" if type =~ /^ack/
-          
+
           msg = []
-          
+
           items = case type
             when "acknowledged"
               Alert.all_acknowledged.all(:order => [:acknowledged_at.asc])
             when "events"
               History.all(:created_at.gte => Time.now - 24.hours)
-            else 
+            else
               Alert.all_unacknowledged.all(:order => [:raised_at.asc])
           end
 
           if first_or_last == "first"
-            items = items.first(n_items) if n_items >= 0 
+            items = items.first(n_items) if n_items >= 0
           elsif first_or_last == "last"
-            items = items.last(n_items) if n_items >= 0 
+            items = items.last(n_items) if n_items >= 0
           end
 
-          return "Nothing to show" if items.length == 0          
+          return "Nothing to show" if items.length == 0
 
           template_file = File.join(File.dirname(__FILE__),"templates","xmpp.txt.erb")
           if File.exists?(template_file)
@@ -570,9 +570,9 @@ EOF
           else
             logger.error("Could not find xmpp.txt.erb template")
             template = nil
-          end 
+          end
 
-          (["Alerts #{type}:"] + items.collect do |alert| 
+          (["Alerts #{type}:"] + items.collect do |alert|
             ERB.new(template).result(binding).chomp
           end).join("\n")
         end
@@ -580,7 +580,7 @@ EOF
         def do_parse_ack(msg)
           return "Sorry -- I don't understand your acknowledge command." unless
              msg.body =~ /ack(?:nowledge)?\s+([\d\D]+)\s+for\s+(\d+(?:\.\d+)?)\s+(work(?:ing)?|day(?:time)?|wall(?:-?clock)?)?\s*(day|hour|min(?:ute)?|sec(?:ond))s?(?:\s+(?:cos|cause|as|because)?\s*(.*))?/i
-          
+
           alerts, n_hours, type_hours, dhms, note = [$1,$2, $3, $4, $5]
 
           alerts = alerts.split(/\D+/)
@@ -608,7 +608,7 @@ EOF
           begin
             now = Time.now
             ack_until = now.in_x_hours(n_hours, type_hours)
-          rescue RangeError 
+          rescue RangeError
             return "I'm sorry, you tried to acknowedge for far too long, and my buffers overflowed!"
           end
 
@@ -627,7 +627,7 @@ EOF
             alert = Alert.get(alert_id)
 
             if alert.nil?
-              msg << "#{alert_id}: alert not found" 
+              msg << "#{alert_id}: alert not found"
               next
             end
 
@@ -643,7 +643,7 @@ EOF
               msg << "#{alert_id}: Acknowledgement failed."
             end
           end
-  
+
           #
           # Add the note.
           #
@@ -662,7 +662,7 @@ EOF
 
           alerts = $1.split(/\D+/)
           note   = $2
-          
+
           username = get_username_for(msg.from)
 
           if is_muc?(Configuration.current.people[username].xmpp)
@@ -683,7 +683,7 @@ EOF
             if alert.cleared?
               msg << "#{alert_id}: alert already cleared."
               next
-            end 
+            end
 
             if alert.clear!
               msg << "#{alert.to_s} cleared."
@@ -691,7 +691,7 @@ EOF
               msg << "#{alert.to_s}: clearing failed."
             end
           end
-          
+
           #
           # Add the note.
           #
@@ -707,19 +707,20 @@ EOF
         def check_alert_conditions(destination, conditions)
           any_failed = conditions.keys.collect do |key|
             case key
-              when :if_presence : check_jid_has_presence(destination, conditions[:if_presence])
-              else 
+            when :if_presence
+              check_jid_has_presence(destination, conditions[:if_presence])
+            else
                 #raise ArgumentError.new("Unknown alert condition, #{key} => #{conditions[key]}")
                 # FIXME - clean up this use of :conditions to pass arbitrary
-                # parameters to notifiers; for now we need to ignore this. 
+                # parameters to notifiers; for now we need to ignore this.
                 true
             end
           end.include?(false)
           !any_failed
         end
-        
-        # Checks our roster to see whether the jid has a resource with at least 
-        # one of the included presences. Acceptable +presence+ types and their 
+
+        # Checks our roster to see whether the jid has a resource with at least
+        # one of the included presences. Acceptable +presence+ types and their
         # meanings for individuals:
         #
         #   :online, :offline               - user is logged in or out
@@ -747,14 +748,28 @@ EOF
 
           results = presences.collect do |need_presence|
             case need_presence
-              when :online      : (roster_item && [:to, :both].include?(roster_item.subscription) && roster_item.online?)
-              when :offline     : (roster_item && [:to, :both].include?(roster_item.subscription) && !roster_item.online?)
-              when :available   : (roster_item && [:to, :both].include?(roster_item.subscription) && (resource_presences.include?(nil) ||
-                                                                                                      resource_presences.include?(:chat)))
+            when :online
+              (roster_item &&
+               [:to, :both].include?(roster_item.subscription) &&
+               roster_item.online?)
+            when :offline
+              (roster_item &&
+               [:to, :both].include?(roster_item.subscription) &&
+               !roster_item.online?)
+            when :available
+              (roster_item &&
+               [:to, :both].include?(roster_item.subscription) &&
+               (resource_presences.include?(nil) ||
+                resource_presences.include?(:chat)))
               # No resources are nil or chat
-              when :unavailable : (roster_item && [:to, :both].include?(roster_item.subscription) && (resource_presences - [:away, :dnd, :xa]).empty?)
+            when :unavailable
+              (roster_item &&
+               [:to, :both].include?(roster_item.subscription) &&
+               (resource_presences - [:away, :dnd, :xa]).empty?)
               # Not in roster or don't know subscription
-              when :unknown     : (roster_item.nil? || [:none, :from].include?(roster_item.subscription)) 
+            when :unknown
+              (roster_item.nil? ||
+               [:none, :from].include?(roster_item.subscription))
             else
               raise ArgumentError.new("Unknown presence possibility: #{need_presence}")
             end
@@ -767,7 +782,7 @@ EOF
         #
         def get_username_for(jid)
           jid = JID.new(jid) unless jid.is_a?(JID)
-       
+
           #
           # Resolve MUC JIDs.
           #
@@ -775,7 +790,7 @@ EOF
             muc_jid = get_jid_from_muc_jid(jid)
             jid = muc_jid unless muc_jid.nil?
           end
- 
+
           ans = Configuration.current.people.find do |username, person|
             next unless person.xmpp.is_a?(JID)
             person.xmpp.strip == jid.strip
@@ -814,7 +829,7 @@ EOF
         def is_known_contact?(jid)
           !get_username_for(jid).nil?
         end
-        
+
       end
     end
   end

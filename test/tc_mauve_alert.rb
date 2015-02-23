@@ -11,7 +11,7 @@ require 'mauve/configuration'
 require 'mauve/configuration_builder'
 require 'mauve/configuration_builders'
 
-class TcMauveAlert < Mauve::UnitTest 
+class TcMauveAlert < Mauve::UnitTest
   include Mauve
 
   def setup
@@ -23,7 +23,7 @@ person ("test") {
 }
 
 alert_group("default") {
-  level URGENT 
+  level URGENT
 
   notify("test") {
     every 10.minutes
@@ -122,7 +122,7 @@ EOF
 
     next_alert = Alert.find_next_with_event
     assert_equal(next_alert.id, alert.id)
-    assert_equal(Time.now+3.minutes, next_alert.due_at)    
+    assert_equal(Time.now+3.minutes, next_alert.due_at)
 
     Timecop.freeze(Time.now + 3.minutes)
 
@@ -170,7 +170,7 @@ EOF
     assert_equal("test-host",    a.source)
     assert_equal("test detail",  a.detail)
     assert_equal("test summary", a.summary)
-    
+
   end
 
   def test_recieve_update_with_suppression
@@ -203,7 +203,7 @@ EOF
 
       Timecop.freeze(Time.now + 2.minute)
     end
-    
+
     #
     # Ten minutes have passed == the suppression should have lapsed.
     #
@@ -289,7 +289,7 @@ EOF
     assert(!a.suppressed?)
 
   end
-    
+
   def test_notify_if_needed
     Configuration.current = ConfigurationBuilder.parse(@test_config)
     Server.instance.setup
@@ -298,7 +298,7 @@ EOF
     #
     #  * the alert has changed state (update_type); or
     #  * the alert new and "raised".
-    
+
     alert = Alert.new(
       :alert_id  => "test_notify_if_needed",
       :source    => "test",
@@ -320,14 +320,14 @@ EOF
     #
     # Empty the buffer.
     Server.instance.notification_buffer.pop
-    
+
     Timecop.freeze(Time.now+5)
     alert.raise!
     #
     # Should not re-raise.
     #
     assert_equal(0, Server.instance.notification_buffer.size, "Notification sent erroneously on second raise.")
-    
+
     alert.acknowledge!(Mauve::Configuration.current.people["test"])
     assert_equal(1, Server.instance.notification_buffer.size, "Wrong number of notifications sent erroneously on acknowledge.")
     #
@@ -364,10 +364,10 @@ EOF
     Timecop.freeze(Time.now + 10.minutes)
     assert_equal(Time.now - 10.minutes, alert.updated_at, "Alert should be last updated before the server instance thinks it started.")
 
-    5.times do 
+    5.times do
       assert(Server.instance.in_initial_sleep?,"Server not in initial sleep when it should be.")
       alert.poll
-      assert_equal(Server.instance.started_at + Server.instance.initial_sleep, alert.will_raise_at) 
+      assert_equal(Server.instance.started_at + Server.instance.initial_sleep, alert.will_raise_at)
       assert_equal(0, Server.instance.notification_buffer.size, "Notification sent for old alert")
       Timecop.freeze(Time.now + 1.minute)
     end
@@ -400,7 +400,7 @@ EOF
       assert(alert.cleared?)
       alert.poll
       assert(alert.cleared?)
-      assert(0, Server.instance.notification_buffer.length)
+      assert_equal(0, Server.instance.notification_buffer.length)
     end
 
   end
@@ -423,7 +423,7 @@ EOF
     Timecop.freeze(Time.now + 5.minutes)
     alert.clear!
     assert_equal(2, History.all.length)
-    
+
     #
     # OK now we destroy the alert.  Destory the histories too.
     #
@@ -450,7 +450,7 @@ EOF
 
     assert_equal(Time.now + 5.minutes, alert.suppress_until)
     assert(alert.suppressed?)
-    
+
     alert = Alert.new(
       :alert_id  => "test_alert_suppression2",
       :source    => "test",
@@ -490,7 +490,7 @@ EOF
     logger_pop
 
     alert.reload
-    assert(256, alert.alert_id.length)
+    assert_equal(256, alert.alert_id.length)
 
   end
 

@@ -11,16 +11,16 @@ module Mauve
   # alert due to trigger.
   #
   class AlertEarliestDate
- 
+
     include DataMapper::Resource
-    
+
     property :alert_id, Integer, :key => true
     property :earliest, EpochTime
     belongs_to :alert, :model => "Alert"
-    
+
     # 1) Shame we can't get this called automatically from DataMapper.auto_upgrade!
     #
-    # 2) Can't use a neater per-connection TEMPORARY VIEW because the pooling 
+    # 2) Can't use a neater per-connection TEMPORARY VIEW because the pooling
     # function causes the connection to get dropped occasionally, and we can't
     # hook the reconnect function (that I know of).
     #
@@ -30,20 +30,22 @@ module Mauve
       the_distant_future = (Time.now + 2000.days).to_i # it is the year 2000 - the humans are dead
 
       case DataMapper.repository(:default).adapter.class.to_s
-        when "DataMapper::Adapters::PostgresAdapter" 
+        when "DataMapper::Adapters::PostgresAdapter"
           ifnull = "COALESCE"
           min    = "LEAST"
-        else 
+        else
           ifnull = "IFNULL"
           min    = "MIN"
       end
 
       ["BEGIN TRANSACTION",
-       "DROP VIEW IF EXISTS mauve_alert_earliest_dates",
-       "CREATE VIEW 
+       # This was previously a DROP VIEW, but the sqlite adapter complains
+       # about DROP VIEW here.
+       "DROP TABLE IF EXISTS mauve_alert_earliest_dates",
+       "CREATE VIEW
           mauve_alert_earliest_dates
         AS
-        SELECT 
+        SELECT
           id AS alert_id,
           NULLIF(
             #{min}(
@@ -53,7 +55,7 @@ module Mauve
             ),
             #{the_distant_future}
           ) AS earliest
-        FROM mauve_alerts 
+        FROM mauve_alerts
         WHERE
           will_clear_at IS NOT NULL OR
           will_raise_at IS NOT NULL OR
@@ -64,7 +66,7 @@ module Mauve
       end
     end
   end
- 
+
   #
   # Woo! An alert.
   #
@@ -73,11 +75,13 @@ module Mauve
     def bytesize; 99; end
     # @deprecated Not used anymore?
     def size; 99; end
-    
+
     include DataMapper::Resource
-   
+
     #
-    # If a string matches this regex, it is valid UTF8.
+    # If a string matches this regex, it is valid UTF8.  This regex is
+    # in ASCII-8BIT, so we have to force the encoding of the string to
+    # match it.
     #
     UTF8_REGEXP = Regexp.new(/^(?:#{[
          "[\x00-\x7F]",                        # ASCII
@@ -89,7 +93,7 @@ module Mauve
          "[\xF1-\xF3][\x80-\xBF]{3}",          # planes 4-15
          "\xF4[\x80-\x8F][\x80-\xBF]{2}"       # plane 16
         ].join("|")})*$/)
- 
+
     property :id, Serial
     property :alert_id, String, :required => true, :unique_index => :alert_index, :length=>256, :lazy => false
     property :source, String, :required => true, :unique_index => :alert_index, :length=>512, :lazy => false
@@ -105,7 +109,7 @@ module Mauve
     property :acknowledged_at, EpochTime
     property :acknowledged_by, String, :lazy => false
     property :update_type, String, :lazy => false
-    
+
     property :will_clear_at, EpochTime
     property :will_raise_at, EpochTime
     property :will_unacknowledge_at, EpochTime
@@ -124,11 +128,11 @@ module Mauve
     after  :destroy, :destroy_associations
 
     validates_with_method :check_dates
-    
+
     default_scope(:default).update(:order => [:source, :importance])
-    
+
     # @return [String]
-    def to_s 
+    def to_s
       "#<Alert #{id}, alert_id #{alert_id}, source #{source}>"
     end
 
@@ -140,7 +144,7 @@ module Mauve
     #
     # @return [Mauve::AlertGroup] The first matching AlertGroup for this alert
     def alert_group
-      # 
+      #
       # Find the AlertGroup by name if we've got a cached value
       #
       ag = AlertGroup.find{|a| self.cached_alert_group == a.name} if self.cached_alert_group
@@ -154,8 +158,8 @@ module Mauve
         ag = AlertGroup.all.last if ag.nil?
         self.cached_alert_group = ag.name unless ag.nil?
       end
-      
-      ag 
+
+      ag
     end
 
     # Pick out the source lists that match this alert by subject.
@@ -176,16 +180,16 @@ module Mauve
       source_list.includes?(self.subject)
     end
 
-    # Returns the alert level 
+    # Returns the alert level
     #
     # @return [Symbol] The alert level, as per its AlertGroup.
     def level
       @level ||= self.alert_group.level
     end
-  
+
     # An array used to sort compare
-    # 
-    # @return [Array] 
+    #
+    # @return [Array]
     def sort_tuple
       [AlertGroup::LEVELS.index(self.level), (self.raised_at || self.cleared_at || Time.now)]
     end
@@ -198,14 +202,14 @@ module Mauve
     def <=>(other)
       other.sort_tuple <=> self.sort_tuple
     end
- 
+
     # The alert subject
     #
     # @return [String]
     def subject; super || self.source || "not set" ; end
 
     # The alert detail
-    # 
+    #
     # @return [String]
     def detail;  super || "_No detail set._" ; end
 
@@ -215,7 +219,7 @@ module Mauve
     def subject=(s)
       self.cached_alert_group = nil
       attribute_set(:subject, s)
-    end 
+    end
 
     #
     # Set the detail -- this clears the cached_alert_group.
@@ -225,14 +229,14 @@ module Mauve
       attribute_set(:detail, s)
     end
 
-    # 
+    #
     # Set the source -- this clears the cached_alert_group.
     #
     def source=(s)
       self.cached_alert_group = nil
       attribute_set(:source, s)
-    end 
-    
+    end
+
     #
     # Set the summary -- this clears the cached_alert_group.
     #
@@ -240,7 +244,7 @@ module Mauve
       self.cached_alert_group = nil
       attribute_set(:summary, s)
     end
- 
+
     protected
 
     # This cleans the HTML before saving.
@@ -274,7 +278,7 @@ module Mauve
         next unless prop.is_a?(DataMapper::Property::String)
         next unless val.is_a?(String)
         #
-        # Truncate 
+        # Truncate
         #
         max_length = prop.length
         if val.length > max_length
@@ -287,7 +291,7 @@ module Mauve
     def do_set_timestamps(context = :default)
       self.updated_at = Time.now if self.dirty?
     end
-   
+
     # This is to stop datamapper inserting duff dates into the database.
     #
     def check_dates
@@ -310,7 +314,7 @@ module Mauve
     end
 
     public
-    
+
     # Send a notification for this alert.
     #
     # @return [Boolean] Showing if an alert has been sent.
@@ -319,7 +323,7 @@ module Mauve
     end
 
     # Save an alert, creating a history and notifications, as needed.
-    # 
+    #
     #
     def save
       #
@@ -328,11 +332,11 @@ module Mauve
       #  * the alert has just been raised
       #  * the alert is raised and its acknowledged status has changed
       #  * the alert has just been cleared, and wasn't suppressed before the clear.
-      # 
+      #
       #
       should_notify = (
         (self.raised?  and self.was_cleared?) or
-        (self.raised?  and self.was_acknowledged? != self.acknowledged?) or 
+        (self.raised?  and self.was_acknowledged? != self.acknowledged?) or
         (self.cleared? and self.was_raised? and !self.was_suppressed?)
       )
 
@@ -340,7 +344,7 @@ module Mauve
       # Set the update type.
       #
       ut = if self.cleared? and !self.was_cleared?
-        "cleared" 
+        "cleared"
       elsif self.raised? and !self.was_raised?
         "raised"
       elsif self.raised? and self.acknowledged? and !self.was_acknowledged?
@@ -369,7 +373,7 @@ module Mauve
         #
         # Add a note saying that notifications have been suppressed
         #
-        if !should_notify 
+        if !should_notify
           history.event += " (notifications not required)"
         elsif self.suppressed?
           history.event += " (notifications suppressed until #{self.suppress_until.to_s_human})"
@@ -397,7 +401,7 @@ module Mauve
         # Success
         #
         return true
-      rescue DataMapper::SaveFailureError => err 
+      rescue DataMapper::SaveFailureError => err
         logger.error "Failed to save #{self} due to #{err.inspect}"
       end
 
@@ -421,14 +425,14 @@ module Mauve
       #
       limit = Time.now + Configuration.current.max_acknowledgement_time
       ack_until = limit if ack_until > limit
- 
+
       self.acknowledged_by = person.username
       self.acknowledged_at = Time.now
       self.will_unacknowledge_at = ack_until
 
       self.save
     end
- 
+
     # Unacknowledge an alert
     #
     # @return [Boolean] showing the unacknowledgment has been successful
@@ -446,9 +450,9 @@ module Mauve
 
       self.save
     end
-   
+
     # Raise an alert at a specified time
-    #    
+    #
     # @param [Time] at The time at which the alert should be raised.
     #
     # @return [Boolean] showing the raise has been successful
@@ -457,7 +461,7 @@ module Mauve
       # OK if this is an alert updated in the last run, do not raise, just postpone.
       #
       if (self.will_raise_at or self.will_unacknowledge_at) and
-          Server.instance.in_initial_sleep? and 
+          Server.instance.in_initial_sleep? and
           self.updated_at and
           self.updated_at < Server.instance.started_at
 
@@ -470,7 +474,7 @@ module Mauve
         if self.will_unacknowledge_at and self.will_unacknowledge_at <= Time.now
           self.will_unacknowledge_at = postpone_until
         end
-        
+
         logger.info("Postponing raise of #{self} until #{postpone_until} as it was last updated in a prior run of Mauve.")
       else
         self.acknowledged_by = nil
@@ -487,7 +491,7 @@ module Mauve
     end
 
     # Clear an alert at a specified time
-    #    
+    #
     # @param [Time] at The time at which the alert should be cleared.
     #
     # @return [Boolean] showing the clear has been successful
@@ -496,10 +500,10 @@ module Mauve
       # Postpone clearance if we're in the sleep period.
       #
       if self.will_clear_at and
-          Server.instance.in_initial_sleep? and 
+          Server.instance.in_initial_sleep? and
           self.updated_at and
           self.updated_at < Server.instance.started_at
-        
+
         self.will_clear_at = Server.instance.started_at + Server.instance.initial_sleep
 
         logger.info("Postponing clear of #{self} until #{self.will_clear_at} as it was last updated in a prior run of Mauve.")
@@ -543,7 +547,7 @@ module Mauve
     def due_at
       [will_clear_at, will_raise_at, will_unacknowledge_at].compact.sort.first
     end
-    
+
     # Polls the alert, raising or clearing as needed.
     #
     # @return [Boolean] showing the poll was successful
@@ -610,7 +614,7 @@ module Mauve
     def cleared?
       !raised?
     end
- 
+
     # Was the alert cleared before the current changes?
     #
     # @return [Boolean]
@@ -696,6 +700,8 @@ module Mauve
       end
 
       def clean_utf8(str)
+        # We're explicitly throwing away non-valid data here.
+        forced = str.force_encoding("ASCII-8BIT")
         unless UTF8_REGEXP.match(str)
           str.gsub(/[^\x00-\x7F]/,'?')
         else
@@ -709,7 +715,7 @@ module Mauve
       def all_raised
         all(:raised_at.not => nil, :order => [:raised_at.asc]) & (all(:cleared_at => nil) | all(:conditions => ['"raised_at" >= "cleared_at"']))
       end
-      
+
       # All alerts currently raised and unacknowledged
       #
       # @return [Array]
@@ -763,7 +769,7 @@ module Mauve
           earliest_alert ? earliest_alert.alert : nil
         end
       end
-     
+
       # Receive an AlertUpdate buffer from the wire.
       #
       # @param [String] update The update string, as received over UDP
@@ -780,14 +786,14 @@ module Mauve
         end
 
         alerts_updated = []
-        
+
         # logger.debug("Alert update received from wire: #{update.inspect.split("\n").join(" ")}")
-        
+
         #
         # Transmission time helps us determine any time offset
         #
         if update.transmission_time and update.transmission_time > 0
-          transmission_time = Time.at(update.transmission_time) 
+          transmission_time = Time.at(update.transmission_time)
         else
           transmission_time = reception_time
         end
@@ -796,14 +802,14 @@ module Mauve
 
         #
         # Make sure there is no HTML in the update source.  Need to do this
-        # here because we use the html-free version in the database save hook. 
+        # here because we use the html-free version in the database save hook.
         #
         update.source = Alert.remove_html(update.source.to_s)
 
         # Update each alert supplied
         #
         update.alert.each do |alert|
-          # 
+          #
           # Infer some actions from our pure data structure (hmm, wonder if
           # this belongs in our protobuf-derived class?
           #
@@ -814,7 +820,7 @@ module Mauve
             #
             # Make sure that we raise if neither raise nor clear is set
             #
-            raise_time = reception_time 
+            raise_time = reception_time
           end
 
           #
@@ -823,7 +829,7 @@ module Mauve
           # search to fail.
           #
           alert.id = Alert.remove_html(alert.id.to_s)
- 
+
           #
           # Load the database alert, and all its properties, since we're updating.
           #
@@ -881,10 +887,10 @@ module Mauve
           #
           # Set the subject
           #
-          if alert.subject and !alert.subject.empty? 
+          if alert.subject and !alert.subject.empty?
             alert_db.subject = alert.subject
 
-          elsif alert_db.subject.nil? 
+          elsif alert_db.subject.nil?
             #
             # Use the source, Luke, but only when the subject hasn't already been set.
             #
@@ -895,7 +901,7 @@ module Mauve
 
           alert_db.detail = alert.detail   if alert.detail  && !alert.detail.empty?
 
-          alert_db.importance = alert.importance if alert.importance != 0 
+          alert_db.importance = alert.importance if alert.importance != 0
 
           alert_db.updated_at = reception_time
 
@@ -905,19 +911,19 @@ module Mauve
           #  * the alert is not already suppressed
           #  * the alert has changed state.
           #
-          if !alert_db.suppressed? and 
+          if !alert_db.suppressed? and
             ((alert_db.was_raised? and !alert_db.raised?) or (alert_db.was_cleared? and !alert_db.cleared?))
             alert_db.suppress_until = Time.at(alert.suppress_until + time_offset)
           end
 
-          if alert_db.raised? 
+          if alert_db.raised?
             #
             # If we're acknowledged, just save.
             #
             if alert_db.acknowledged?
               alert_db.save
             else
-              alert_db.raise! 
+              alert_db.raise!
             end
           else
             alert_db.clear!
@@ -929,7 +935,7 @@ module Mauve
           logger.info("Received update from #{ip_source} for #{alert_db}")
 
         end
-        
+
         # If this is a complete replacement update, find the other alerts
         # from this source and clear them.
         #
@@ -940,14 +946,14 @@ module Mauve
           # The to_a is used here to make sure datamapper runs the query now,
           # rather than at some point in the future.
           #
-          Alert.all(:source => update.source, 
+          Alert.all(:source => update.source,
               :alert_id.not => alert_ids_mentioned
               ).to_a.each do |alert_db|
             alert_db.clear! unless alert_db.cleared?
           end
         end
-      
-        return nil 
+
+        return nil
       end
 
       #

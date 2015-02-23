@@ -6,10 +6,12 @@ require 'mauve/configuration_builder'
 class TcMauveConfigurationBuilder < Mauve::UnitTest
 
   def setup
+    super
     setup_logger
   end
 
   def teardown
+    super
     teardown_logger
   end
 

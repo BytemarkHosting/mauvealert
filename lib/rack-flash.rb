@@ -12,7 +12,7 @@ module Rack
       def middleware.rack_builder
         @rack_builder
       end
-      @ins << lambda { |app|
+      @ins << Proc.new { |app|
         middleware.new(app, *args, &block)
       }
     end

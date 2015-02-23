@@ -1,0 +1,35 @@
+source "https://rubygems.org"
+
+
+gem "bcrypt-ruby",    "=3.0.1"
+gem "timecop",   "=0.3.5"
+gem "log4r",     "=1.0.6"
+gem "ipaddress", "=0.8.0"
+gem "webmock",   "=1.7.6"
+gem "ruby_protobuf",  "=0.4.11"
+gem "json",      "=1.5.4"
+gem "datamapper", "=1.2.0"
+gem "dm-aggregates", "=1.2.0"
+gem "dm-do-adapter", "=1.2.0"
+gem "dm-migrations", "=1.2.0"
+gem "dm-postgres-adapter", "=1.2.0"
+gem "dm-sqlite-adapter", "=1.2.0"
+gem "dm-transactions", "=1.2.0"
+gem "dm-types", "=1.2.0"
+gem "dm-validations", "=1.2.0"
+gem "sanitize", "=2.0.3"
+gem "rmail", "=0.17"
+gem "xmpp4r", "=0.5"
+gem "thin", "=1.2.11"
+gem "haml", "=3.0.15"
+gem "RedCloth"
+gem "rack", "=1.3.4"
+gem "rack-protection", "=1.1.4"
+gem "rack-test", "=0.6.1"
+gem "tilt", "=1.3.3"
+gem "sinatra", "=1.3.1"
+gem "locale", "=2.1.0"
+
+group :test do
+  gem "simplecov", :require => false
+end
