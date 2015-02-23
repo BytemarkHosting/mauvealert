@@ -10,8 +10,11 @@ require 'mauve/configuration'
 require 'mauve/configuration_builder'
 require 'mauve/configuration_builders'
 
-class TcMauveAuthentication < Mauve::UnitTest 
+require 'webmock'
+
+class TcMauveAuthentication < Mauve::UnitTest
   include Mauve
+  include WebMock::API
 
 
   def setup
@@ -84,8 +87,35 @@ EOF
     assert(Authentication.authenticate("test","password"))
   end
 
+  def stub_auth_response(auth_method, success, return_value)
+    xml_writer = XMLRPC::XMLWriter::Simple.new
+    response_body = XMLRPC::Create.new(xml_writer).methodResponse(success, return_value)
+    stub_request(:post, "https://auth.bytemark.co.uk/").
+      with(:body => /bytemark\.auth\.#{Regexp.escape(auth_method)}/,:times => 1).
+      to_return(:body => response_body,
+                :headers => {"Content-Type" => "text/xml"})
+  end
+
+  def stub_auth_call(auth_method, return_value)
+    stub_auth_response(auth_method, true, return_value)
+  end
+
+  def stub_auth_failure(auth_method, failure)
+    stub_auth_response(auth_method, false, failure)
+  end
+
+  def stub_bad_login
+    stub_auth_call("getChallengeForUser", "challengechallengechallenge")
+    stub_auth_failure("login", XMLRPC::FaultException.new(91, "Bad login credentials"))
+  end
+
+  def stub_good_login
+    stub_auth_call("getChallengeForUser", "challengechallengechallenge")
+    stub_auth_call("login", "sessionsessionsession")
+  end
+
   def test_bytemark_auth
-    # 
+    #
     # BytemarkAuth test users are:
     #   test1: ummVRu7qF
     #   test2: POKvBqLT7
@@ -111,23 +141,26 @@ EOF
     #
     # Test to make sure auth can fail
     #
+    stub_bad_login
     assert(!Authentication.authenticate("test1","password"))
-    # 
+    #
     # Should issue a warning for just bytemark auth failing, and no more.
     #
     assert_match(/AuthBytemark for test1 failed/, logger_shift)
     assert_nil(logger_shift)
 
+    stub_good_login
     assert(Authentication.authenticate("test1","ummVRu7qF"))
-    # 
+    #
     # Shouldn't issue any warnings.
     #
     assert_nil(logger_shift)
-  
+
     #
     # Test to make sure that in the event of failure we fall back to local
     # auth, which should also fail in this case.
     #
+    stub_bad_login
     assert(!Authentication.authenticate("test2","badpassword"))
     assert_match(/AuthBytemark for test2 failed/, logger_shift)
     assert_match(/AuthLocal for test2 failed/, logger_shift)
@@ -136,8 +169,9 @@ EOF
     # Test to make sure that in the event of failure we fall back to local
     # auth, which should pass in this case.
     #
+    stub_bad_login
     assert(Authentication.authenticate("test2","password"))
-    # 
+    #
     # Should issue a warning for just bytemark auth failing, and no more.
     #
     assert_match(/AuthBytemark for test2 failed/, logger_shift)
@@ -146,8 +180,9 @@ EOF
     #
     # Finally test to make sure local-only still works
     #
+    stub_bad_login
     assert(Authentication.authenticate("test3","password"))
-    # 
+    #
     # Should issue a warning for just bytemark auth failing, and no more.
     #
     assert_match(/AuthBytemark for test3 failed/, logger_shift)
