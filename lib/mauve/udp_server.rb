@@ -4,6 +4,7 @@ require 'socket'
 require 'mauve/datamapper'
 require 'mauve/proto'
 require 'mauve/alert'
+require 'mauve/mauve_thread'
 require 'ipaddr'
 
 module Mauve
@@ -33,18 +34,18 @@ module Mauve
 
       super
     end
- 
+
     #
     # This sets the IP which the server will listen on.
-    # 
-    # @param [String] i The new IP 
+    #
+    # @param [String] i The new IP
     # @return [IPAddr]
     #
     def ip=(i)
       raise ArgumentError, "ip must be a string" unless i.is_a?(String)
       @ip = IPAddr.new(i)
     end
- 
+
     # Sets the listening port
     #
     # @param [Integer] pr The new port
@@ -54,7 +55,7 @@ module Mauve
       raise ArgumentError, "port must be an integer between 0 and #{2**16-1}" unless pr.is_a?(Integer) and pr < 2**16 and pr > 0
       @port = pr
     end
-   
+
     # This stops the UDP server, by signalling to the thread to stop, and
     # sending a zero-length packet to the socket.
     #
@@ -83,14 +84,14 @@ module Mauve
       # Specify the family when opening the socket.
       #
       @socket = UDPSocket.new(@ip.family)
-      
+
       logger.debug("Trying to increase Socket::SO_RCVBUF to 10M.")
       old = @socket.getsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF).unpack("i").first
 
       @socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF, 10*1024*1024)
       new = @socket.getsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF).unpack("i").first
 
-      logger.warn "Could not increase Socket::SO_RCVBUF.  Had #{old} ended up with #{new}!" if old > new 
+      logger.warn "Could not increase Socket::SO_RCVBUF.  Had #{old} ended up with #{new}!" if old > new
 
       logger.debug("Successfully increased Socket::SO_RCVBUF from #{old} to #{new}.")
 
@@ -105,9 +106,9 @@ module Mauve
       return if @socket.nil?  or @socket.closed?
 
       begin
-        @socket.close 
+        @socket.close
       rescue IOError => ex
-        # Just in case there is some sort of explosion! 
+        # Just in case there is some sort of explosion!
         logger.error "Caught IOError #{ex.to_s}"
         logger.debug ex.backtrace.join("\n")
       end
@@ -127,7 +128,7 @@ module Mauve
 
       open_socket if @socket.nil? or @socket.closed?
 
-      return if self.should_stop? 
+      return if self.should_stop?
 
       #
       # TODO: why is/isn't this non-block?
@@ -150,7 +151,7 @@ module Mauve
       # If we get a zero length packet, and we've been flagged to stop, we stop!
       #
       if packet.first.length == 0 and self.should_stop?
-        close_socket 
+        close_socket
         return
       end
 

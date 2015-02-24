@@ -53,17 +53,17 @@ module Mauve
     #
     def initialize(*destinations)
       destinations = destinations.flatten
-      
+
       destinations = begin
         File.read("/etc/mauvealert/mauvesend.destination").split(/\s+/)
       rescue Errno::ENOENT => notfound
         []
       end if destinations.empty?
-      
+
       if !destinations || destinations.empty?
         raise ArgumentError.new("No destinations specified, and could not read any destinations from /etc/mauvealert/mauvesend.destination")
       end
-    
+
       #
       # Resolv results
       #
@@ -105,7 +105,7 @@ module Mauve
                 # domain is an underscore, assume that it is a SRV record
                 #
                 srv_domain = (domain[0] == ?_ ? domain : "_mauvealert._udp.#{domain}")
-  
+
                 list += dns.getresources(srv_domain, SRV).map do |srv|
                   [srv.target.to_s, srv.port]
                 end
@@ -144,12 +144,19 @@ module Mauve
 
     # Sanitise all fields in an update, such that when we send, they are
     # normal.
-    # 
+    #
     #
     def sanitize(update)
       #
-      # Must have a source, so default to hostname if user doesn't care 
+      # Must have a source, so default to hostname if user doesn't care
       update.source ||= Socket.gethostname
+
+      #
+      # Must have a `replace`.  We supply a default, but it doesn't
+      # get used so if we want to use Sender outside of bin/mauvesend,
+      # we have to manually add it here with an explicit `false`.
+      # `nil` doesn't work.
+      update.replace ||= false
 
       #
       # Check the locale charset.  This is to maximise the amout of information
@@ -159,7 +166,7 @@ module Mauve
       from_charset ||= "UTF-8"
 
       #
-      # 
+      #
       #
       update.each_field do |field, value|
         #
@@ -171,7 +178,7 @@ module Mauve
           elsif defined? Iconv
             value = Iconv.conv("UTF-8//IGNORE", from_charset, value)
           end
-        
+
           update.__send__("#{field.name}=", value)
         end
 
