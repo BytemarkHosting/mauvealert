@@ -20,11 +20,16 @@ class TcMauveUdpServer < Mauve::UnitTest
 
   def test_listens
     update = generic_update()
+    before = Time.now
     t = Thread.new do @server.__send__(:main_loop) end
     sleep(0.2)
     sender.send(update)
     Timeout.timeout(2) do t.join end
-    assert_equal update, Proto::AlertUpdate.new.parse_from_string(Server.packet_pop[0])
+    after = Time.now
+    data, addrinfo, received_at = Server.packet_pop
+    assert_equal update, Proto::AlertUpdate.new.parse_from_string(data)
+    assert addrinfo[3], "No client source address!"
+    assert received_at >= before && received_at <= after, "Received at time was wrong"
   end
 
   def test_closes
