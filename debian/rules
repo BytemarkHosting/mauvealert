@@ -1,8 +1,0 @@
-#!/usr/bin/make -f
-#
-# Use CDBS, so we can build for etch (ugh)
-#
-  
-include /usr/share/cdbs/1/rules/debhelper.mk
-include /usr/share/cdbs/1/class/makefile.mk
-
