@@ -161,9 +161,8 @@ module Mauve
       #
       # Update any tables.
       #
-      Mauve.constants.each do |c|
-        next if %w(AlertEarliestDate).include?(c)
-        m = Mauve.const_get(c)
+      DataMapper::Model.descendants.each do |m|
+        next if m == AlertEarliestDate
         next unless m.respond_to?("auto_upgrade!")
         m.auto_upgrade!
         #
