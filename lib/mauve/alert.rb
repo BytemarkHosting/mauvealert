@@ -30,18 +30,20 @@ module Mauve
       the_distant_future = (Time.now + 2000.days).to_i # it is the year 2000 - the humans are dead
 
       case DataMapper.repository(:default).adapter.class.to_s
-        when "DataMapper::Adapters::PostgresAdapter"
-          ifnull = "COALESCE"
-          min    = "LEAST"
-        else
-          ifnull = "IFNULL"
-          min    = "MIN"
+      when "DataMapper::Adapters::PostgresAdapter"
+        ifnull = "COALESCE"
+        min    = "LEAST"
+        drop_view = "DROP VIEW"
+      else
+        ifnull = "IFNULL"
+        min    = "MIN"
+        # This was previously a DROP VIEW, but the sqlite adapter complains
+        # about DROP VIEW here.
+        drop_view = "DROP TABLE"
       end
 
       ["BEGIN TRANSACTION",
-       # This was previously a DROP VIEW, but the sqlite adapter complains
-       # about DROP VIEW here.
-       "DROP TABLE IF EXISTS mauve_alert_earliest_dates",
+       "#{drop_view} IF EXISTS mauve_alert_earliest_dates",
        "CREATE VIEW
           mauve_alert_earliest_dates
         AS
