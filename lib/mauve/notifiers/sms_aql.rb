@@ -7,26 +7,30 @@ module Mauve
       
       require 'net/https'
 
-      class AQL
+      # Simple SMS-sending wrapper.  Use like so:
+      # 
+      #   aql = Mauve::Notifiers::Sms::AQLGateway.new(username, password)
+      #   aql.send_sms(to_number="077711234567",
+      #                from_number="0190412345678",
+      #                message="This is my message!")
+      class AQLGateway
         GATEWAY = "https://gw1.aql.com/sms/sms_gw.php"
 
-        attr_writer :username, :password, :from
-        attr_reader :name
-
-        def initialize(name)
-          @name = name
+        def initialize(username, password)
+          @username = username
+          @password = password
         end
 
-        def send_alert(destination, alert, all_alerts, conditions = {})
+        def send_sms(destination, from, message, flash=0)
           uri = URI.parse(GATEWAY)
 
           opts_string = {
             :username => @username,
             :password => @password,
-            :destination => normalize_number(destination),
-            :message => prepare_message(destination, alert, all_alerts, conditions),
+            :destination => destination,
+            :message => message,
             :originator => @from,
-            :flash => @flash ? 1 : 0
+            :flash => flash
           }.map { |k,v| "#{k}=#{CGI::escape(v.to_s)}" }.join("&")
           
           http = Net::HTTP.new(uri.host, uri.port)
@@ -47,6 +51,23 @@ module Mauve
           else
             false
           end
+        end
+      end # class AQLGateway
+
+
+      class AQL
+
+        attr_writer :username, :password, :from
+        attr_reader :name
+
+        def initialize(name)
+          @name = name
+        end
+
+        def send_alert(destination, alert, all_alerts, conditions = {})
+          to = normalize_number(destination)
+          msg = prepare_message(destination, alert, all_alerts, conditions)
+          AQLGateway.new(@username, @password).send_sms(to, @from, msg)
         end
         
         protected
