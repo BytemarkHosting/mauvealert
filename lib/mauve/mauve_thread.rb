@@ -1,6 +1,8 @@
 require 'thread'
 require 'singleton'
 
+Thread.abort_on_exception = true
+
 module Mauve
 
   #
