@@ -23,7 +23,7 @@ module Mauve
     #
     # This is the order in which the threads should be started.
     #
-    THREAD_CLASSES = [UDPServer, HTTPServer, Pop3Server, Processor, Notifier, Heartbeat]
+    THREAD_CLASSES = [UDPServer, HTTPServer, Processor, Notifier, Heartbeat]
 
     attr_reader   :hostname, :database, :initial_sleep
     attr_reader   :packet_buffer, :notification_buffer, :started_at
