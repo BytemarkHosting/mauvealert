@@ -35,7 +35,7 @@ module Mauve
     # @param [Integer] i Seconds
     # @return [Integer] Seconds
     def raise_after=(i)
-      raise ArgumentError "raise_after must be an integer" unless i.is_a?(Integer)      
+      raise ArgumentError, "raise_after must be an integer" unless i.is_a?(Integer)      
       @raise_after = i
     end
     
@@ -44,7 +44,7 @@ module Mauve
     # @param [Integer] i Seconds
     # @return [Integer] Seconds
     def send_every=(i)
-      raise ArgumentError "send_every must be an integer" unless i.is_a?(Integer)      
+      raise ArgumentError, "send_every must be an integer" unless i.is_a?(Integer)      
       @send_every = i
     end
 
@@ -54,7 +54,7 @@ module Mauve
     #
     # @param [String] s Summary
     def summary=(s)
-      raise ArgumentError "summary must be a string" unless s.is_a?(String)
+      raise ArgumentError, "summary must be a string" unless s.is_a?(String)
       @summary = s
     end
 
@@ -62,7 +62,7 @@ module Mauve
     #
     # @param [String] d Detail
     def detail=(d)
-      raise ArgumentError "detail must be a string" unless d.is_a?(String)
+      raise ArgumentError, "detail must be a string" unless d.is_a?(String)
       @detail = d
     end
 
@@ -71,7 +71,7 @@ module Mauve
     # @param [String] d Destination
     #
     def destination=(d)
-      raise ArgumentError "destination must be a string" unless d.is_a?(String)
+      raise ArgumentError, "destination must be a string" unless d.is_a?(String)
       @destination = d
     end
 

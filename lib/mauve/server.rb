@@ -163,6 +163,7 @@ module Mauve
       #
       DataMapper::Model.descendants.each do |m|
         next if m == AlertEarliestDate
+        c = m.to_s.split("::").last
         next unless m.respond_to?("auto_upgrade!")
         m.auto_upgrade!
         #
