@@ -2,7 +2,6 @@
 test.*
 .*.db
 .*.sw*
-static/javascript/jquery
 doc/
 .yardoc/
 coverage/
