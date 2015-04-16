@@ -1,3 +1,4 @@
+# encoding: utf-8
 require 'mauve/proto'
 require 'mauve/alert_changed'
 require 'mauve/history'
@@ -79,22 +80,6 @@ module Mauve
     def size; 99; end
 
     include DataMapper::Resource
-
-    #
-    # If a string matches this regex, it is valid UTF8.  This regex is
-    # in ASCII-8BIT, so we have to force the encoding of the string to
-    # match it.
-    #
-    UTF8_REGEXP = Regexp.new(/^(?:#{[
-         "[\x00-\x7F]",                        # ASCII
-         "[\xC2-\xDF][\x80-\xBF]",             # non-overlong 2-byte
-         "\xE0[\xA0-\xBF][\x80-\xBF]",         # excluding overlongs
-         "[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}",  # straight 3-byte
-         "\xED[\x80-\x9F][\x80-\xBF]",         # excluding surrogates
-         "\xF0[\x90-\xBF][\x80-\xBF]{2}",      # planes 1-3
-         "[\xF1-\xF3][\x80-\xBF]{3}",          # planes 4-15
-         "\xF4[\x80-\x8F][\x80-\xBF]{2}"       # plane 16
-        ].join("|")})*$/)
 
     property :id, Serial
     property :alert_id, String, :required => true, :unique_index => :alert_index, :length=>256, :lazy => false
@@ -702,13 +687,7 @@ module Mauve
       end
 
       def clean_utf8(str)
-        # We're explicitly throwing away non-valid data here.
-        forced = str.force_encoding("ASCII-8BIT")
-        unless UTF8_REGEXP.match(str)
-          str.gsub(/[^\x00-\x7F]/,'?')
-        else
-          str
-        end
+        str.encode("utf-8",  :invalid => :replace,  :replace => '?', :undef => :replace)
       end
 
       # All alerts currently raised

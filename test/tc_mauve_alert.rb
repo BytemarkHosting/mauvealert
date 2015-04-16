@@ -1,3 +1,4 @@
+# encoding: utf-8
 $:.unshift "../lib"
 
 
@@ -492,6 +493,19 @@ EOF
     alert.reload
     assert_equal(256, alert.alert_id.length)
 
+  end
+
+
+  def test_remove_html_utf_8
+    problem_string = "<pre>This is a ûŧđ ™ message.\n\n</pre><hr/>"
+    fixed_string = Alert.remove_html(problem_string)
+    assert_equal "This is a ûŧđ ™ message.",  fixed_string.strip
+  end
+
+  def test_remove_html_invalid_character
+    problem_string = "caf\xa9".force_encoding("ascii")
+    fixed_string = Alert.remove_html(problem_string)
+    assert_equal "caf?", fixed_string 
   end
 
 end
