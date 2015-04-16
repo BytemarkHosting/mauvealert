@@ -104,8 +104,14 @@ module Mauve
 
       update.alert << message
 
-      Mauve::Sender.new(self.destination).send(update)
-      logger.debug "Sent to #{self.destination}"
+      begin
+        Mauve::Sender.new(self.destination).send(update)
+        logger.debug "Sent to #{self.destination}"
+      rescue => e
+        logger.error "Caught #{e.class}: #{e.message}"
+        logger.debug e.backtrace.join("\n")
+        raise
+      end
 
       sleep @send_every
     end
