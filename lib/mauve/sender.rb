@@ -7,12 +7,6 @@ rescue LoadError
   # Do nothing -- these are bonus libraries :)
 end
 
-begin
-  require 'iconv' unless String.new.respond_to?(:encode)
-rescue LoadError
-  # Do nothing -- these are bonus libraries :)
-end
-
 require 'mauve/mauve_resolv'
 require 'mauve/mauve_time'
 require 'mauve/proto'
@@ -172,16 +166,10 @@ module Mauve
         #
         # Make sure all string fields are UTF8 -- to ensure the maximal amount of information is sent.
         #
-        if value.is_a?(String)
-          if value.respond_to?(:encode)
-            value = value.encode("UTF-8", :undef => :replace, :invalid => :replace)
-          elsif defined? Iconv
-            value = Iconv.conv("UTF-8//IGNORE", from_charset, value)
-          end
-
-          update.__send__("#{field.name}=", value)
+        if value.respond_to?(:encode)
+          value = value.encode("UTF-8", :undef => :replace, :invalid => :replace)
         end
-
+        update.__send__("#{field.name}=", value)
       end
 
       update.alert.each do |alert|
@@ -194,15 +182,10 @@ module Mauve
           #
           # Make sure all string fields are UTF8 -- to ensure the maximal amount of information is sent.
           #
-          if value.is_a?(String)
-            if value.respond_to?(:encode)
-              value = value.encode("UTF-8", :undef => :replace, :invalid => :replace)
-            elsif defined? Iconv
-              value = Iconv.conv("UTF-8//IGNORE", from_charset, value)
-            end
-
-            alert.__send__("#{field.name}=", value)
+          if value.respond_to?(:encode)
+            value = value.encode("UTF-8", :undef => :replace, :invalid => :replace)
           end
+          alert.__send__("#{field.name}=", value)
         end
       end
 

@@ -7,7 +7,6 @@ require 'mauve/server'
 require 'mauve/configuration'
 require 'mauve/configuration_builder'
 require 'mauve/configuration_builders'
-require 'iconv'
 
 class TcMauveDatabasePeculiarities < Mauve::UnitTest
   include Mauve
@@ -43,10 +42,10 @@ EOF
     x["fi"] = "Ole hyvä kiirehtiä minulle kannettavan mursu kiillotukseen pakki!"
     x["jp"] = "私に私のポータブルセイウチの研磨キットを急いでください！"
 
-    %w(UTF-8 WINDOWS-1252 SHIFT-JIS).each do |enc|
+    %w(UTF-8 WINDOWS-1252 SJIS).each do |enc|
       x.each do |lang, str|
         assert_nothing_raised("Failed to use iconv to convert to #{enc}") {
-          str = Iconv.conv(enc+"//IGNORE", "utf8", str)
+          str = str.encode(enc, :invalid => :replace, :undef => :replace, :replace => '?')
         }
 
         alert = Alert.new(

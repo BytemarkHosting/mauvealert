@@ -7,7 +7,6 @@ require 'pp'
 require 'timecop'
 require 'mauve/sender'
 require 'locale'
-require 'iconv'
 
 
 class TcMauveSender < Test::Unit::TestCase
@@ -29,7 +28,7 @@ class TcMauveSender < Test::Unit::TestCase
     # Set up a couple of crazy sources.
     #
     utf8_source = "Å ðîßtáñt plàñët"
-    iso88591_source = Iconv.conv(Locale.current.charset, "UTF-8", utf8_source)
+    iso88591_source = utf8_source.encode(Locale.current.charset)
 
     #
     # Make sure our two sources are distinct
