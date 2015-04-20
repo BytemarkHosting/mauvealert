@@ -66,6 +66,9 @@ module Mauve
     set :raise_errors, false    # ...will not let exceptions out to main program
     set :show_exceptions, false # ...will not show exceptions
 
+    # We need this to avoid 403's on AJAX requests
+    set :protection,  :except => :json_csrf
+
     #
     # Default template.
     #
