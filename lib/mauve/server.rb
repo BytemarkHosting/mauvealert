@@ -13,6 +13,7 @@ require 'mauve/processor'
 require 'mauve/http_server'
 require 'mauve/heartbeat'
 require 'mauve/configuration'
+require 'mauve/bank_holidays_cache'
 require 'log4r'
 
 module Mauve
@@ -52,7 +53,7 @@ module Mauve
       # Bank Holidays -- this list is kept here, because I can't think of
       # anywhere else to put it.
       #
-      @bank_holidays = nil
+      @bank_holidays_cache = BankHolidaysCache.new
 
       #
       # Turn off unwanted reverse DNS lookups across the board.
@@ -127,18 +128,7 @@ module Mauve
     #
     #
     def bank_holidays
-      #
-      # Update the bank holidays list hourly.
-      #
-      if @bank_holidays.nil? or
-         @bank_holidays_last_checked_at.nil? or
-         @bank_holidays_last_checked_at < (Time.now - 1.hour)
-
-        @bank_holidays = CalendarInterface.get_bank_holiday_list(Time.now)
-        @bank_holidays_last_checked_at = Time.now
-      end
-
-      @bank_holidays
+      @bank_holidays_cache.bank_holidays
     end
 
     # return [Log4r::Logger]
