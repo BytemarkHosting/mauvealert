@@ -6,17 +6,13 @@ module Mauve
   class Person 
   
     attr_reader :username, :password, :urgent, :normal, :low, :email, :xmpp, :sms
-    attr_reader :last_pop3_login, :suppressed, :notifications
+    attr_reader :suppressed, :notifications
     attr_reader :notify_when_off_sick, :notify_when_on_holiday
 
     # Set up a new Person
     #
     def initialize(username)
       @suppressed = false
-      #
-      # TODO fix up web login so pop3 can be used as a proxy.
-      #
-      @last_pop3_login = {:from => nil, :at => nil}
       @notifications = []
 
       @username = username

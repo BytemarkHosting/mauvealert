@@ -106,24 +106,6 @@ module Mauve
       end
     end
 
-    class Pop3Server < ObjectBuilder
-      #
-      # The IP adderess the Pop3 server listens on
-      #
-      is_attribute "ip"
-
-      #
-      # The POP3 server port
-      #
-      is_attribute "port"
-
-      # Sets up a Mauve::Pop3Server singleton as the result
-      #
-      # @return [Mauve::Pop3Server]
-      def builder_setup
-        @result = Mauve::Pop3Server.instance
-      end
-    end
 
     #
     # This is the main Server singleton.
@@ -137,7 +119,6 @@ module Mauve
       is_builder "processor",     Processor
       is_builder "notifier",      Notifier
       is_builder "heartbeat",     Heartbeat
-      is_builder "pop3_server",   Pop3Server
 
       #
       # The name of the server this instance of Mauve is running on
