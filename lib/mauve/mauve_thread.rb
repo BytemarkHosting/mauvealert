@@ -140,6 +140,7 @@ module Mauve
     #
     def stop
       self.state = :stopping
+      @thread.wakeup
 
       10.times do 
         break unless self.alive?
