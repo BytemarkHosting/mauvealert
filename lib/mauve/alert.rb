@@ -309,28 +309,22 @@ module Mauve
       Server.notification_push([self, at])
     end
 
-    # Save an alert, creating a history and notifications, as needed.
+    #
+    # Notification should happen if
+    #
+    #  * the alert has just been raised
+    #  * the alert is raised and its acknowledged status has changed
+    #  * the alert has just been cleared, and wasn't suppressed before the clear.
     #
     #
-    def save
-      #
-      # Notification should happen if
-      #
-      #  * the alert has just been raised
-      #  * the alert is raised and its acknowledged status has changed
-      #  * the alert has just been cleared, and wasn't suppressed before the clear.
-      #
-      #
-      should_notify = (
-        (self.raised?  and self.was_cleared?) or
-        (self.raised?  and self.was_acknowledged? != self.acknowledged?) or
-        (self.cleared? and self.was_raised? and !self.was_suppressed?)
-      )
+    def should_notify?
+      (self.raised?  and self.was_cleared?) or
+      (self.raised?  and self.was_acknowledged? != self.acknowledged?) or
+      (self.cleared? and self.was_raised? and !self.was_suppressed?)
+    end
 
-      #
-      # Set the update type.
-      #
-      ut = if self.cleared? and !self.was_cleared?
+    def update_type_str
+      if self.cleared? and !self.was_cleared?
         "cleared"
       elsif self.raised? and !self.was_raised?
         "raised"
@@ -341,7 +335,18 @@ module Mauve
       else
         nil
       end
+    end
 
+    # Save an alert, creating a history and notifications, as needed.
+    #
+    #
+    def save
+      should_notify = self.should_notify?
+
+      #
+      # Set the update type.
+      #
+      ut = self.update_type_str
       history = nil
 
       unless ut.nil?
