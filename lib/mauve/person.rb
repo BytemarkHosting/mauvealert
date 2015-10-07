@@ -18,7 +18,7 @@ module Mauve
       @username = username
       @password = nil
       @urgent   = @normal = @low  = nil
-      @email    = @sms    = @xmpp = nil
+      @email = @sms = @xmpp = @hipchat = nil
    
       @notify_when_on_holiday = @notify_when_off_sick = false 
     end
@@ -82,6 +82,14 @@ module Mauve
     def xmpp=(arg)
       # raise ArgumentError, "xmpp expected a string, not a #{arg.class}" unless arg.is_a?(String) or arg.is_a?(Jabber::JID)
       @xmpp = arg
+    end
+
+    # Sets up the hipchat parameter
+    # 
+    #
+    def hipchat=(arg)
+      raise ArgumentError, "hipchat expected a string, not a #{arg.class}" unless arg.is_a?(String)
+      @hipchat = arg
     end
 
     # Sets the password parameter
