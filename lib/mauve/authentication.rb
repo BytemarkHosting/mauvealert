@@ -49,9 +49,7 @@ module Mauve
     # @return [Boolean] Success or failure.
     #
     def self.authenticate(login, password)
-      result = false
-
-      ORDER.any? do |klass|
+      auth_success = ORDER.any? do |klass|
         auth = klass.new
 
         result = begin
@@ -73,7 +71,7 @@ module Mauve
         sleep Configuration.current.failed_login_delay
       end
 
-      result
+      auth_success
     end
 
   end
