@@ -65,7 +65,7 @@ module Mauve
         result
       end
 
-      unless true == result
+      unless auth_success
         logger.info "Authentication for #{login} failed"
         # Rate limit
         sleep Configuration.current.failed_login_delay
