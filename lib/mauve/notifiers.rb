@@ -4,6 +4,7 @@ require 'mauve/notifiers/sms_aql'
 require 'mauve/notifiers/sms_clockwork'
 require 'mauve/notifiers/xmpp'
 require 'mauve/notifiers/hipchat'
+require 'mauve/notifiers/pushover'
 
 module Mauve
   #

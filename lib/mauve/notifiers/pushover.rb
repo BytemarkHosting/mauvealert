@@ -7,7 +7,7 @@ module Mauve
     require 'cgi'
     require 'uri'
 
-    class Hipchat
+    class Pushover
 
       attr_accessor :token
       attr_reader   :name
@@ -27,32 +27,35 @@ module Mauve
       def send_alert(destination, alert, all_alerts, conditions = {})
         msg = prepare_message(destination, alert, all_alerts, conditions)
 
-        colour = case alert.level
+        priority = case alert.level
           when :urgent
-            "red"
+            1
           when :normal
-            "yellow"
+            0
           else
-            "green"
+            -1
         end
         
         opts = {
-          "color"   => colour,
+          "priority" => priority,
           "message" => msg,
-          "notify"  => true,
+          "url" => WebInterface.url_for(alert),
+          "url_title" => "View alert",
+          "html" => 1,
         }
 
         uri = @gateway.dup
+        uri.path = "/1/messages.json"
 
         #
         # If the destination is an email, it is a user
         #
         if destination =~ /@/
-          uri.path = "/v2/user/"+ CGI::escape(destination) +"/message"
-          opts["message_type"] = "text"
+          (device,user) = destination.split(/@/,2)
+          opts['device'] = device
+          opts['user'] = user
         else
-          uri.path = "/v2/room/"+CGI::escape(destination)+"/notification"
-          opts["message_type"] = "html"
+          opts['user'] = user
         end
 
         uri.query = "auth_token="+CGI::escape(self.token)
@@ -63,6 +66,15 @@ module Mauve
           http.use_ssl = true
           http.verify_mode = OpenSSL::SSL::VERIFY_PEER
         end
+        
+        case alert.update_type
+        when "cleared"
+         opts['timestamp'] = alert.cleared_at
+        when "acknowledged"
+          opts['timestamp'] = alert.acknowledged_at
+        else
+          opts['timestamp'] = alert.raised_at
+        end 
 
         response, data = http.post(uri.request_uri, opts, {
           'Content-Type' => 'application/json',
@@ -86,11 +98,7 @@ module Mauve
         was_suppressed = conditions[:was_suppressed] || false
         will_suppress  = conditions[:will_suppress]  || false
         
-        if destination =~ /@/
-          template_file = File.join(File.dirname(__FILE__),"templates","hipchat.txt.erb")
-        else
-          template_file = File.join(File.dirname(__FILE__),"templates","hipchat.html.erb")
-        end
+        template_file = File.join(File.dirname(__FILE__),"templates","pushover.html.erb")
 
         txt = if File.exists?(template_file)
           ERB.new(File.read(template_file)).result(binding).chomp
