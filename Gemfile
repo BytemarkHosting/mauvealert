@@ -15,7 +15,6 @@ gem "dm-validations"
 group :devlopment do
   gem "log4r"
   gem "ipaddress"
-  gem "ruby_protobuf"
   gem "json"
   gem "sanitize"
   gem "rmail"

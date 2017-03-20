@@ -9,7 +9,7 @@ test:jessie: &test
   variables:
     DISTRO: jessie
   before_script:
-    - apt-get install libxml2-dev libxslt1-dev libpq-dev postgresql-server-dev-9.4 libsqlite3-dev rake ruby-log4r ruby-ipaddress ruby-json ruby-sanitize ruby-rubymail thin ruby-haml ruby-haml-contrib ruby-redcloth ruby-rack ruby-rack-protection ruby-rack-flash3 ruby-tilt ruby-sinatra ruby-locale ruby-rack-test ruby-webmock ruby-timecop ruby-test-unit
+    - apt-get install libpq-dev postgresql-server-dev-9.4 libsqlite3-dev rake ruby-log4r ruby-ipaddress ruby-json ruby-sanitize ruby-rubymail thin ruby-haml ruby-haml-contrib ruby-redcloth ruby-rack ruby-rack-protection ruby-rack-flash3 ruby-tilt ruby-sinatra ruby-locale ruby-rack-test ruby-webmock ruby-timecop ruby-test-unit
   script:
     - bundle install -j $(nproc) --path vendor/bundle --without development,test
     - bundle exec rake test
@@ -19,7 +19,7 @@ test:stretch:
   variables:
     DISTRO: stretch
   before_script:
-    - apt-get install libxml2-dev libxslt1-dev libpq-dev postgresql-server-dev-9.6 libsqlite3-dev rake ruby-log4r ruby-ipaddress ruby-json ruby-sanitize ruby-rubymail thin ruby-haml ruby-haml-contrib ruby-redcloth ruby-rack ruby-rack-protection ruby-rack-flash3 ruby-tilt ruby-sinatra ruby-locale ruby-rack-test ruby-webmock ruby-timecop ruby-test-unit
+    - apt-get install libpq-dev postgresql-server-dev-9.6 libsqlite3-dev rake ruby-log4r ruby-ipaddress ruby-json ruby-sanitize ruby-rubymail thin ruby-haml ruby-haml-contrib ruby-redcloth ruby-rack ruby-rack-protection ruby-rack-flash3 ruby-tilt ruby-sinatra ruby-locale ruby-rack-test ruby-webmock ruby-timecop ruby-test-unit
 
 package:jessie: &package
   image: $CI_REGISTRY/docker-images/layers:$DISTRO-deb
