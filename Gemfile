@@ -1,6 +1,5 @@
 source "https://rubygems.org"
 
-gem "bcrypt-ruby",    "= 3.1.5"
 gem "ruby_protobuf",  "= 0.4.11"
 gem "datamapper"
 gem "dm-aggregates"
@@ -12,27 +11,30 @@ gem "dm-transactions"
 gem "dm-types"
 gem "dm-validations"
 
-group :devlopment do
-  gem "log4r"
-  gem "ipaddress"
-  gem "json"
-  gem "sanitize"
-  gem "rmail"
-  gem "thin"
-  gem "haml"
-  gem "haml-contrib"
-  gem "RedCloth"
-  gem "rack"
-  gem "rack-protection"
-  gem "rack-flash3"
-  gem "tilt"
-  gem "sinatra"
-  gem "locale"
+# 
+# The versions here are to match Jessie
+#
+group :development do
+  gem "log4r",     "= 1.1.10"
+  gem "ipaddress", "= 0.8.0"
+  gem "json",      "= 1.8.1"
+  gem "sanitize",  "= 2.1.0"
+  gem "rmail",     "= 1.1.0"
+  gem "thin",      "= 1.6.3"
+  gem "haml",       "= 4.0.5"
+  gem "haml-contrib", "= 1.0.0"
+  gem "RedCloth",   "= 4.2.9"
+  gem "rack",       "= 1.5.2"
+  gem "rack-protection", "= 1.5.2"
+  gem "rack-flash3", "= 1.0.5"
+  gem "tilt",        "= 1.4.1"
+  gem "sinatra",     "= 1.4.5"
+  gem "locale",      "= 2.1.0"
 end
 
 group :test do
   gem "simplecov", :require => false
-  gem "rack-test"
-  gem "webmock"
-  gem "timecop"
+  gem "rack-test", "= 0.6.3"
+  gem "webmock",   "= 1.19.0"
+  gem "timecop",   "= 0.7.1"
 end
