@@ -69,7 +69,7 @@ class TcMauveDatabasePostgresPeculiarities < TcMauveDatabasePeculiarities
     unless $?.success?
       msg = "Skipping postgres tests, as DB creation (#{@temp_db}) failed."
       @temp_db = nil
-      flunk(msg)
+      skip(msg)
     end
     # @pg_conn = PGconn.open(:dbname => @temp_db)
     @db_url = "postgres:///#{@temp_db}"
