@@ -1,0 +1,3 @@
+bin/mauvesend        usr/bin/
+lib/mauve/sender.rb  usr/lib/ruby/vendor_ruby/mauve/
+lib/mauve/quick_update.rb usr/lib/ruby/vendor_ruby/mauve/

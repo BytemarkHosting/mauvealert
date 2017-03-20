@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -e
+
+##
+# Add a mauve user
+##
+RUNASUSER=mauvealert
+
+adduser --system --no-create-home --home /nonexistent $RUNASUSER > /dev/null
+
+##
+# Add default directories
+##
+for i in log lib ; do
+  mkdir -p /var/$i/mauvealert
+  chown -R $RUNASUSER:nogroup /var/$i/mauvealert
+done
+
+#
+# Symlink jquery libraries in.
+#
+if [ -e /usr/share/javascript/jquery -a ! -e /usr/share/mauvealert/static/javascript/jquery ] ; then
+  ln -s /usr/share/javascript/jquery /usr/share/mauvealert/static/javascript/
+fi
+
+
+#DEBHELPER#
