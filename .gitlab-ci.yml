@@ -8,8 +8,9 @@ test:jessie: &test
   stage: test
   variables:
     DISTRO: jessie
-  script:
+  before_script:
     - apt-get install libxml2-dev libxslt1-dev libpq-dev postgresql-server-dev-9.4 libsqlite3-dev rake
+  script:
     - bundle install -j $(nproc) --path vendor/bundle --binstubs
     - bundle exec rake test
 
@@ -17,6 +18,8 @@ test:stretch:
   <<: *test
   variables:
     DISTRO: stretch
+  before_script:
+    - apt-get install libxml2-dev libxslt1-dev libpq-dev postgresql-server-dev-9.6 libsqlite3-dev rake
 
 package:jessie: &package
   image: $CI_REGISTRY/docker-images/layers:$DISTRO-deb
