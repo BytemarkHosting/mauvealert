@@ -9,7 +9,7 @@ test:jessie: &test
   variables:
     DISTRO: jessie
   script:
-    - apt-get install libxml2-dev
+    - apt-get install libxml2-dev libxslt1-dev
     - bundle install -j $(nproc) --path vendor/bundle --binstubs
     - bundle exec rake test:unit
 
