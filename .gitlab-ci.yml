@@ -51,5 +51,4 @@ publish:
     - publish
   dependencies:
     - package:jessie
-    - package:stretch
 
