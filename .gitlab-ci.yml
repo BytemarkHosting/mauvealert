@@ -7,7 +7,7 @@ test:jessie: &test
   image: $CI_REGISTRY/docker-images/layers:$DISTRO-ruby
   stage: test
   services:
-    - postgres:latest
+    - postgres:9.4
   variables:
     POSTGRES_DB: mauve
     POSTGRES_USER: mauveuser
