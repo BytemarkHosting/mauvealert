@@ -68,6 +68,8 @@ GEM
     fastercsv (1.5.5)
     haml (4.0.5)
       tilt
+    haml-contrib (1.0.0.1)
+      haml (>= 3.2.0.alpha.13)
     ipaddress (0.8.0)
     json (1.8.1)
     json_pure (1.8.6)
@@ -127,6 +129,7 @@ DEPENDENCIES
   dm-types
   dm-validations
   haml (= 4.0.5)
+  haml-contrib
   ipaddress (= 0.8.0)
   json (= 1.8.1)
   locale (= 2.1.0)
