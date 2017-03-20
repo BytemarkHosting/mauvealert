@@ -1,5 +1,5 @@
 # encoding: utf-8
-$:.unshift "../lib"
+$LOAD_PATH.unshift '../lib'
 
 require 'th_mauve'
 require 'mauve/datamapper'
@@ -14,7 +14,7 @@ class TcMauveDatabasePeculiarities < Mauve::UnitTest
   def setup
     super
     setup_database
-    @temp_db = "mauve_test.#{10.times.collect{ rand(36).to_s(36) }.join}"
+    @temp_db = "mauve_test.#{Array.new(10) { rand(36).to_s(36) }.join}"
   end
 
   def teardown
@@ -28,7 +28,7 @@ class TcMauveDatabasePeculiarities < Mauve::UnitTest
     #
     return unless @db_url
 
-    config=<<EOF
+    config = <<EOF
 server {
   database "#{@db_url}"
 }
@@ -37,21 +37,21 @@ EOF
     Configuration.current = ConfigurationBuilder.parse(config)
     Server.instance.setup
 
-    x = Hash.new
-    x["en"] = "Please rush me my portable walrus polishing kit!"
-    x["fi"] = "Ole hyvä kiirehtiä minulle kannettavan mursu kiillotukseen pakki!"
-    x["jp"] = "私に私のポータブルセイウチの研磨キットを急いでください！"
+    x = {}
+    x['en'] = 'Please rush me my portable walrus polishing kit!'
+    x['fi'] = 'Ole hyvä kiirehtiä minulle kannettavan mursu kiillotukseen pakki!'
+    x['jp'] = '私に私のポータブルセイウチの研磨キットを急いでください！'
 
     %w(UTF-8 WINDOWS-1252 SJIS).each do |enc|
       x.each do |lang, str|
-        assert_nothing_raised("Failed to use iconv to convert to #{enc}") {
-          str = str.encode(enc, :invalid => :replace, :undef => :replace, :replace => '?')
-        }
+        assert_nothing_raised("Failed to use iconv to convert to #{enc}") do
+          str = str.encode(enc, invalid: :replace, undef: :replace, replace: '?')
+        end
 
         alert = Alert.new(
-          :alert_id  => "#{lang}:#{enc}",
-          :source    => "test",
-          :subject   => str
+          alert_id: "#{lang}:#{enc}",
+          source: 'test',
+          subject: str
         )
 
         assert_nothing_raised("failed to insert #{enc}") { alert.save }
@@ -60,30 +60,32 @@ EOF
   end
 end
 
-
-
 class TcMauveDatabasePostgresPeculiarities < TcMauveDatabasePeculiarities
   def setup
     super
-    system("createdb #{@temp_db} --encoding UTF8")
-    unless $?.success?
-      msg = "Skipping postgres tests, as DB creation (#{@temp_db}) failed."
+
+    if ENV['POSTGRES_URL']
+      @db_url = ENV['POSTGRES_URL']
       @temp_db = nil
-      omit(msg)
+    else
+      system("createdb #{@temp_db} --encoding UTF8")
+      unless $?.success?
+        msg = "Skipping postgres tests, as DB creation (#{@temp_db}) failed."
+        @temp_db = nil
+        omit(msg)
+      end
+      # @pg_conn = PGconn.open(:dbname => @temp_db)
+      @db_url = "postgres:///#{@temp_db}"
     end
-    # @pg_conn = PGconn.open(:dbname => @temp_db)
-    @db_url = "postgres:///#{@temp_db}"
   end
 
   def teardown
-    # @pg_conn.finish if @pg_conn.is_a?(PGconn) and @pg_conn.status == PGconn::CONNECTION_OK
     super
     (system("dropdb #{@temp_db}") || puts("Failed to drop #{@temp_db}")) if @temp_db
   end
 
-
   def test_reminders_only_go_once
-    config=<<EOF
+    config = <<EOF
 server {
   database "#{@db_url}"
   use_notification_buffer  false
@@ -109,16 +111,16 @@ alert_group("default") {
 }
 EOF
     Configuration.current = ConfigurationBuilder.parse(config)
-    notification_buffer = Configuration.current.notification_methods["email"].deliver_to_queue
+    notification_buffer = Configuration.current.notification_methods['email'].deliver_to_queue
     Server.instance.setup
 
-     a = Alert.new(
-      :alert_id  => "test",
-      :source    => "test",
-      :subject   => "test"
+    a = Alert.new(
+      alert_id: 'test',
+      source: 'test',
+      subject: 'test'
     )
 
-    assert(a.raise!, "raise was not successful")
+    assert(a.raise!, 'raise was not successful')
     assert(a.saved?)
     assert_equal(1, notification_buffer.length)
     notification_buffer.pop
@@ -133,17 +135,14 @@ EOF
       assert_equal(1, notification_buffer.length)
       notification_buffer.pop
     end
-
   end
-
-
 end
 
 class TcMauveDatabaseSqlite3Peculiarities < TcMauveDatabasePeculiarities
   def setup
     super
     # @pg_conn = PGconn.open(:dbname => @temp_db)
-    @db_url = "sqlite3::memory:"
+    @db_url = 'sqlite3::memory:'
   end
 
   #
@@ -153,6 +152,4 @@ class TcMauveDatabaseSqlite3Peculiarities < TcMauveDatabasePeculiarities
     assert DataMapper::Adapters::SqliteAdapter.private_instance_methods.include?(:with_connection_old)
     assert DataMapper::Adapters::SqliteAdapter.public_instance_methods.include?(:synchronize)
   end
-
 end
-

@@ -6,6 +6,12 @@ stages:
 test:jessie: &test
   image: $CI_REGISTRY/docker-images/layers:$DISTRO-ruby
   stage: test
+  services:
+    - postgres:latest
+  variables:
+    POSTGRES_DB: mauve
+    POSTGRES_USER: mauveuser
+    POSTGRES_PASSWORD: ""
   variables:
     DISTRO: jessie
   before_script:
@@ -13,9 +19,9 @@ test:jessie: &test
   script:
     - apt install libsqlite3-dev rake ruby-log4r ruby-ipaddress ruby-json ruby-sanitize ruby-rubymail thin ruby-haml ruby-haml-contrib ruby-redcloth ruby-rack ruby-rack-protection ruby-rack-flash3 ruby-tilt ruby-sinatra ruby-locale ruby-rack-test ruby-webmock ruby-timecop ruby-test-unit
     - bundle install -j $(nproc) --path vendor/bundle --without development
-    - bundle exec rake test
+    - POSTGRES_URL=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres/$POSTGRES_DB bundle exec rake test
 
-test:stretch:
+.test:stretch:
   <<: *test
   variables:
     DISTRO: stretch
@@ -33,7 +39,7 @@ package:jessie: &package
     paths:
       - pkg/
 
-package:stretch:
+.package:stretch:
   <<: *package
   variables:
     DISTRO: stretch
