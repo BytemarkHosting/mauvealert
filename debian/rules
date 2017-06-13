@@ -3,3 +3,7 @@
 %:
 	dh $@ --with systemd
 
+
+override_dh_auto_test:
+	echo "NOP"
+
