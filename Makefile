@@ -35,7 +35,7 @@ distclean: clean
 test: setup.rb
 	ruby ./setup.rb test
 
-setup.rb: /usr/lib/ruby/vendor_ruby/setup.rb
+setup.rb:
 	ln -sf /usr/lib/ruby/vendor_ruby/setup.rb .
 
 OpenBSD: OpenBSD/sha256.asc
