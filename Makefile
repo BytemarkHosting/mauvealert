@@ -25,7 +25,7 @@ clean:
 	$(RM) -r tmp
 	$(RM) -r OpenBSD
 	$(RM) setup.rb
-
+	
 
 distclean: clean
 	if [ -e ./setup.rb ] ; then ruby ./setup.rb distclean ; fi
@@ -35,15 +35,15 @@ distclean: clean
 test: setup.rb
 	ruby ./setup.rb test
 
-setup.rb:
-	ln -sf /usr/lib/ruby/vendor_ruby/setup.rb .
+setup.rb: /usr/lib/ruby/1.8/setup.rb
+	ln -sf /usr/lib/ruby/1.8/setup.rb .
 
 OpenBSD: OpenBSD/sha256.asc
 
 OpenBSD/sha256: OpenBSD/ruby-mauvealert.tar.gz OpenBSD/ruby-protobuf.tar.gz
 	#
 	# rejig sha256sum to openbsd sha256
-	#
+	# 
 	$(RM) OpenBSD/sha256
 	cd OpenBSD && sha256sum * | sed -e 's/\([^ ]\+\)  \(.*\)$$/SHA256 (\2) = \1/' > sha256
 
@@ -65,11 +65,12 @@ OpenBSD/ruby-protobuf.tar.gz:
 	mkdir -p tmp/ruby-protobuf-source
 	git clone https://github.com/macks/ruby-protobuf.git tmp/ruby-protobuf-source
 	cd tmp/ruby-protobuf-source && git checkout -b v0.4.5
-	ln -sf /usr/lib/ruby/vendor_ruby/setup.rb tmp/ruby-protobuf-source/
-	cd tmp/ruby-protobuf-source && ruby ./setup.rb config ${OPENBSD_SETUP_FLAGS}
+	ln -sf /usr/lib/ruby/1.8/setup.rb tmp/ruby-protobuf-source/
+	cd tmp/ruby-protobuf-source && ruby ./setup.rb config ${OPENBSD_SETUP_FLAGS} 
 	cd tmp/ruby-protobuf-source && ruby ./setup.rb setup
 	cd tmp/ruby-protobuf-source && ruby ./setup.rb install --prefix=../ruby-protobuf
 	mkdir -p OpenBSD
 	tar -C tmp/ruby-protobuf -czvf $@ .
 
 .PHONY: all clean openbsd_tarball test distclean OpenBSD
+
