@@ -16,7 +16,7 @@ test:jessie: &test
   before_script:
     - apt install libpq-dev postgresql-server-dev-9.4
   script:
-    - apt install libsqlite3-dev rake ruby-log4r ruby-ipaddress ruby-json ruby-sanitize ruby-rubymail thin ruby-haml ruby-haml-contrib ruby-redcloth ruby-rack ruby-rack-protection ruby-rack-flash3 ruby-tilt ruby-sinatra ruby-locale ruby-rack-test ruby-webmock ruby-timecop ruby-test-unit
+    - apt install libsqlite3-dev rake ruby-log4r ruby-ipaddress ruby-json ruby-sanitize ruby-rubymail thin ruby-haml ruby-haml-contrib ruby-redcloth ruby-rack ruby-rack-protection ruby-rack-flash3 ruby-tilt ruby-sinatra ruby-locale ruby-rack-test ruby-webmock ruby-setup ruby-timecop ruby-test-unit
     - bundle install -j $(nproc) --path vendor/bundle --without development
     - "POSTGRES_URL=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres/$POSTGRES_DB bundle exec rake test"
 
