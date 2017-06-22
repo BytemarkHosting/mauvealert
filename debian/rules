@@ -1,5 +1,17 @@
 #!/usr/bin/make -f
   
+# Ugh
+export GEM_HOME := $(shell pwd)/vendor/bundle
+export PATH     := ${GEM_HOME}/bin:${PATH}
+
 %:
-	dh $@ --with systemd
+	dh $@ --with-systemd
+
+override_dh_auto_build:
+	gem install bundler
+	bundler install --deployment --without="test development" --jobs=4
+
+override_dh_clean:
+	dh_clean
+	$(RM) -r vendor/
 
