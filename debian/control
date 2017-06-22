@@ -9,20 +9,7 @@ Standards-Version: 3.9.1
 Package: mauvealert-server
 Architecture: all
 Pre-Depends: libjs-jquery
-Depends: mauvealert-common (>= 3.8.0),
- adduser,
- ruby-haml,
- ruby-haml-contrib,
- ruby-sanitize,
- ruby-sinatra,
- ruby-ipaddress,
- ruby-log4r,
- ruby-redcloth,
- ruby-rubymail,
- ruby-thin,
- lsb-base,
- ruby | ruby-interpreter,
- ${misc:Depends}
+Depends: adduser, lsb-base, ruby | ruby-interpreter, ${misc:Depends}
 Suggests: mauvealert-client
 Recommends: ruby-locale | liblocale-ruby1.8
 Description: Mauve network alert system -- server
