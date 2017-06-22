@@ -25,6 +25,7 @@ test:stretch:
   allow_failure: true
   variables:
     DISTRO: stretch
+    POSTGRES_USER: root
   before_script:
     - apt install postgresql-server-dev-9.6
 
