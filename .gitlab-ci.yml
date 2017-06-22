@@ -20,8 +20,9 @@ test:jessie: &test
     - bundle install -j $(nproc) --path vendor/bundle --without development
     - "POSTGRES_URL=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres/$POSTGRES_DB bundle exec rake test"
 
-.test:stretch:
+test:stretch:
   <<: *test
+  allow_failure: true
   variables:
     DISTRO: stretch
   before_script:
@@ -38,8 +39,9 @@ package:jessie: &package
     paths:
       - pkg/
 
-.package:stretch:
+package:stretch:
   <<: *package
+  allow_failure: true
   variables:
     DISTRO: stretch
 
