@@ -3,7 +3,8 @@ Maintainer: Matthew Bloch <matthew@bytemark.co.uk>
 Uploaders: Patrick J Cherry <patrick@bytemark.co.uk>
 Section: ruby
 Priority: optional
-Build-Depends: ruby | ruby-interpreter, debhelper, rdoc, txt2man, dh-systemd, bundler
+Build-Depends: ruby | ruby-interpreter, debhelper, rdoc, txt2man, dh-systemd,
+ bundler, libsqlite3-dev, zlib1g-dev, libxml2-dev, ruby-dev, libpq-dev
 Standards-Version: 3.9.1
 
 Package: mauvealert-server
