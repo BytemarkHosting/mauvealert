@@ -14,9 +14,9 @@ test:jessie: &test
     POSTGRES_PASSWORD: ""
     DISTRO: jessie
   before_script:
-    - apt install libpq-dev postgresql-server-dev-9.4
+    - apt install postgresql-server-dev-9.4
   script:
-    - apt install libsqlite3-dev
+    - apt install libsqlite3-dev zlib1g-dev libxml2-dev ruby-dev libpq-dev
     - bundle install -j $(nproc) --path vendor/bundle --without development
     - "POSTGRES_URL=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres/$POSTGRES_DB bundle exec rake test"
 
@@ -25,7 +25,7 @@ test:jessie: &test
   variables:
     DISTRO: stretch
   before_script:
-    - apt install libpq-dev postgresql-server-dev-9.6
+    - apt install postgresql-server-dev-9.6
 
 package:jessie: &package
   image: $CI_REGISTRY/docker-images/layers:$DISTRO-deb
