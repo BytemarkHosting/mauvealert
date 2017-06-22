@@ -11,7 +11,8 @@ man:
 	mkdir -p man
 
 man/%.1: bin/%
-	ruby -I lib $< --manual | txt2man -t $(notdir $<) -s 1  > $@
+	bundle exec $< --manual | txt2man -t $(notdir $<) -s 1  > $@
+	test -s $@
 
 clean:
 	$(RM) -r man
