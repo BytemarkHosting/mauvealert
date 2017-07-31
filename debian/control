@@ -9,9 +9,9 @@ Build-Depends: ruby | ruby-interpreter, debhelper, rdoc, txt2man, dh-systemd,
 Standards-Version: 3.9.1
 
 Package: mauvealert-server
-Architecture: all
+Architecture: any
 Pre-Depends: libjs-jquery
-Depends: adduser, lsb-base, ruby | ruby-interpreter, ${misc:Depends}
+Depends: adduser, lsb-base, ruby | ruby-interpreter, ruby-bundler, libpq5, ${misc:Depends}
 Suggests: mauvealert-client
 Recommends: ruby-locale | liblocale-ruby1.8
 Description: Mauve network alert system -- server
@@ -24,10 +24,12 @@ Description: Mauve network alert system -- server
 
 Package: mauvealert-client
 Architecture: all
-Depends: ruby | ruby-interpreter,
-  mauvealert-common (>= 3.8.0),
+Depends: ruby | ruby-interpreter, ruby-protobuf, ${misc:Depends}
   ${misc:Depends}
 Recommends: liblocale-ruby1.8 | ruby-locale
+Replaces:  mauvealert-common
+Conflicts: mauvealert-common
+Provides: mauvealert-common
 Description: Mauve network alert system -- client
  Mauve is a network alert system for system and network administrators.  You
  can use it to quickly set up ad-hoc monitoring for a variety of services, and
@@ -35,16 +37,4 @@ Description: Mauve network alert system -- client
  or text messages.
  .
  This is the client package.
-
-Package: mauvealert-common
-Architecture: all
-Depends: ruby | ruby-interpreter, ruby-protobuf, ${misc:Depends}
-Suggests: mauvealert-client
-Description: Mauve network alert system -- common libraries
- Mauve is a network alert system for system and network administrators.  You can
- use it to quickly set up ad-hoc monitoring for a variety of services, and to
- confidently replace all scripts that might otherwise send floods of emails or
- text messages.
- .
- This is the package of libraries in common with both the client and server.
 

@@ -1,3 +1,9 @@
 bin/mauvesend        usr/bin/
 lib/mauve/sender.rb  usr/lib/ruby/vendor_ruby/mauve/
 lib/mauve/quick_update.rb usr/lib/ruby/vendor_ruby/mauve/
+mauve.proto         usr/lib/mauvealert/
+lib/mauve/proto.rb  usr/lib/ruby/vendor_ruby/mauve/
+lib/mauve/mauve_time.rb  usr/lib/ruby/vendor_ruby/mauve/
+lib/mauve/version.rb  usr/lib/ruby/vendor_ruby/mauve/
+lib/mauve/mauve_resolv.rb usr/lib/ruby/vendor_ruby/mauve/
+

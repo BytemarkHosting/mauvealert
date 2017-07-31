@@ -1,0 +1,14 @@
+[Unit]
+Description=Mauve Alert Server
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+WorkingDirectory=/srv/mauvealert
+ExecStart=/srv/mauvealert/bin/mauvealert /etc/mauveserver.conf
+
+[Install]
+WantedBy=multi-user.target
+
+

@@ -5,3 +5,7 @@ test.*
 doc/
 .yardoc/
 coverage/
+.bundle/
+vendor/
+debian/*.debhelper.log
+

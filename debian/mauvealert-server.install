@@ -5,3 +5,5 @@ views                    srv/mauvealert
 vendor                   srv/mauvealert
 .bundle                  srv/mauvealert
 etc/mauveserver.conf     etc/mauvealert/
+Gemfile                  srv/mauvealert
+Gemfile.lock             srv/mauvealert
