@@ -8,4 +8,11 @@ coverage/
 .bundle/
 vendor/
 debian/*.debhelper.log
-
+debian/*.debhelper
+debian/*.substvars
+debian/files
+debian/debhelper-build-stamp
+debian/mauvealert-client/
+debian/mauvealert-server/
+debian/mauvealert-server-dependencies/
+man/
