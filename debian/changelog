@@ -1,8 +1,13 @@
 mauvealert (3.16.0) UNRELEASED; urgency=medium
 
-  * Re-packaged to install server into /srv, removing common package.
+  * Re-packaged to install server into /srv, removing common package. (!2)
+  * Fixed a typo in the Depends field for mauvealert-client. (!2)  
+  * Removed lots of old, unused scripts, and merged the example configuration
+    into /etc/mauvealert/mauveserver.conf. (!2)
+  * Changed supervision model to systemd. (!2)
+  * Removed XMPP support. (!2)
 
- -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 31 Jul 2017 11:31:34 +0100
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 01 Aug 2017 14:37:32 +0100
 
 mauvealert (3.15.15-1) stable; urgency=medium
 
