@@ -25,7 +25,6 @@ Description: Mauve network alert system -- server
 Package: mauvealert-client
 Architecture: all
 Depends: ruby | ruby-interpreter, ruby-protobuf, ${misc:Depends}
-  ${misc:Depends}
 Recommends: liblocale-ruby1.8 | ruby-locale
 Replaces:  mauvealert-common
 Conflicts: mauvealert-common
