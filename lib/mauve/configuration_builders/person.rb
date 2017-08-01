@@ -23,7 +23,6 @@ module Mauve
       is_attribute "password"
       is_attribute "sms"
       is_attribute "email"
-      is_attribute "xmpp"
       is_attribute "hipchat"
 
       is_flag_attribute "notify_when_on_holiday"
@@ -109,8 +108,8 @@ module Mauve
       # Set up some default notify levels.
       #
       if person.urgent.nil? and person.normal.nil? and person.low.nil?
-        person.urgent = Proc.new { sms ; xmpp ; email }
-        person.normal = Proc.new { xmpp ; email }
+        person.urgent = Proc.new { sms ; email }
+        person.normal = Proc.new { email }
         person.low    = Proc.new { email }
       end
 

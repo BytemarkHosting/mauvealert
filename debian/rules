@@ -1,0 +1,13 @@
+#!/usr/bin/make -f
+
+export BUNDLER_FLAGS=--deployment --without='test development' --jobs=4
+
+%:
+	dh $@ --with-systemd
+
+#
+# We test separately in Gitlab.
+#
+override_dh_auto_test:
+	echo "NOP"
+

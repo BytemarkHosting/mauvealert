@@ -1,0 +1,57 @@
+stages:
+  - test
+  - package
+  - publish
+
+.test: &test
+  image: $CI_REGISTRY/docker-images/layers:$DISTRO-ruby
+  stage: test
+  script:
+    - apt install libsqlite3-dev zlib1g-dev libxml2-dev ruby-dev libpq-dev
+    - bundle install -j $(nproc) --path vendor/bundle --without development
+    - "POSTGRES_URL=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres/$POSTGRES_DB bundle exec rake test"
+  services:
+    - postgres:$POSTGRES_VERSION
+  before_script:
+    - apt install postgresql-server-dev-$POSTGRES_VERSION
+
+test:jessie:
+  <<: *test
+  variables:
+    DISTRO: jessie
+    POSTGRES_USER: root
+    POSTGRES_VERSION: "9.4"
+
+test:stretch:
+  <<: *test
+  variables:
+    DISTRO: stretch
+    POSTGRES_USER: root
+    POSTGRES_VERSION: "9.6"
+
+.package: &package
+  image: $CI_REGISTRY/docker-images/layers:$DISTRO-deb
+  stage: package
+  script:
+    - package
+  artifacts:
+    paths:
+      - pkg/
+
+package:jessie:
+  <<: *package
+  variables:
+    DISTRO: jessie
+
+package:stretch:
+  <<: *package
+  variables:
+    DISTRO: stretch
+
+publish:
+  stage: publish
+  tags:
+    - shell
+  script:
+    - publish
+

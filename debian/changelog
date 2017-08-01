@@ -1,0 +1,732 @@
+mauvealert (3.16.0) UNRELEASED; urgency=medium
+
+  * Re-packaged to install server into /srv, removing common package. (!2)
+  * Fixed a typo in the Depends field for mauvealert-client. (!2)  
+  * Removed lots of old, unused scripts, and merged the example configuration
+    into /etc/mauvealert/mauveserver.conf. (!2)
+  * Changed supervision model to systemd. (!2)
+  * Removed XMPP support. (!2)
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 01 Aug 2017 14:37:32 +0100
+
+mauvealert (3.15.15-1) stable; urgency=medium
+
+  * Tidied up iconv usage for ruby1.9+
+
+ -- Patrick J Cherry <patch@bytemark.co.uk>  Thu, 10 Jul 2014 13:40:27 +0100
+
+mauvealert (3.15.14-2) stable; urgency=low
+ 
+  * Relaxed mauvealert-client ruby dependency.
+ 
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 03 Jul 2014 11:43:00 +0100
+
+mauvealert (3.15.14-1) stable; urgency=low
+
+  * Web interface now defaults to wall-clock hours.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 22 May 2013 11:47:52 +0100
+
+mauvealert (3.15.13-1) stable; urgency=low
+
+  * Switched off global socket reverse lookups.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 21 May 2013 14:34:15 +0100
+
+mauvealert (3.15.12-1) stable; urgency=low
+
+  * Removed extra database lookup when receiving alert updates.
+  * Added extra to_a when checking to see if an alert should be suppressed to
+    force the database lookup at that point.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 21 May 2013 12:24:13 +0100
+
+mauvealert (3.15.11-1) stable; urgency=low
+
+  * Notifications now generate just one history entry to ensure that the
+    previous changes regarding notification supression work.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 16 May 2013 14:13:43 +0100
+
+mauvealert (3.15.10-1ubuntu1) stable; urgency=low
+
+  * Database is now queried to see if a notification should be suppressed.
+  * Notification suppression now takes urgency into account, such that more
+    urgent alerts are not smothered by less urgent ones.
+  * Templates now include which level the alert is.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 16 May 2013 11:47:33 +0100
+
+mauvealert (3.15.9-1) stable; urgency=low
+
+  * Added Mauve::QuickUpdate library
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 02 May 2013 14:23:34 +0100
+
+mauvealert (3.15.8-1) stable; urgency=low
+
+  * Added a further check to make sure the last alert of the same update type
+    was being updated by reminders.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 01 May 2013 15:41:10 +0100
+
+mauvealert (3.15.7-1) stable; urgency=low
+
+  * Altered alert_group to only set one reminder.
+  * Allow alert to clear raised_at/cleared_at times if none specified.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 01 May 2013 10:16:52 +0100
+
+mauvealert (3.15.6-2) stable; urgency=low
+
+  * Added generic_http library that had been missed off.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 25 Jan 2013 13:47:05 +0000
+
+mauvealert (3.15.6-1) stable; urgency=low
+
+  * Alert fields are now truncated if they're too long.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 12 Dec 2012 10:47:28 +0000
+
+mauvealert (3.15.5-1) stable; urgency=low
+
+  * Fixed bug whereby alerts cleared by a "replace" flag were not sending
+    notifications.
+  * The alert summary is now recorded in the history for an alert.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 05 Dec 2012 12:34:21 +0000
+
+mauvealert (3.15.4-1) stable; urgency=low
+
+  * Fixed typo in AlertGroup.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 04 Dec 2012 14:34:31 +0000
+
+mauvealert (3.15.3-1) stable; urgency=low
+
+  * Further fix-ups to the alert notification suppression code.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 04 Dec 2012 14:08:47 +0000
+
+mauvealert (3.15.2-1) stable; urgency=low
+
+  * Added "eager" loading when looking at event histories.
+  * Fixed event views to use dates, and to miss queries for days with no
+    events.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 04 Dec 2012 11:56:19 +0000
+
+mauvealert (3.15.1-1) stable; urgency=low
+
+  * Rationalised alert tables to look the same for both searches and
+    normal views.
+  * Events calendar is now faster as fewer queries are made when loading. 
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 30 Nov 2012 22:48:43 +0000
+
+mauvealert (3.14.2-1) stable; urgency=low
+
+  * Added search views to package 
+  * Alert actions are now controlled by just one form, and two actions.
+  * Alerts in search results are now de-duped.
+  * Serch results are only coloured if they're raised.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 30 Nov 2012 14:55:16 +0000
+
+mauvealert (3.14.1-1) stable; urgency=low
+
+  * Web frontend now has a search box.
+  * Alert counts now reinstated.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 30 Nov 2012 12:35:44 +0000
+
+mauvealert (3.13.2-1) stable; urgency=low
+
+  * Raised time now set to unacknowledgment time when alerts become
+    unacknowledged
+  * Tidied up history entries
+  * Changed UNACKNOWLEDGED to RE-RAISED when alerts are no longer ack'd
+  * Added suppression information to views
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 29 Nov 2012 21:05:51 +0000
+
+mauvealert (3.13.1-1) stable; urgency=low
+
+  * Rewrote decision code for notifying on save for an alert.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 29 Nov 2012 16:17:11 +0000
+
+mauvealert (3.12.1-1) stable; urgency=low
+
+  * Added optional notification suppression for alerts.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 29 Nov 2012 10:35:04 +0000
+
+mauvealert (3.11.8-1) stable; urgency=low
+
+  * Re-wrote alert saving logic to use database transactions.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 27 Nov 2012 16:16:09 +0000
+
+mauvealert (3.11.7-1) stable; urgency=low
+
+  * Models are now more picky when setting created_at/updated_at times.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 27 Nov 2012 11:51:55 +0000
+
+mauvealert (3.11.6-2) stable; urgency=low
+
+  * Fixed missing library file. 
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 27 Nov 2012 10:16:35 +0000
+
+mauvealert (3.11.6-1) stable; urgency=low
+
+  * Added dm-validations monkey-patch to automatically save validation
+    failures, when no failures are given.
+  * Reverted change to AlertChanged.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 27 Nov 2012 09:55:44 +0000
+
+mauvealert (3.11.5-1) stable; urgency=low
+
+  * Now uses ruby-ipaddress instead of IPAddr.
+  * Now logs when AlertChanged fails, and bypassess validation when needed.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 26 Nov 2012 17:06:39 +0000
+
+mauvealert (3.11.4-1) stable; urgency=low
+
+  * AlertGroup is no longer looked for on raise/clear/ack.  It is looked up on
+    notification.
+  * Update web_interface to use public_folder instead of just public
+  * Tidied notifier a little.  Alert#cached_alert_group is reset before
+    notification.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 23 Nov 2012 15:43:11 +0000
+
+mauvealert (3.11.3-3) stable; urgency=low
+
+  * dm-aggregates now included.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 23 Nov 2012 13:05:26 +0000
+
+mauvealert (3.11.3-2) stable; urgency=low
+
+  * Updated dependencies to take new-style library names
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 23 Nov 2012 12:03:49 +0000
+
+mauvealert (3.11.3) stable; urgency=low
+
+  * minimal_dns_lookups configuration item added, preventing extra DNS lookups
+    when matching hosts to source lists.
+  * When the cached alert group is saved (in Notifier#notify) the callbacks
+    which trigger notifications are now skipped.
+  * Tidied up postgres test failure.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 23 Nov 2012 10:49:21 +0000
+
+mauvealert (3.11.2) stable; urgency=low
+
+  * Fixed typo in WebInterface.
+  * Make sure alerts only get sent on save if their status has changed.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 21 Nov 2012 16:38:00 +0000
+
+mauvealert (3.11.1) stable; urgency=low
+
+  * Added a sleep to the server main loop
+  * The alert gets saved after notification to make sure that the
+    cached_alert_group gets stored.
+  * xmmp errors now crash mauve completely. (deliberately).
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 21 Nov 2012 14:32:20 +0000
+
+mauvealert (3.11.0) stable; urgency=low
+
+  * Removed needless counting of alerts in the web interface
+  * Made alert queries more accurate
+  * Removed duplicate code in Alert#in_source_list
+  * Cut down on the number of DNS queries in SourceList#includes?
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 21 Nov 2012 14:20:42 +0000
+
+mauvealert (3.10.0) stable; urgency=low
+
+  * Added URLs which can be polled for source lists
+  * Removed freeze/thaw functionality from the threads which hasn't been used
+    for a while.
+  * Threads are now checked to make sure they're running, and not stuck.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 05 Jul 2012 14:00:55 +0100
+
+mauvealert (3.9.4) stable; urgency=low
+
+  * Clear cleared_at time if raised_at time is set on alert reception.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 02 Jul 2012 11:33:35 +0100
+
+mauvealert (3.9.3) stable; urgency=low
+
+  * no_one_in is now only called once per DuringRunner instance per
+    people_list to try and reduce hammering on the calendar.
+  * Fixed notify_when_on_holiday/off_sick to actually work.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 08 Jun 2012 10:32:23 +0100
+
+mauvealert (3.9.2) stable; urgency=low
+
+  * Removed destroy XMPP command -- replaced with clear.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 09 May 2012 17:05:43 +0100
+
+mauvealert (3.9.1) stable; urgency=low
+
+  * Web interface now uses an ajax call to work out ack times, falling back to
+    javascript if that takes too long.
+  * Default working hours are now 9.30 - 5.30 as per SLA.
+  * Fixed time tests + standardised dead zone + daylight hours.
+  * Fixed up PeopleList#resolve_notifications to check for recursion, and only
+    return notify clauses that refer to people.
+  * Changed Person#resolve_notification to match the signature for the
+    people_list version.
+  * Updated notifier only to try to connect to objects that respond to xmpp.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 08 May 2012 12:05:56 +0100
+
+mauvealert (3.9.0) stable; urgency=low
+
+  * Notify anyone who has contributed to an alert's history since its last
+    raise, either by acknowledging, or by being notified about it.
+  * Username is now recorded in the History wherever possible.  
+  * Update Time.bank_holiday? etc. to work correctly.
+  * Mauve::Configuration#do_parse_time now a class method, and used elsewhere
+    to standardise ranges in the configuration file.
+  * Updated notification tests to test bank_holiday changes etc.
+  * Person and people lists have now become interchangeable, with
+    notifications only recording the username, rather than the
+    Person/PeopleList.  This means that notifications in alert groups can use
+    default #during clauses and #every values from people lists and persons.
+  * Notify clauses can now take an array of persons/people_lists, and
+    people_lists can refer to other people lists.
+  * PeopleList names are now in the same namespace as usernames.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 04 May 2012 16:52:39 +0100
+
+mauvealert (3.8.5) stable; urgency=low
+
+  * Added configuration options for daytime_hours, dead_zone, and
+    working_hours.
+  * Updated views to be neater with respect to notice/errors and in the case
+    when no alerts are found in a table.
+  * Set default hostname to Socket.gethostname, and default base_url now
+    includes the port, if it is not port 80
+  * Added ruby locale dependency for server.
+  * Symlink jquery if possible in server postinst.
+  * Updated history partial to be better.
+  * Updated sender to try and get things into UTF8 where poss.
+  * Fixed warn on nil method in person.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 02 May 2012 15:24:52 +0100
+
+mauvealert (3.8.4) stable; urgency=low
+
+  * Fixed notification when on holiday/off sick
+  * Strings are now stripped of any illegal/non-UTF8 characters
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 30 Apr 2012 12:53:33 +0100
+
+mauvealert (3.8.3) stable; urgency=low
+
+  * Reverted bad changes to mauveserver + example.conf
+  * Added default options for a person
+  * Added calendar check for a people_list
+  * Added a time at which to check the people in a people_list
+ 
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 27 Apr 2012 11:56:52 +0100
+
+mauvealert (3.8.2) stable; urgency=low
+
+  * Reverted a couple of duff changes.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 27 Apr 2012 11:00:21 +0100
+
+mauvealert (3.8.1) stable; urgency=low
+
+  * Calendar now honours http timeout + ssl verify settings.
+  * Added no_one_in test for DuringRunner
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 27 Apr 2012 09:32:02 +0100
+
+mauvealert (3.8.0) stable; urgency=low
+
+  * HTML sanitizing only takes place if the text looks like HTML.
+  * Tests improved to couple processor and notifier buffers.
+  * Added authentication tests
+  * Removed remote auth tests in from the web interface tests.
+  * If no bytemark_auth_url is set, then no remote auth takes place.
+  * SSL peer cert validation now takes place by default.
+  * People/PeopleLists can now specify individualy notification times/frequencies
+  * Notification now uses #during/#every from the Person/PeopleList if nothing was specified
+  * Max acknowledgement time is now specified in the config
+  * Calendar interface improved.
+  * holiday_url no longer used -- replaced by notify_when_on_holiday!
+  * added notify_when_off_sick!
+  * Added ability for the calendar to be queried for a list of bank holdays.
+  * Added ability for Time to be given a list of bank holidays to check
+    against.
+  * PeopleLists can now be a Proc, allowing downloading of lists.
+  * Testing is much improved.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 25 Apr 2012 17:16:56 +0100
+
+mauvealert (3.7.8) stable; urgency=low
+
+  * Reduced the liklihood of race conditions during evaluation of during {}
+    clauses. 
+  * Added cache to DuringRunner to reduce the number of times now? is
+    evaluated.
+  * Added a debug! option to notification_method clauses for easier, erm,
+    debugging.
+  * Alert#notify and AlertChanged#notify now make use of the notification
+    buffer make the disconnection betweeen the processing loop and
+    notifications happen sooner.
+  * Manpage typo sorted out.
+  * -
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 27 Apr 2012 09:10:37 +0100
+
+mauvealert (3.7.7) stable; urgency=low
+
+  * Javascript refreshes now happen every two minutes.
+  * Alert now tries to find just one matching AlertGroup, not all.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 23 Mar 2012 15:02:53 +0000
+
+mauvealert (3.7.6) stable; urgency=low
+
+  * Tweaked alert display to show the alert_group properly.
+  * Bumped Mauve::Version correctly.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 22 Mar 2012 17:55:51 +0000
+
+mauvealert (3.7.5) stable; urgency=low
+
+  * Added tests for web interface.
+  * Tidied up HTTP auth codes when auth fails.
+  * Further tweaks to alert_group caching, and source_list searches.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 22 Mar 2012 17:44:58 +0000
+
+mauvealert (3.7.4) stable; urgency=low
+
+  * Possible improvements in alert group caching, in an attempt to fix
+    slowness in the interface.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 22 Mar 2012 10:06:07 +0000
+
+mauvealert (3.7.3) stable; urgency=low
+
+  * Added destroy command to XMPP interface.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 28 Feb 2012 14:35:17 +0000
+
+mauvealert (3.7.2) stable; urgency=low
+
+  * Fixed Hash/Array confusions when merging conditions for notification.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 02 Feb 2012 10:59:28 +0000
+
+mauvealert (3.7.1) stable; urgency=low
+
+  * Fixed debian packaging to install everything.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 30 Jan 2012 17:03:48 +0000
+
+mauvealert (3.7.0) stable; urgency=low
+
+  * Bundled timer in with processor.  What could go wrong..?
+  * Updated example.conf to work
+  * Added possibility of using postgres databases.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 30 Jan 2012 12:31:06 +0000
+
+mauvealert (3.6.3) stable; urgency=low
+
+  * Logs received at time in Processor
+  * Added lsb-base dependency
+  * Added test-task to init script
+  * Added include, include_file, and include_directory directives to
+    configuration.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 06 Jan 2012 14:41:45 +0000
+
+mauvealert (3.6.2) stable; urgency=low
+
+  * Tinkered with dependencies
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 07 Nov 2011 10:09:54 +0000
+
+mauvealert (3.6.1) stable; urgency=low
+
+  * Fixed up alert ack parsing a bit.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 07 Nov 2011 09:38:05 +0000
+
+mauvealert (3.6.0) stable; urgency=low
+
+  * Changed ack command to split on spaces or commas or both
+  * Fixed initscripts to, erm, work when VERBOSE is not set
+  * Robustificated XMPP some more
+  * Moved all timestamps into epoch time from regular timestamps
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 04 Nov 2011 08:33:13 +0000
+
+mauvealert (3.5.10) stable; urgency=low
+
+  * Fixed up Pop3Client class to work.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 04 Oct 2011 15:29:22 +0100
+
+mauvealert (3.5.9) stable; urgency=low
+
+  * Improve documentation in code
+  * Fix XMPP crash problem properly
+  * Fix XMPP acknowledge syntax for minutes, seconds, etc.
+  * Update template to remove colon between the subject and summary.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 16 Sep 2011 13:20:51 +0100
+
+mauvealert (3.5.8) stable; urgency=low
+
+  *  Added rescue clause to XMPP connect
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 13 Sep 2011 07:56:38 +0100
+
+mauvealert (3.5.7) stable; urgency=low
+
+  * Reminders are now unconditionally cleared when an alert is cleared.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 12 Sep 2011 11:18:09 +0100
+
+mauvealert (3.5.6) stable; urgency=low
+
+  * XMPP interface now saves note.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 06 Sep 2011 15:56:01 +0100
+
+mauvealert (3.5.5) stable; urgency=low
+
+  * Further updates to the suppression code.  Should be much better now.
+  * XMPP interface fixed.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 06 Sep 2011 15:30:11 +0100
+
+mauvealert (3.5.4) stable; urgency=low
+
+  * Fixed up alert suppression to work better
+  * Also allow multiple suppression clauses in config
+  * Test for dual alerts when an alert unacknowledges.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 06 Sep 2011 11:06:09 +0100
+
+mauvealert (3.5.3) stable; urgency=low
+
+  * Fixed do_get timeout
+  * Added small cache for fetching external URIs.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 31 Aug 2011 14:03:45 +0100
+
+mauvealert (3.5.2) stable; urgency=low
+
+  * Added holiday checks
+  * Suppression now a bit less jumpy.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 31 Aug 2011 13:07:50 +0100
+
+mauvealert (3.5.1) stable; urgency=low
+
+  * Fixed XMPP interface to allow ack's from groupchat.
+  * Fixed XMPP interface to allow private chats to work.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 24 Aug 2011 16:55:30 +0100
+
+mauvealert (3.5.0) stable; urgency=low
+
+  * Added XMPP interface
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 24 Aug 2011 12:24:55 +0100
+
+mauvealert (3.4.4) stable; urgency=low
+
+  * Added events calendar
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 23 Aug 2011 18:24:52 +0100
+
+mauvealert (3.4.3) stable; urgency=low
+
+  * Fixed notification race-conditions.
+  * Reminders now get sent at the start of the next during period.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 22 Aug 2011 11:58:28 +0100
+
+mauvealert (3.4.2) stable; urgency=low
+
+  * Improved polling interval timing.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 19 Aug 2011 16:56:33 +0100
+
+mauvealert (3.4.1) stable; urgency=low
+
+  * Fixed note in alert acknowledgement box
+  * HTML now sanitized on save for Alert and History types
+  * Default thread interval now 0s for UDP server and Timer, 5s for everything
+    else
+  * Moar tests
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 19 Aug 2011 16:24:56 +0100
+
+mauvealert (3.4.0) stable; urgency=low
+
+  * More thread monitoring
+  * Altered alert path for reminders
+  * Lengthened cookie lifetime
+  * Added an initial logger
+  * Can now have one history with multiple alerts
+  * Changed DateTime to Time everywhere
+  * Moar tests
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 17 Aug 2011 14:26:18 +0100
+
+mauvealert (3.3.2) stable; urgency=low
+
+  * More pop3 tweaks
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 04 Aug 2011 17:18:13 +0100
+
+mauvealert (3.3.1) stable; urgency=low
+
+  * Fixed bug in Pop3 server
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 04 Aug 2011 15:18:27 +0100
+
+mauvealert (3.3.0) stable; urgency=low
+
+  * Added pop3 server
+  * Rejigged authentication
+  * Web interface improvements 
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Thu, 04 Aug 2011 14:26:24 +0100
+
+mauvealert (3.2.1) stable; urgency=low
+
+  * Fixed up alert_group matching.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 22 Jul 2011 16:28:52 +0100
+
+mauvealert (3.2.0) stable; urgency=low
+
+  * Re-organisation of config
+  * Added lots of tests.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 22 Jul 2011 13:30:23 +0100
+
+mauvealert (3.1.6) stable; urgency=low
+
+  * Added new heartbeat to remote mauve
+  * Added alert URL to messages.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 20 Jul 2011 16:15:07 +0100
+
+mauvealert (3.1.5) stable; urgency=low
+
+  * mauvesend can now specify an absolute time
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 20 Jul 2011 10:54:17 +0100
+
+mauvealert (3.1.4) stable; urgency=low
+
+  * Fixed up recording of update_type for alerts
+  * Tidied up threading. 
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 19 Jul 2011 22:44:30 +0100
+
+mauvealert (3.1.3) stable; urgency=low
+
+  * Tidied up initscript
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 19 Jul 2011 17:59:01 +0100
+
+mauvealert (3.1.2) stable; urgency=low
+
+  * Fixed up some gruesome spelling errors.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 19 Jul 2011 16:42:19 +0100
+
+mauvealert (3.1.1) stable; urgency=low
+
+  * Fixed mauveserver config file searching
+  * Updated dependencies for lenny (ugh)
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 19 Jul 2011 15:48:53 +0100
+
+mauvealert (3.1.0) stable; urgency=low
+
+  * New version. 
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 15 Jul 2011 14:03:15 +0100
+
+mauvealert (3.0.6) stable; urgency=low
+
+  * Reminders to peple lists now work. 
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Sun, 19 Jun 2011 21:52:16 +0100
+
+mauvealert (3.0.5) stable; urgency=low
+
+  * Moar fiXXord. 
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 17 Jun 2011 18:08:21 +0100
+
+mauvealert (3.0.4) stable; urgency=low
+
+  * New release. 
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Fri, 17 Jun 2011 08:57:55 +0100
+
+mauvealert (3.0.3) stable; urgency=low
+
+  * Added get_all back to front-end
+  * Fixed up logging for more classes 
+  * Catch empty notification lists
+  * Added console to server package
+  * Fixed document_root location
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 19 Apr 2011 11:31:10 +0100
+
+mauvealert (3.0.2) stable; urgency=low
+
+  * Now checks for transmission time set to zero.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 19 Apr 2011 10:27:13 +0100
+
+mauvealert (3.0.1) stable; urgency=low
+
+  * Fixed up logging for the web interface
+  * Added better catch for validation errors 
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Tue, 19 Apr 2011 10:18:44 +0100
+
+mauvealert (3.0.0) stable; urgency=low
+
+  * New version.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 13 Apr 2011 17:02:22 +0100 
+
+mauvealert (0.1-1) stable; urgency=low
+
+  * First release.
+
+ -- Patrick J Cherry <patrick@bytemark.co.uk>  Wed, 28 Oct 2009 10:34:17 +0000

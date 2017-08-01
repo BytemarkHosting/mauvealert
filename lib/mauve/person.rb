@@ -5,7 +5,7 @@ require 'log4r'
 module Mauve
   class Person 
   
-    attr_reader :username, :password, :urgent, :normal, :low, :email, :xmpp, :sms
+    attr_reader :username, :password, :urgent, :normal, :low, :email, :sms
     attr_reader :suppressed, :notifications
     attr_reader :notify_when_off_sick, :notify_when_on_holiday
 
@@ -18,7 +18,7 @@ module Mauve
       @username = username
       @password = nil
       @urgent   = @normal = @low  = nil
-      @email = @sms = @xmpp = @hipchat = nil
+      @email = @sms = @hipchat = nil
    
       @notify_when_on_holiday = @notify_when_off_sick = false 
     end
@@ -74,14 +74,6 @@ module Mauve
     def sms=(arg)
       raise ArgumentError, "sms expects a string, not a #{arg.class}" unless arg.is_a?(String)
       @sms = arg
-    end
-
-    # Sets the xmpp parameter
-    #
-    #
-    def xmpp=(arg)
-      # raise ArgumentError, "xmpp expected a string, not a #{arg.class}" unless arg.is_a?(String) or arg.is_a?(Jabber::JID)
-      @xmpp = arg
     end
 
     # Sets up the hipchat parameter
@@ -211,7 +203,7 @@ module Mauve
       # @return Log4r::Logger
       def logger ; @logger ||= Log4r::Logger.new self.class.to_s ; end
 
-      # This method makes sure things like +xmpp+ and +email+ work.
+      # This method makes sure things like +email+ work.
       #
       # @param [String] name The notification method to use
       # @param [Array or Hash] args Extra conditions to pass to this notification method
