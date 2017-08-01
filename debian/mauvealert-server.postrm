@@ -2,9 +2,6 @@
 
 set -e
 
-##
-# Add a mauve user
-##
 RUNASUSER=mauvealert
 
 if [ "$1" = "purge" ] ; then
