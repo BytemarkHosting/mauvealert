@@ -1,20 +1,13 @@
 #!/usr/bin/make -f
-  
-# Ugh
-export GEM_HOME := $(shell pwd)/vendor/bundle
-export PATH     := ${GEM_HOME}/bin:${PATH}
+
+export BUNDLER_FLAGS=--deployment --without='test development' --jobs=4
 
 %:
 	dh $@ --with-systemd
 
-override_dh_auto_build:
-	bundler install --deployment --without="test development" --jobs=4
-	make
-
-override_dh_clean:
-	dh_clean
-	$(RM) -r vendor/
-
+#
+# We test separately in Gitlab.
+#
 override_dh_auto_test:
 	echo "NOP"
 

@@ -4,40 +4,33 @@
 ##
 
 OPENBSD_SETUP_FLAGS = --prefix=/usr/local --installdirs=site --ruby-path=/usr/local/bin/ruby18 --mandir=\$$prefix/man/man1 --siteruby=\$$libdir/ruby/site_ruby --siterubyver=\$$siteruby/1.8
+BUNDLER_FLAGS ?= --path=vendor/bundle --jobs=4 --no-deployment
 
-all: man man/mauvesend.1 man/mauveserver.1 man/mauveconsole.1
+all: vendor/bundle man/mauvesend.1 man/mauveserver.1 man/mauveconsole.1 
 
 man:
 	mkdir -p man
 
-man/%.1: bin/%
+man/%.1: bin/% vendor/bundle man
 	bundle exec $< --manual | txt2man -t $(notdir $<) -s 1  > $@
 	test -s $@
 
 clean:
 	$(RM) -r man
-	# Theoretically this will clean up the shebang munging done by the openbsd_tarball task below.
-	if [ -e ./setup.rb ] ; then  \
-		ruby ./setup.rb distclean ; \
-		ruby ./setup.rb config    ; \
-		ruby ./setup.rb setup     ; \
-		ruby ./setup.rb clean ; \
-	fi
 	$(RM) -r tmp
-	$(RM) -r OpenBSD
-	$(RM) setup.rb
 	
-
 distclean: clean
-	if [ -e ./setup.rb ] ; then ruby ./setup.rb distclean ; fi
-	$(RM) setup.rb
 	$(RM) -r OpenBSD
+	$(RM) -r vendor/bundle
 
-test: setup.rb
-	ruby ./setup.rb test
+vendor/bundle: Gemfile
+	@bundle install $(BUNDLER_FLAGS)
 
-setup.rb: /usr/lib/ruby/1.8/setup.rb
-	ln -sf /usr/lib/ruby/1.8/setup.rb .
+Gemfile.lock: Gemfile
+	@bundle update
+
+test: vendor/bundle
+	@bundle exec rake test
 
 OpenBSD: OpenBSD/sha256.asc
 
