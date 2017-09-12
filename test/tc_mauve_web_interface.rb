@@ -112,12 +112,20 @@ EOF
     assert last_response.body.include?("Mauve: Login")
     assert session['__FLASH__'].empty?
     
-    # Check we can access this page before logging in.
+    # Check we can't access this page before logging in.
     get '/alerts'
     assert(session['__FLASH__'].has_key?(:error),"The flash error wasn't set following forbidden access")
     follow_redirect!  while last_response.redirect?
     assert_equal(403, last_response.status, "The HTTP status wasn't 403")
     assert last_response.body.include?("Mauve: Login")
+    assert session['__FLASH__'].empty?
+    
+    # Check we can't access AJAX requests before logging in.
+    get '/ajax/alerts_table/raised/subject'
+    refute(session['__FLASH__'].has_key?(:error), "The flash error shouldn't have been set from an AJAX call")
+    follow_redirect!  while last_response.redirect?
+    assert_equal(403, last_response.status, "The HTTP status wasn't 403")
+    assert last_response.body.include?('You must be logged in to access this page')
     assert session['__FLASH__'].empty?
 
     #
