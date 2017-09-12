@@ -121,7 +121,7 @@ EOF
     assert session['__FLASH__'].empty?
     
     # Check we can't access AJAX requests before logging in.
-    get '/ajax/alerts_table/raised/subject'
+    get '/ajax/alerts_table/raised/subject', {}, {:xhr => true}
     refute(session['__FLASH__'].has_key?(:error), "The flash error shouldn't have been set from an AJAX call")
     follow_redirect!  while last_response.redirect?
     assert_equal(403, last_response.status, "The HTTP status wasn't 403")
