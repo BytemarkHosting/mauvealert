@@ -123,11 +123,15 @@ EOF
         # Uh-oh.. Intruder alert!
         #
         ok_urls = %w(/ /login /logout)
-        no_redirect_urls = %w(/ajax)
 
-        unless ok_urls.include?(request.path_info) 
-          flash['error'] = "You must be logged in to access that page."
-          redirect "/login?next_page=#{request.path_info}" unless no_redirect_urls.any?{|u| /^#{u}/ =~ request.path_info }
+        unless ok_urls.include?(request.path_info)
+          # No auth, so we need to stop the page loading
+          if request.xhr? # No redirecting for AJAX requests
+            halt 403, {'Content-Type' => 'text/plain'}, 'You must be logged in to access this page.'
+          else
+            flash['error'] = 'You must be logged in to access that page.'
+            redirect "/login?next_page=#{request.path_info}"
+          end
         end
       end      
     end
