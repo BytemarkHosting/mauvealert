@@ -6,6 +6,7 @@ mauvealert (3.16.0) UNRELEASED; urgency=medium
     into /etc/mauvealert/mauveserver.conf. (!2)
   * Changed supervision model to systemd. (!2)
   * Removed XMPP support. (!2)
+  * Change 'Events' nav item to load day list instead of calendar (#18, !4)
 
  -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 01 Aug 2017 14:37:32 +0100
 
