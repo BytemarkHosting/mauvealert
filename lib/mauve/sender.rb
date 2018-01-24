@@ -1,11 +1,11 @@
 # encoding: UTF-8
 require 'ipaddr'
 require 'socket'
-begin
-  require 'locale'
-rescue LoadError
+#begin
+#  require 'locale'
+#rescue LoadError
   # Do nothing -- these are bonus libraries :)
-end
+#end
 
 require 'mauve/mauve_resolv'
 require 'mauve/mauve_time'
