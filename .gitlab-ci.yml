@@ -3,17 +3,6 @@ stages:
   - package
   - publish
 
-codeclimate:
-  image: $CI_REGISTRY/docker-images/layers:stretch-codeclimate
-  stage: test
-  tags:
-    - docker-socket
-  script:
-    - codeclimate analyze -f json > codeclimate.json
-  artifacts:
-    paths: [codeclimate.json]
-
-
 .test: &test
   image: $CI_REGISTRY/docker-images/layers:$DISTRO-ruby
   stage: test
