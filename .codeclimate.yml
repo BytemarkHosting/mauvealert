@@ -5,3 +5,22 @@ engines:
     config:
       languages:
         - javascript
+  rubocop:
+    enabled: true
+  jslint:
+    enabled: true
+  stylelint:
+    enabled: true
+  fixme:
+    enabled: true
+  haml-lint:
+    enabled: true
+  ratings:
+    paths:
+      - "**.css"
+      - "**.js"
+      - "**.html"
+      - "**.rb"
+      - "**.haml"
+  exclude_paths:
+    - static/javascript/jquery.*.js
