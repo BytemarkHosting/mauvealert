@@ -1,10 +1,5 @@
 --
 engines:
-  duplication:
-    enabled:false
-    config:
-      languages:
-        - javascript
   rubocop:
     enabled: true
   jslint:
@@ -15,6 +10,13 @@ engines:
     enabled: true
   haml-lint:
     enabled: true
+  duplication:
+    enabled: true
+    config:
+      languages:
+        - ruby
+        - html
+        -javascript
   ratings:
     paths:
       - "**.css"
