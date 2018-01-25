@@ -1,5 +1,4 @@
-version: 2
-plugins:
+engines:
   rubocop:
     enabled: true
   eslint:
@@ -14,5 +13,5 @@ plugins:
       languages:
         - ruby
         - html
-exclude_patterns:
+exclude_paths:
   - static/javascript/jquery.*.js
