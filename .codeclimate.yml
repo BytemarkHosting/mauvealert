@@ -1,14 +1,12 @@
---
-engines:
+version: 2
+plugins:
   rubocop:
     enabled: true
-  jslint:
+  eslint:
     enabled: true
   stylelint:
     enabled: true
   fixme:
-    enabled: true
-  haml-lint:
     enabled: true
   duplication:
     enabled: true
@@ -16,13 +14,5 @@ engines:
       languages:
         - ruby
         - html
-        -javascript
-  ratings:
-    paths:
-      - "**.css"
-      - "**.js"
-      - "**.html"
-      - "**.rb"
-      - "**.haml"
-  exclude_paths:
-    - static/javascript/jquery.*.js
+exclude_patterns:
+  - static/javascript/jquery.*.js
