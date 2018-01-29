@@ -47,7 +47,7 @@ package:gem:
   script:
     - package
   variables:
-    GEMFILE: mauve.gemspec
+    GEMFILE: mauvesend.gemspec
 
 package:jessie:
   <<: *package
