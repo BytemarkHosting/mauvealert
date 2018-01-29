@@ -9,6 +9,9 @@ mauvealert (3.16.0) UNRELEASED; urgency=medium
   * Make authentication work for AJAX requests (#22, !3)
   * Change 'Events' nav item to load day list instead of calendar (#18, !3)
 
+  [ Telyn Roat]
+  * Removed need for locale gem outside of tests. (github pr #3)
+
  -- Patrick J Cherry <patrick@bytemark.co.uk>  Mon, 01 Aug 2017 14:37:32 +0100
 
 mauvealert (3.15.15-1) stable; urgency=medium
