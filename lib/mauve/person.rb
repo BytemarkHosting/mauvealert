@@ -18,7 +18,7 @@ module Mauve
       @username = username
       @password = nil
       @urgent   = @normal = @low  = nil
-      @email = @sms = @xmpp = @hipchat = nil
+      @email = @sms = @xmpp = @hipchat = @pushover = nil
    
       @notify_when_on_holiday = @notify_when_off_sick = false 
     end
@@ -90,6 +90,14 @@ module Mauve
     def hipchat=(arg)
       raise ArgumentError, "hipchat expected a string, not a #{arg.class}" unless arg.is_a?(String)
       @hipchat = arg
+    end
+
+    # Sets up the pushover parameter
+    #
+    #
+    def pushover=(arg)
+      raise ArgumentError, "pushover expected a string, not a #{arg.class}" unless arg.is_a?(String)
+      @pushover = arg
     end
 
     # Sets the password parameter

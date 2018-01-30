@@ -25,6 +25,7 @@ module Mauve
       is_attribute "email"
       is_attribute "xmpp"
       is_attribute "hipchat"
+      is_attribute "pushover"
 
       is_flag_attribute "notify_when_on_holiday"
       is_flag_attribute "notify_when_off_sick"
