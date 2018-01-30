@@ -38,6 +38,17 @@ test:stretch:
     paths:
       - pkg/
 
+package:gem:
+  stage: package
+  image: $CI_REGISTRY/docker-images/layers:jessie-ruby
+  artifacts:
+    paths:
+      - pkg
+  script:
+    - package
+  variables:
+    GEMFILE: mauvesend.gemspec
+
 package:jessie:
   <<: *package
   variables:

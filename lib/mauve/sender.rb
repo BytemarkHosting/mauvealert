@@ -1,11 +1,6 @@
 # encoding: UTF-8
 require 'ipaddr'
 require 'socket'
-begin
-  require 'locale'
-rescue LoadError
-  # Do nothing -- these are bonus libraries :)
-end
 
 require 'mauve/mauve_resolv'
 require 'mauve/mauve_time'
@@ -151,13 +146,6 @@ module Mauve
       # we have to manually add it here with an explicit `false`.
       # `nil` doesn't work.
       update.replace ||= false
-
-      #
-      # Check the locale charset.  This is to maximise the amout of information
-      # mauve receives, rather than provide proper sanitized data for the server.
-      #
-      from_charset = (Locale.current.charset || Locale.charset) if defined?(Locale)
-      from_charset ||= "UTF-8"
 
       #
       #
