@@ -28,9 +28,9 @@ gem "rack-protection", "~> 1.5.2"
 gem "rack-flash3", "~> 1.0.5"
 gem "tilt",        "~> 1.4.1"
 gem "sinatra",     "~> 1.4.5"
-gem "locale",      "~> 2.1.0"
 
 group :test do
+  gem "locale",      "~> 2.1.0"
   gem "simplecov", :require => false
   gem "rack-test", "~> 0.6.3"
   gem "webmock",   "~> 1.19.0"

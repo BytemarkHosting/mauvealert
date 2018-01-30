@@ -27,13 +27,13 @@ module Mauve
       def send_alert(destination, alert, all_alerts, conditions = {})
         msg = prepare_message(destination, alert, all_alerts, conditions)
 
-        colour = case alert.level
-          when :urgent
-            "red"
-          when :normal
-            "yellow"
+        colour = case alert.update_type
+          when 'cleared'
+            'green'
+          when 'acknowledged'
+            'yellow'
           else
-            "green"
+            'red'
         end
         
         opts = {
