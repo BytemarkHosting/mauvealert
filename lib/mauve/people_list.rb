@@ -25,11 +25,6 @@ module Mauve
 
     alias username label
 
-    #
-    # A dummy XMPP method.
-    #
-    def xmpp; nil ; end
-
     # Append an Array or String to a list
     #
     # @param [Array or String] arr

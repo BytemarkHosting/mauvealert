@@ -74,7 +74,7 @@ module MauveTestHelper
   #
   #   [destination, alert, other_alerts]
   #
-  # e.g. destination will be an email address, phone number or xmpp ID, just
+  # e.g. destination will be an email address, or phone number, just
   # as in the configuration file.  alert will be the subject of this 
   # alert, and other_alerts will be the other notifications that
   # are relevant for this person at this time.

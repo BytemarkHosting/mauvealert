@@ -1,6 +1,5 @@
 require 'mauve/mauve_thread'
 require 'mauve/notifiers'
-require 'mauve/notifiers/xmpp'
 
 module Mauve
 
@@ -15,8 +14,7 @@ module Mauve
     include Singleton
 
     # Stop the notifier thread.  This just makes sure that all the
-    # notifications in the buffer have been sent before closing the XMPP
-    # connection.
+    # notifications in the buffer have been sent.
     #
     def stop
       super
@@ -25,11 +23,6 @@ module Mauve
       # Flush the queue.
       #
       main_loop
-
-      if Configuration.current.notification_methods['xmpp']
-        Configuration.current.notification_methods['xmpp'].close
-      end
-
     end
     
     #
@@ -69,43 +62,6 @@ module Mauve
     #
     #
     def main_loop
-
-      #
-      # Make sure we're connected to the XMPP server if needed on every iteration.
-      #
-      xmpp = Configuration.current.notification_methods['xmpp']
-
-      if xmpp and !xmpp.ready?
-        #
-        # Connect to XMPP server
-        #
-        xmpp.connect 
-
-        #
-        # Join all chats and shit.  Unless the connection failed.
-        #
-        Configuration.current.people.each do |username, person|
-          # 
-          # Ignore people without XMPP stanzas.
-          #
-          next unless person.respond_to?(:xmpp) and person.xmpp 
-
-          #
-          # For each JID, either ensure they're on our roster, or that we're in
-          # that chat room.
-          #
-          jid = if xmpp.is_muc?(person.xmpp)
-            xmpp.join_muc(person.xmpp)
-          else
-            xmpp.ensure_roster_and_subscription!(person.xmpp)
-          end
-
-          Configuration.current.people[username].xmpp = jid unless jid.nil?
-
-        end if xmpp.ready?
-
-      end
-
       # 
       # Cycle through the buffer.
       #

@@ -67,7 +67,7 @@ EOF
   end
 
 
-  def test_local_auth
+  def test_local_auth_again
     config=<<EOF
 failed_login_delay 0
 

@@ -1,0 +1,37 @@
+Source: mauvealert
+Maintainer: Matthew Bloch <matthew@bytemark.co.uk>
+Uploaders: Patrick J Cherry <patrick@bytemark.co.uk>
+Section: ruby
+Priority: optional
+Build-Depends: ruby | ruby-interpreter, debhelper, rdoc, txt2man, dh-systemd,
+ bundler, libsqlite3-dev, zlib1g-dev, libxml2-dev, ruby-dev, libpq-dev,
+ postgresql-server-dev-9.4 | postgresql-server-dev-9.6
+Standards-Version: 3.9.1
+
+Package: mauvealert-server
+Architecture: any
+Pre-Depends: libjs-jquery
+Depends: adduser, lsb-base, ruby | ruby-interpreter, ruby-bundler, ${shlibs:Depends}, ${misc:Depends}
+Suggests: mauvealert-client
+Description: Mauve network alert system -- server
+ Mauve is a network alert system for system and network administrators.  You can
+ use it to quickly set up ad-hoc monitoring for a variety of services, and to
+ confidently replace all scripts that might otherwise send floods of emails or
+ text messages.
+ .
+ This is the server package.
+
+Package: mauvealert-client
+Architecture: all
+Depends: ruby | ruby-interpreter, ruby-protobuf, ${misc:Depends}
+Replaces:  mauvealert-common
+Conflicts: mauvealert-common
+Provides: mauvealert-common
+Description: Mauve network alert system -- client
+ Mauve is a network alert system for system and network administrators.  You
+ can use it to quickly set up ad-hoc monitoring for a variety of services, and
+ to confidently replace all scripts that might otherwise send floods of emails
+ or text messages.
+ .
+ This is the client package.
+

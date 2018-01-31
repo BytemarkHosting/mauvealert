@@ -13,7 +13,6 @@ person("test1") {
 
   email "test1@example.com"
   sms "01234567890"
-  xmpp "test1@chat.example.com"
 
   password "topsekrit"
 
@@ -35,7 +34,6 @@ EOF
     person = x.people["test1"]
     assert_equal("test1@example.com", person.email)
     assert_equal("01234567890", person.sms)
-    assert_equal("test1@chat.example.com", person.xmpp)
     assert_equal("topsekrit", person.password)
 
 #   assert_equal(300, x.people["test1"].every)
@@ -59,7 +57,6 @@ EOF
 
     assert_equal(nil, person.sms)
     assert_equal(nil, person.email)
-    assert_equal(nil, person.xmpp)
 
     assert_kind_of(Proc, person.low)
     assert_kind_of(Proc, person.normal)
