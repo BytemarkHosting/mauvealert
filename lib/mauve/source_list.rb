@@ -25,7 +25,7 @@ module Mauve
 
     attr_reader :label, :last_resolved_at
 
-    ## Default contructor.
+    ## Default constructor.
     def initialize (label, url = nil)
       @label            = label
       @last_resolved_at = nil

@@ -75,7 +75,7 @@ module Mauve
       do_processor
     end
     
-    # This processes an incoming packet.  It is in a seperate method so it can
+    # This processes an incoming packet.  It is in a separate method so it can
     # be (de)coupled as needed from the UDP server.
     #
     def process_packet(data, client, received_at)

@@ -7,7 +7,7 @@
     %th.summary{:title => "The server/entity that this alert concerns"} Subject
     %td= @alert.subject
   %tr
-    %th{:title => "The server/entitiy that originated the alert"} Source
+    %th{:title => "The server/entity that originated the alert"} Source
     %td= @alert.source
   %tr
     %th{:title => "HTML fragment describing the alert in more detail, no limit on length."} Detail
@@ -55,7 +55,7 @@
           %li
             = history.event
             at
-            = (history.created_at.nil? ? "unkown" : history.created_at.to_s_human)
+            = (history.created_at.nil? ? "unknown" : history.created_at.to_s_human)
         %p
           %a{:href => "/events/alert/#{@alert.id}"}
             View full event history

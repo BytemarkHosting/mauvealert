@@ -3,7 +3,7 @@ require 'mauve/notifiers'
 
 module Mauve
 
-  # The Notifier is reponsible for popping notifications off the
+  # The Notifier is responsible for popping notifications off the
   # notification_buffer run by the Mauve::Server instance.  This ensures that
   # notifications are sent in a separate thread to the main processing /
   # updating threads, and stops notifications delaying updates.

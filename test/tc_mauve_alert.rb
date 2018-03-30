@@ -426,7 +426,7 @@ EOF
     assert_equal(2, History.all.length)
 
     #
-    # OK now we destroy the alert.  Destory the histories too.
+    # OK now we destroy the alert.  Destroy the histories too.
     #
     alert.destroy
     assert_equal(0, History.all.length)

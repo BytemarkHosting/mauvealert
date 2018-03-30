@@ -78,7 +78,7 @@ exit 0 if help or version or manual
 require 'log4r'
 
 #
-# Initial logger -- gets detroyed later.
+# Initial logger -- gets destroyed later.
 #
 logger      = Log4r::Logger.new 'Mauve'
 outputter   = Log4r::StderrOutputter.new("initial")

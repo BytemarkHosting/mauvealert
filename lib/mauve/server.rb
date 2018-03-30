@@ -44,7 +44,7 @@ module Mauve
 
       #
       # Keep these queues here to prevent a crash in a subthread losing all the
-      # subsquent things in the queue.
+      # subsequent things in the queue.
       #
       @packet_buffer       = []
       @notification_buffer = []

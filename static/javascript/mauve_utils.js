@@ -114,7 +114,7 @@ function workoutDate( h, type ) {
   }
 
   //
-  // Substract any overshoot.
+  // Subtract any overshoot.
   //
   if ( n < 0 ) t += n;
 

@@ -379,7 +379,7 @@ mauvealert (3.8.0) stable; urgency=low
   * Removed remote auth tests in from the web interface tests.
   * If no bytemark_auth_url is set, then no remote auth takes place.
   * SSL peer cert validation now takes place by default.
-  * People/PeopleLists can now specify individualy notification times/frequencies
+  * People/PeopleLists can now specify individually notification times/frequencies
   * Notification now uses #during/#every from the Person/PeopleList if nothing was specified
   * Max acknowledgement time is now specified in the config
   * Calendar interface improved.
@@ -402,7 +402,7 @@ mauvealert (3.7.8) stable; urgency=low
   * Added a debug! option to notification_method clauses for easier, erm,
     debugging.
   * Alert#notify and AlertChanged#notify now make use of the notification
-    buffer make the disconnection betweeen the processing loop and
+    buffer make the disconnection between the processing loop and
     notifications happen sooner.
   * Manpage typo sorted out.
   * -

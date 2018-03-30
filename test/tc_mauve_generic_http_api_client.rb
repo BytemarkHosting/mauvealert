@@ -71,7 +71,7 @@ class TcMauveGenericApiClient < Mauve::UnitTest
       to_return( Proc.new{ {:status => 200, :body => YAML.dump(Time.now), :headers => {}} } )
 
     #
-    # This reponse should not be cached, the cache-until paramter is "now"
+    # This response should not be cached, the cache-until parameter is "now"
     #
     assert_equal(YAML.dump(Time.now), do_get_with_cache( url, Time.now))
 
