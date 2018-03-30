@@ -183,7 +183,7 @@ module Mauve
 
     # This is the main run loop for the thread.  
     #
-    # This thread will run untill the thread state is changed to :stopping.
+    # This thread will run until the thread state is changed to :stopping.
     #
     def run_thread
       #

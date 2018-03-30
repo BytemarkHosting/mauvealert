@@ -140,7 +140,7 @@ module Mauve
       @remote_http_timeout = arg
     end
 
-    # Sets the SSL verification mode when makeing remote HTTPS requests
+    # Sets the SSL verification mode when making remote HTTPS requests
     #
     # @param [String] arg must be one of "none" or "peer"
     # @return [Constant]

@@ -116,7 +116,7 @@ module Mauve
     attr_reader :session_secret 
     
     #
-    # Initialze the server
+    # Initialize the server
     #
     def initialize
       super

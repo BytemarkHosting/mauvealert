@@ -91,7 +91,7 @@ class Time
     end
     
     #
-    # Substract any overshoot.
+    # Subtract any overshoot.
     #
     t += n if n < 0
 

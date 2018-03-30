@@ -522,7 +522,7 @@ EOF
 
 
   #
-  # Test to make sure that if a bondary is crossed, then the during clauses all
+  # Test to make sure that if a boundary is crossed, then the during clauses all
   # work. 
   #  
   def test_no_race_conditions_in_during

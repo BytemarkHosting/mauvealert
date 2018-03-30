@@ -164,7 +164,7 @@ module Mauve
         return true if !AlertGroup::LEVELS.include?(level) or AlertGroup::LEVELS.index(level) == 0
 
         #
-        # Suppress this notification if all the last N of the preceeding
+        # Suppress this notification if all the last N of the preceding
         # notifications were of a equal or higher level.
         #
         return previous_notifications.first(number).alerts.to_a.all? do |a|
@@ -208,7 +208,7 @@ module Mauve
       # @param [String] name The notification method to use
       # @param [Array or Hash] args Extra conditions to pass to this notification method
       #
-      # @return [Boolean] if the notifcation has been successful
+      # @return [Boolean] if the notification has been successful
       def method_missing(name, *args)
         #
         # Work out the notification method
@@ -260,7 +260,7 @@ module Mauve
     # Sends the alert
     #
     # @param [Symbol] level Level at which the alert should be sent
-    # @param [Mauve::Alert] alert Alert we're notifiying about
+    # @param [Mauve::Alert] alert Alert we're notifying about
     #
     # @return [Boolean] if the notification was successful
     def send_alert(level, alert, now=Time.now)
@@ -336,7 +336,7 @@ module Mauve
     end
 
     # Returns a list of notification blocks for this person, using the default
-    # "during" and "every" paramaters if given.  The "at" and "people_seen"
+    # "during" and "every" parameters if given.  The "at" and "people_seen"
     # parameters are not used, but are in place to keep the signature the same
     # as the method in people_list.
     # 

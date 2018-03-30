@@ -98,7 +98,7 @@
 #
 # SENISBLE USAGE
 #
-# Mauve uses UDP to transmit data, which means that there is no guarrantee a
+# Mauve uses UDP to transmit data, which means that there is no guarantee a
 # single packet will reach the server. Therefore:
 #
 #  * The host/application should send "raise" notification regularly until the

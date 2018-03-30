@@ -67,8 +67,8 @@ module Mauve
       @now_cache[t] = (instance_eval(&@during) ? true : false)
     end
 
-    # This finds the next occurance of the +during+ block evaluating to true.
-    # It returns nil if an occurence cannot be found within the next 8 days.
+    # This finds the next occurrence of the +during+ block evaluating to true.
+    # It returns nil if an occurrence cannot be found within the next 8 days.
     #
     # @param [Integer] after Skip time forward this many seconds before starting
     # @return [Time or nil]
